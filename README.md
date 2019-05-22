@@ -65,7 +65,12 @@ export AWS_SECRET_ACCESS_KEY=...
 
 ### AWS setup
 
-1. Setup your AWS Lambda and ECS task:
+1. Initialize terraform:
+```
+docker run --rm -it -v $(pwd)/terraform:/opt/plan -w /opt/plan hashicorp/terraform:light init
+```
+
+2. Setup your AWS Lambda and ECS task:
 ```
 docker run -e "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID" -e "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY" --rm -it -v $(pwd)/terraform:/opt/plan -w /opt/plan hashicorp/terraform:light apply -auto-approve
 ```
