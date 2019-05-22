@@ -1,6 +1,6 @@
 # numerai-compute-cli
 
-It's not much of a CLI yet, but the skeleton is ready to go:
+This is a CLI for setting up a Numer.ai compute node and deplying your models to it.
 
 * [Prerequisites](#prerequisites)
 * [Setup](#setup)
