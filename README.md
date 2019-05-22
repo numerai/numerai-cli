@@ -108,7 +108,7 @@ submission_url = https://wzq6vxvj8j.execute-api.us-east-1.amazonaws.com/v1/submi
 
 If you don't have a docker environment already setup, then you should copy over the docker example.
 ```
-numerai copy-docker-example
+numerai docker copy-example
 ```
 
 WARNING: this will overwrite the following files if they exist: Dockerfile, main.py, and requirements.txt
@@ -118,21 +118,21 @@ WARNING: this will overwrite the following files if they exist: Dockerfile, main
 Build your docker image
 
 ```
-numerai docker-build
+numerai docker build
 ```
 
 ### Docker run (optional)
 
 To test your docker container locally, you can run it with:
 ```
-numerai docker-run
+numerai docker run
 ```
 
 ### Docker deploy
 Push your docker image to the AWS docker repo
 
 ```
-numerai docker-deploy
+numerai docker deploy
 ```
 
 ### Test live url
@@ -145,6 +145,28 @@ Where $submission_url is from the AWS Setup step. If you've forgotten it, you ca
 You can check logs that your container actually ran at https://console.aws.amazon.com/cloudwatch/home?region=us-east-1#logStream:group=/fargate/service/numerai-submission or you can check for the running tasks at https://console.aws.amazon.com/ecs/home?region=us-east-1#/clusters/numerai-submission-ecs-cluster/tasks
 
 NOTE: the container takes a little time to schedule. The first time it runs also tends to take longer (2-3min), with subsequent runs starting a lot faster.
+
+
+## Troubleshooting
+
+### Container uses up too much memory and gets killed
+
+By default, Numer.ai compute nodes are limited to 8GB of RAM. If you need more, you can open up `.numerai/variables.tf` and update the `fargate_cpu` and `fargate_memory` settings to the following:
+```
+variable "fargate_cpu" {
+  description = "Fargate instance CPU units to provision (1 vCPU = 1024 CPU units)"
+  default     = "4096"
+}
+
+variable "fargate_memory" {
+  description = "Fargate instance memory to provision (in MiB)"
+  default     = "30720"
+}
+```
+
+30720MB=30GB and is the maximum that Amazon can support.
+
+Note: this will raise the costs of running your compute node, see http://fargate-pricing-calculator.site.s3-website-us-east-1.amazonaws.com/ for estimated costs.
 
 ## Uninstall
 

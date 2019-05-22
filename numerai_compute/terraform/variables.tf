@@ -30,5 +30,5 @@ variable "fargate_cpu" {
 
 variable "fargate_memory" {
   description = "Fargate instance memory to provision (in MiB)"
-  default     = "4096"
+  default     = "8192"
 }

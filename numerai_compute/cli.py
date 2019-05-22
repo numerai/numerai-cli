@@ -62,11 +62,6 @@ def load_or_setup_keys():
     return setup_keys()
 
 
-@click.group()
-def cli():
-    pass
-
-
 def setup_keys():
     click.echo("Setting up key file at " + get_key_file())
 
@@ -138,11 +133,13 @@ def terraform_setup():
 
     keys = load_or_setup_keys()
 
-    subprocess.call(
+    res = subprocess.run(
         f"docker run --rm -it -v {numerai_dir}:/opt/plan -w /opt/plan hashicorp/terraform:light init", shell=True)
+    res.check_returncode()
 
-    subprocess.call(
+    res = subprocess.run(
         f'''docker run -e "AWS_ACCESS_KEY_ID={keys.aws_public}" -e "AWS_SECRET_ACCESS_KEY={keys.aws_secret}" --rm -it -v {numerai_dir}:/opt/plan -w /opt/plan hashicorp/terraform:light apply -auto-approve''', shell=True)
+    res.check_returncode()
 
     res = subprocess.run(
         f'''docker run --rm -it -v {numerai_dir}:/opt/plan -w /opt/plan hashicorp/terraform:light output docker_repo''', shell=True, stdout=subprocess.PIPE)
@@ -164,45 +161,70 @@ def terraform_destroy():
 
     keys = load_or_setup_keys()
 
-    subprocess.call(
+    res = subprocess.run(
         f'''docker run -e "AWS_ACCESS_KEY_ID={keys.aws_public}" -e "AWS_SECRET_ACCESS_KEY={keys.aws_secret}" --rm -it -v {numerai_dir}:/opt/plan -w /opt/plan hashicorp/terraform:light destroy -auto-approve''', shell=True)
+    res.check_returncode()
+
+
+@click.group()
+def cli():
+    """This script allows you to setup Numer.ai compute node and deploy docker containers to it"""
+    pass
 
 
 @click.command()
 def setup():
+    """Sets up a Numer.ai compute node in AWS"""
     terraform_setup()
 
 
 @click.command()
 def destroy():
+    """Destroys a previously setup Numer.ai compute node"""
     terraform_destroy()
 
 
-@click.command()
-def copy_docker_example():
+@click.group()
+def docker():
+    """A collection of docker commands for building/deploying a docker image"""
+    pass
+
+
+@docker.command()
+def copy_example():
+    """Copies a few example files into the current directory"""
     copy_docker_python3()
 
 
-@click.command()
-def docker_build():
+@docker.command()
+def run():
+    """
+    Run the docker image locally.
+
+    Requires that `build` has already run and succeeded. Useful for local testing of the docker container
+    """
+    docker_repo = read_docker_repo_file()
+
+    res = subprocess.run(
+        f'''docker run {docker_repo}''', shell=True)
+    res.check_returncode()
+
+
+@docker.command()
+def build():
+    """Builds the docker image"""
     docker_repo = read_docker_repo_file()
 
     keys = load_or_setup_keys()
 
-    subprocess.call(
+    res = subprocess.run(
         f'''docker build -t {docker_repo} --build-arg NUMERAI_PUBLIC_ID={keys.numerai_public} --build-arg NUMERAI_SECRET_KEY={keys.numerai_secret} .''', shell=True)
+    res.check_returncode()
 
 
-@click.command()
-def docker_run():
-    docker_repo = read_docker_repo_file()
-
-    subprocess.call(
-        f'''docker run {docker_repo}''', shell=True)
-
-
-@click.command()
-def docker_deploy():
+@docker.command()
+def deploy():
+    """Deploy the docker image to the Numer.ai compute node"""
     docker_repo = read_docker_repo_file()
 
     keys = load_or_setup_keys()
@@ -214,19 +236,20 @@ def docker_deploy():
     username, password = base64.b64decode(
         token['authorizationData'][0]['authorizationToken']).decode().split(':')
 
-    subprocess.run(
-        f'''docker login -u {username} -p {password} {docker_repo}''', shell=True)
-    subprocess.call(
+    res = subprocess.run(
+        f'''docker login -u {username} -p {password} {docker_repo}''', stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    res.check_returncode()
+
+    res = subprocess.run(
         f'''docker push {docker_repo}''', shell=True)
+    res.check_returncode()
 
 
 def main():
     cli.add_command(setup)
     cli.add_command(destroy)
-    cli.add_command(copy_docker_example)
-    cli.add_command(docker_build)
-    cli.add_command(docker_run)
-    cli.add_command(docker_deploy)
+
+    cli.add_command(docker)
     cli()
 
 
