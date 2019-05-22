@@ -106,7 +106,7 @@ docker build -t $docker_repo --build-arg NUMERAI_PUBLIC_ID=$NUMERAI_PUBLIC_ID --
 docker run $docker_repo
 ```
 
-3.
+3. Push your docker image to the AWS docker repo
 ```
 docker push $docker_repo
 ```
