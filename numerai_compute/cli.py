@@ -104,6 +104,10 @@ def get_docker_repo_file():
     return path.join(get_project_numerai_dir(), 'docker_repo.txt')
 
 
+def get_submission_url_file():
+    return path.join(get_project_numerai_dir(), 'submission_url.txt')
+
+
 def read_docker_repo_file():
     with open(get_docker_repo_file(), 'r') as f:
         return f.read().strip()
@@ -144,6 +148,12 @@ def terraform_setup():
         f'''docker run --rm -it -v {numerai_dir}:/opt/plan -w /opt/plan hashicorp/terraform:light output docker_repo''', shell=True, stdout=subprocess.PIPE)
 
     with open(get_docker_repo_file(), 'w') as f:
+        f.write(res.stdout.decode('utf-8').strip())
+
+    res = subprocess.run(
+        f'''docker run --rm -it -v {numerai_dir}:/opt/plan -w /opt/plan hashicorp/terraform:light output submission_url''', shell=True, stdout=subprocess.PIPE)
+
+    with open(get_submission_url_file(), 'w') as f:
         f.write(res.stdout.decode('utf-8').strip())
 
 

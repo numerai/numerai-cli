@@ -70,27 +70,29 @@ For other Linux distros, check out https://docs.docker.com/install/linux/docker-
 
 ## Setup
 
-Before doing anything below, you need to add your AWS key and numerai key to your environment variables:
+Before doing anything below, make sure you have your AWS and Numer.ai API keys ready.
+
+Install this library with:
 ```
-export NUMERAI_PUBLIC_ID=...
-export NUMERAI_SECRET_KEY=...
-export AWS_ACCESS_KEY_ID=...
-export AWS_SECRET_ACCESS_KEY=...
+pip install https://github.com/numerai/numerai-compute-cli/archive/master.zip
+```
+
+The following commands should be run from wherever your model code lives. If you would rather start from scratch, you can do:
+```
+mkdir example-numerai
+cd example-numerai
 ```
 
 ### AWS setup
 
-1. Initialize terraform:
+The following command will setup a Numer.ai compute cluster in AWS:
 ```
-docker run --rm -it -v $(pwd)/terraform:/opt/plan -w /opt/plan hashicorp/terraform:light init
-```
-
-2. Setup your AWS Lambda and ECS task:
-```
-docker run -e "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID" -e "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY" --rm -it -v $(pwd)/terraform:/opt/plan -w /opt/plan hashicorp/terraform:light apply -auto-approve
+numerai setup
 ```
 
-Note the output block from this command, e.g.:
+If this is your first time running, it will also ask for your AWS and Numer.ai API keys. These keys are stored in $HOME/.numerai for future runs.
+
+There will be a bunch of output about how it's setting up the AWS cluster, but the only important part is at the end:
 ```
 ...
 Outputs:
@@ -99,43 +101,46 @@ docker_repo = 505651907052.dkr.ecr.us-east-1.amazonaws.com/numerai-submission
 submission_url = https://wzq6vxvj8j.execute-api.us-east-1.amazonaws.com/v1/submit
 ```
 
-docker_repo will be used in the next step, and submission_url is your webhook url that you will provide to Numer.ai. Set docker_repo and submission_url in your env for ease of use later:
+* submission_url is your webhook url that you will provide to Numer.ai. Save this for later. If you forget it, a copy is stored in `.numerai/submission_url.txt`.
+* docker_repo will be used in the next step but you don't need to worry about it since it's all automated for you
+
+### Copy docker example (optional)
+
+If you don't have a docker environment already setup, then you should copy over the docker example.
 ```
-export docker_repo=505651907052.dkr.ecr.us-east-1.amazonaws.com/numerai-submission
-export submission_url=https://wzq6vxvj8j.execute-api.us-east-1.amazonaws.com/v1/submit
+numerai copy-docker-example
 ```
+
+WARNING: this will overwrite the following files if they exist: Dockerfile, main.py, and requirements.txt
 
 ### Docker build
 
-1. Login to the AWS secure docker repo:
+Build your docker image
+
 ```
-$(aws ecr get-login --region us-east-1 --no-include-email)
+numerai docker-build
 ```
 
-That command looks weird, but just paste it exactly as-is into your terminal. If you're paranoid, you can `echo` it out first to see the `docker login` command that it generates.
+### Docker run (optional)
 
-2. Build your docker image
-
-Use $docker_repo from above
+To test your docker container locally, you can run it with:
 ```
-docker build -t $docker_repo --build-arg NUMERAI_PUBLIC_ID=$NUMERAI_PUBLIC_ID --build-arg NUMERAI_SECRET_KEY=$NUMERAI_SECRET_KEY .
+numerai docker-run
 ```
 
-3. (optional) Run the docker image locally for testing purposes:
+### Docker deploy
+Push your docker image to the AWS docker repo
+
 ```
-docker run $docker_repo
+numerai docker-deploy
 ```
 
-4. Push your docker image to the AWS docker repo
-```
-docker push $docker_repo
-```
-
+### Test live url
 You're now good to go. You can test your flow by running:
 ```
 curl $submission_url
 ```
-Where $submission_url is from the AWS Setup step. The curl will return immediately, with a status of "pending". This means that your container has been scheduled to run but hasn't actually started yet.
+Where $submission_url is from the AWS Setup step. If you've forgotten it, you can find it by doing `cat .numerai/submission_url.txt`. If the curl succeeds, it will return immediately with a status of "pending". This means that your container has been scheduled to run but hasn't actually started yet.
 
 You can check logs that your container actually ran at https://console.aws.amazon.com/cloudwatch/home?region=us-east-1#logStream:group=/fargate/service/numerai-submission or you can check for the running tasks at https://console.aws.amazon.com/ecs/home?region=us-east-1#/clusters/numerai-submission-ecs-cluster/tasks
 
@@ -145,7 +150,7 @@ NOTE: the container takes a little time to schedule. The first time it runs also
 
 If you ever want to delete the AWS environment to save costs or start from scratch, you can run the following:
 ```
-docker run -e "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID" -e "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY" --rm -it -v $(pwd)/terraform:/opt/plan -w /opt/plan hashicorp/terraform:light destroy -auto-approve
+numerai destroy
 ```
 
 This will delete everything, including the lambda url, the docker container and associated task, as well as all the logs
