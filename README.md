@@ -80,7 +80,7 @@ Before doing anything below, make sure you have your AWS and Numer.ai API keys r
 
 Install this library with:
 ```
-pip3 install https://github.com/numerai/numerai-compute-cli/archive/master.zip
+pip3 install numerai-cli
 ```
 
 The following commands should be run from wherever your model code lives. If you would rather start from scratch, you can do:
