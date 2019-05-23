@@ -288,6 +288,17 @@ Builds and pushes your docker image to the AWS docker repo
 numerai docker deploy
 ```
 
+### numerai destroy
+
+If you ever want to delete the AWS environment to save costs or start from scratch, you can run the following:
+```
+numerai destroy
+```
+
+This will delete everything, including the lambda url, the docker container and associated task, as well as all the logs
+
+This command is idempotent and safe to run multiple times.
+
 ## Troubleshooting
 
 ### Container uses up too much memory and gets killed
@@ -319,11 +330,12 @@ We estimate costs to be less than $5 per month unless your compute takes more th
 
 ## Uninstall
 
-If you ever want to delete the AWS environment to save costs or start from scratch, you can run the following:
+Destroy the AWS environment
 ```
 numerai destroy
 ```
 
-This will delete everything, including the lambda url, the docker container and associated task, as well as all the logs
-
-This command is idempotent and safe to run multiple times.
+And then uninstall the package:
+```
+pip3 uninstall numerai-cli
+```
