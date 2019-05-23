@@ -63,7 +63,13 @@ Install docker through your distribution.
 
 Ubuntu/Debian:
 ```
-sudo apt install docker
+sudo apt install docker.io
+```
+
+Also make sure to add your user to the docker group:
+```
+sudo groupadd docker
+sudo usermod -aG docker $REPLACE_WITH_USER
 ```
 
 For other Linux distros, check out https://docs.docker.com/install/linux/docker-ce/centos/ and find your distro on the sidebar.
@@ -74,7 +80,7 @@ Before doing anything below, make sure you have your AWS and Numer.ai API keys r
 
 Install this library with:
 ```
-pip install https://github.com/numerai/numerai-compute-cli/archive/master.zip
+pip3 install https://github.com/numerai/numerai-compute-cli/archive/master.zip
 ```
 
 The following commands should be run from wherever your model code lives. If you would rather start from scratch, you can do:
@@ -98,6 +104,23 @@ numerai docker deploy
 The default example does *not* stake, so you will still have to manually do that every week. Alternatively, check out the bottom of predict.py for example code on how to stake automatically.
 
 You are now completely setup and good to go. Look in the `.numerai/submission_url.txt` file to see your submission url that you will provide to Numer.ai as your webhook url.
+
+### Common Problems
+
+#### `numerai` not in PATH
+```
+numerai: command not found
+```
+
+Try and run `/home/jason/.local/bin/numerai` instead
+
+#### Docker not installed
+```
+...
+subprocess.CalledProcessError: Command 'docker run --rm -it -v /home/jason/tmp/.numerai:/opt/plan -w /opt/plan hashicorp/terraform:light init' returned non-zero exit status 127.
+```
+
+If you're certain that docker is installed, make sure that your user can execute docker, ie. try to run `docker ps`
 
 ### Testing
 
