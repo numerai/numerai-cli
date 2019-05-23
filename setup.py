@@ -1,7 +1,13 @@
 from setuptools import setup
 
+# read the contents of your README file
+from os import path
+this_directory = path.abspath(path.dirname(__file__))
+with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
+    long_description = f.read()
+
 setup(name='numerai-cli',
-      version='0.1.2',
+      version='0.1.3',
       description='A library for helping to deploy a Numer.ai compute node',
       url='https://github.com/numerai/numerai-compute-cli',
       author='Numer.ai',
@@ -9,6 +15,8 @@ setup(name='numerai-cli',
       license='MIT',
       packages=['numerai_compute'],
       include_package_data=True,
+      long_description=long_description,
+      long_description_content_type='text/markdown',
       install_requires=[
           "click>=7",
           "boto3",

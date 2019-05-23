@@ -29,10 +29,10 @@ You need to signup for AWS and create an administrative IAM user
 
 ### Numer.ai API Key
 
-* You will need to create an API key by going to https://numer.ai/account and clicking "Add" under the "Your API keys" section.
-* Select the following permissions for the key: "Upload submissions", "Make stakes", "View historical submission info", "View user info"
-* Your secret key will pop up in the bottom left of the page. Copy this somewhere safe.
-* You public ID will be listed when you click "View" under "Your API keys". Copy this somewhere safe as well.
+1. You will need to create an API key by going to https://numer.ai/account and clicking "Add" under the "Your API keys" section.
+2. Select the following permissions for the key: "Upload submissions", "Make stakes", "View historical submission info", "View user info"
+3. Your secret key will pop up in the bottom left of the page. Copy this somewhere safe.
+4. You public ID will be listed when you click "View" under "Your API keys". Copy this somewhere safe as well.
 
 
 ### Python
