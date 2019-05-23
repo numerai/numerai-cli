@@ -1,47 +1,33 @@
 import numerox as nx
 import numerapi
 import os
-
-from sklearn.linear_model import LogisticRegression
+import model
 
 tournaments = nx.tournament_names()
 print(tournaments)
-
-
-class logistic(nx.Model):
-    # define your model
-
-    def __init__(self, inverse_l2=0.0001, verbose=False):
-        self.p = {'inverse_l2': inverse_l2}
-        self.verbose = verbose
-
-    def fit_predict(self, dfit, dpre, tournament):
-        # create a sklearn.LogisticRegression model
-        model = LogisticRegression(
-            C=self.p['inverse_l2'], solver='liblinear', verbose=self.verbose)
-
-        # fit the data
-        model.fit(dfit.x, dfit.y[tournament])
-
-        # predict
-        yhat = model.predict_proba(dpre.x)[:, 1]
-
-        # return predictions along with the original ids
-        return dpre.ids, yhat
 
 
 # download dataset from numerai
 data = nx.download('numerai_dataset.zip')
 
 for tournament_name in tournaments:
-    # create your model
-    model = logistic(verbose=True)
+    saved_model_name = 'model_trained_' + tournament_name
+    if os.path.exists(saved_model_name):
+        print("using saved model for", tournament_name)
+        m = model.logistic_with_fit.load(saved_model_name)
+    else:
+        print("saved model not found for", tournament_name)
+        m = model.logistic_with_fit(verbose=True)
 
+        print("training model for", tournament_name)
+        m.fit(data['train'], tournament_name)
+
+    print("running predictions for", tournament_name)
     # fit model with train data and make predictions for tournament data
-    prediction = nx.production(model, data, tournament=tournament_name)
+    prediction = nx.production(m, data, tournament=tournament_name)
 
     # save predictions to csv file
-    prediction_filename = 'prediction_' + tournament_name + '.csv'
+    prediction_filename = '/tmp/prediction_' + tournament_name + '.csv'
     prediction.to_csv(prediction_filename, verbose=True)
 
 # submit the prediction
@@ -53,10 +39,10 @@ public_id = os.environ["NUMERAI_PUBLIC_ID"]
 secret_key = os.environ["NUMERAI_SECRET_KEY"]
 
 for tournament_name in tournaments:
-    prediction_filename = 'prediction_' + tournament_name + '.csv'
+    prediction_filename = '/tmp/prediction_' + tournament_name + '.csv'
 
     submission_id = nx.upload(
-        prediction_filename, tournament_name, public_id, secret_key)
+        prediction_filename, tournament_name, public_id, secret_key, block=False)
 
 # staking variables
 # confidence = .501 # increase this number to signify your confidence in a minimum AUC. Can't go below .501

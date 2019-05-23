@@ -13,4 +13,4 @@ ARG NUMERAI_SECRET_KEY
 RUN test -n "$NUMERAI_SECRET_KEY" || (echo "Error: you need to set the NUMERAI_SECRET_KEY build arg" && exit 1)
 ENV NUMERAI_SECRET_KEY=$NUMERAI_SECRET_KEY
 
-CMD [ "python", "./main.py" ]
+CMD [ "python", "./predict.py" ]

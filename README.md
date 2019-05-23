@@ -4,6 +4,8 @@ This is a CLI for setting up a Numer.ai compute node and deplying your models to
 
 * [Prerequisites](#prerequisites)
 * [Setup](#setup)
+* [Docker Example Explained](#docker-example)
+* [Troubleshooting](#troubleshooting)
 * [Uninstall](#uninstall)
 
 ## Prerequisites
@@ -30,7 +32,7 @@ If your system isn't setup to add python commands to your PATH, then you can run
 ### AWS
 
 You need to signup for AWS and create an administrative IAM user
-1. Sign up for an AWS account
+1. Sign up for an AWS account: https://portal.aws.amazon.com/billing/signup
 2. Create an IAM user with Administrative access: https://console.aws.amazon.com/iam/home?region=us-east-1#/users$new
     1. Give user a name and select "Programmatic accesss"
     2. For permissions, click "Attach existing policies directly" and click the check box next to "AdministratorAccess"
@@ -104,6 +106,8 @@ submission_url = https://wzq6vxvj8j.execute-api.us-east-1.amazonaws.com/v1/submi
 * submission_url is your webhook url that you will provide to Numer.ai. Save this for later. If you forget it, a copy is stored in `.numerai/submission_url.txt`.
 * docker_repo will be used in the next step but you don't need to worry about it since it's all automated for you
 
+This command is idempotent and safe to run multiple times.
+
 ### Copy docker example (optional)
 
 If you don't have a docker environment already setup, then you should copy over the docker example.
@@ -111,25 +115,25 @@ If you don't have a docker environment already setup, then you should copy over 
 numerai docker copy-example
 ```
 
-WARNING: this will overwrite the following files if they exist: Dockerfile, main.py, and requirements.txt
+WARNING: this will overwrite the following files if they exist: Dockerfile, model.py, train.py, and predict.py and requirements.txt
 
-### Docker build
+### Docker train (optional, but highly recommended)
 
-Build your docker image
+Trains your model by running `train.py`. This assumes a file called `train.py` exists and serializes your model to this directory. See the example if you want inspiration for how to do this.
 
 ```
-numerai docker build
+numerai docker train
 ```
 
 ### Docker run (optional)
 
-To test your docker container locally, you can run it with:
+To test your docker container locally, you can run it with. This will run `predict.py` if you're following the example Dockerfile.
 ```
 numerai docker run
 ```
 
 ### Docker deploy
-Push your docker image to the AWS docker repo
+Builds and pushes your docker image to the AWS docker repo
 
 ```
 numerai docker deploy
@@ -146,6 +150,9 @@ You can check logs that your container actually ran at https://console.aws.amazo
 
 NOTE: the container takes a little time to schedule. The first time it runs also tends to take longer (2-3min), with subsequent runs starting a lot faster.
 
+## Docker example
+
+Everything from the current directory is added to the docker container. This means you can pre-train your model, serialize it to a file, and then load it just as you would locally. The docker example provided has separate files, model.py, train.py and predict.py. The model lives in model.py. train.py is run as part of `numerai docker train`, and predict.py is what will run in the Numer.ai compute node. You can test predict.py by running `numerai docker run`.
 
 ## Troubleshooting
 
@@ -166,7 +173,15 @@ variable "fargate_memory" {
 
 30720MB=30GB and is the maximum that Amazon can support.
 
-Note: this will raise the costs of running your compute node, see http://fargate-pricing-calculator.site.s3-website-us-east-1.amazonaws.com/ for estimated costs.
+After you've done this, re-run `numerai setup`.
+
+Note: this will raise the costs of running your compute node, see http://fargate-pricing-calculator.site.s3-website-us-east-1.amazonaws.com/ for estimated costs. You only pay for the time it's running, rounded to the nearest minute.
+
+### Billing Alerts
+
+Unfortunately, there's no automated way to setup billing alerts. If you wish to be alerted when costs pass some threshold, you should follow the instructions at https://www.cloudberrylab.com/resources/blog/how-to-configure-billing-alerts-for-your-aws-account/ to setup one.
+
+We estimate costs to be less than $5 per month unless your compute takes more than 12 hours a week. Also keep in mind that increasing the RAM/CPU as described in the previous section will increase your costs.
 
 ## Uninstall
 
@@ -176,3 +191,5 @@ numerai destroy
 ```
 
 This will delete everything, including the lambda url, the docker container and associated task, as well as all the logs
+
+This command is idempotent and safe to run multiple times.

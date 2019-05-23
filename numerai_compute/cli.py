@@ -118,12 +118,22 @@ def copy_docker_python3():
     click.echo("copying Dockerfile")
     shutil.copy(path.join(get_code_dir(), "examples",
                           "python3", "Dockerfile"), "Dockerfile")
-    click.echo("copying main.py")
+    click.echo("copying model.py")
     shutil.copy(path.join(get_code_dir(), "examples",
-                          "python3", "main.py"), "main.py")
+                          "python3", "model.py"), "model.py")
+    click.echo("copying train.py")
+    shutil.copy(path.join(get_code_dir(), "examples",
+                          "python3", "train.py"), "train.py")
+    click.echo("copying predict.py")
+    shutil.copy(path.join(get_code_dir(), "examples",
+                          "python3", "predict.py"), "predict.py")
     click.echo("copying requirements.txt")
     shutil.copy(path.join(get_code_dir(), "examples",
                           "python3", "requirements.txt"), "requirements.txt")
+
+    with open('.dockerignore', 'a+') as f:
+        f.write(".numerai\n")
+        f.write("numerai_dataset.zip\n")
 
 
 def terraform_setup():
@@ -197,22 +207,38 @@ def copy_example():
 
 
 @docker.command()
+def train():
+    """
+    Run the docker image locally.
+
+    Requires that `build` has already run and succeeded. Useful for local testing of the docker container
+    """
+    docker_build()
+
+    docker_repo = read_docker_repo_file()
+
+    res = subprocess.run(
+        f'''docker run --rm -it -v {os.getcwd()}:/opt/app -w /opt/app {docker_repo} python train.py ''', shell=True)
+    res.check_returncode()
+
+
+@docker.command()
 def run():
     """
     Run the docker image locally.
 
     Requires that `build` has already run and succeeded. Useful for local testing of the docker container
     """
+    docker_build()
+
     docker_repo = read_docker_repo_file()
 
     res = subprocess.run(
-        f'''docker run {docker_repo}''', shell=True)
+        f'''docker run --rm -it -v {os.getcwd()}:/opt/app -w /opt/app {docker_repo} ''', shell=True)
     res.check_returncode()
 
 
-@docker.command()
-def build():
-    """Builds the docker image"""
+def docker_build():
     docker_repo = read_docker_repo_file()
 
     keys = load_or_setup_keys()
@@ -223,8 +249,16 @@ def build():
 
 
 @docker.command()
+def build():
+    """Builds the docker image"""
+    docker_build()
+
+
+@docker.command()
 def deploy():
     """Deploy the docker image to the Numer.ai compute node"""
+    docker_build()
+
     docker_repo = read_docker_repo_file()
 
     keys = load_or_setup_keys()
