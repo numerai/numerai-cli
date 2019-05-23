@@ -71,6 +71,7 @@ Also make sure to add your user to the docker group:
 sudo groupadd docker
 sudo usermod -aG docker $USER
 ```
+Then reboot or logout/login for this to take effect.
 
 For other Linux distros, check out https://docs.docker.com/install/linux/docker-ce/centos/ and find your distro on the sidebar.
 
@@ -124,6 +125,7 @@ If you're certain that docker is installed, make sure that your user can execute
 ```
 sudo usermod -aG docker $USER
 ```
+Then reboot or logout/login for this to take effect.
 
 #### Wrong AWS API key
 
