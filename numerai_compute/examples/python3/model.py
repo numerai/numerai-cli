@@ -6,7 +6,7 @@ from sklearn.linear_model import LogisticRegression
 # define a model that can be trained separately and saved
 
 
-class logistic_with_fit(nx.Model):
+class LogisticModel(nx.Model):
 
     def __init__(self, inverse_l2=0.0001, verbose=False):
         self.verbose = verbose

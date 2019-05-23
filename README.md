@@ -4,30 +4,19 @@ This is a CLI for setting up a Numer.ai compute node and deplying your models to
 
 * [Prerequisites](#prerequisites)
 * [Setup](#setup)
+* [Quickstart](#quickstart)
 * [Docker Example Explained](#docker-example)
+* [Commands](#commands)
 * [Troubleshooting](#troubleshooting)
 * [Uninstall](#uninstall)
 
 ## Prerequisites
 
 All you need is:
-1. Python3 (your model code doesn't have to use Python3, but this CLI tool needs it)
-2. AWS (Amazon Web Services) account setup with an API key
+1. AWS (Amazon Web Services) account setup with an API key
+2. A Numer.ai API key
 3. Docker setup on your machine
-4. A Numer.ai API key
-
-### Python
-
-If you don't already have Python3, you can get it from https://www.python.org/downloads/
-
-After your python is setup, run:
-```
-pip install https://github.com/numerai/numerai-compute-cli/archive/master.zip
-```
-
-This will install a command named `numerai`. Test it out by running `numerai --help` in your terminal.
-
-If your system isn't setup to add python commands to your PATH, then you can run the module directly instead with `python -m 'numerai_compute.cli'`
+4. Python3 (your model code doesn't have to use Python3, but this CLI tool needs it)
 
 ### AWS
 
@@ -37,6 +26,20 @@ You need to signup for AWS and create an administrative IAM user
     1. Give user a name and select "Programmatic accesss"
     2. For permissions, click "Attach existing policies directly" and click the check box next to "AdministratorAccess"
     3. Save the "Access key ID" and "Secret access key" from the last step. You will need them later
+
+### Numer.ai API Key
+
+* You will need to create an API key by going to https://numer.ai/account and clicking "Add" under the "Your API keys" section.
+* Select the following permissions for the key: "Upload submissions", "Make stakes", "View historical submission info", "View user info"
+* Your secret key will pop up in the bottom left of the page. Copy this somewhere safe.
+* You public ID will be listed when you click "View" under "Your API keys". Copy this somewhere safe as well.
+
+
+### Python
+
+If you don't already have Python3, you can get it from https://www.python.org/downloads/ or install it from your system's package manager.
+
+[conda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/) is also a good option to get a working Python environment out of the box
 
 ### Docker
 
@@ -65,11 +68,6 @@ sudo apt install docker
 
 For other Linux distros, check out https://docs.docker.com/install/linux/docker-ce/centos/ and find your distro on the sidebar.
 
-### Numer.ai API Key
-
-* You will need to create an API key by going to https://numer.ai/account and clicking "Add" under the "Your API keys" section.
-* Select the following permissions for the key: "Upload submissions", "Make stakes", "View historical submission info", "View user info"
-
 ## Setup
 
 Before doing anything below, make sure you have your AWS and Numer.ai API keys ready.
@@ -85,9 +83,122 @@ mkdir example-numerai
 cd example-numerai
 ```
 
-### AWS setup
+## Quickstart
 
-The following command will setup a Numer.ai compute cluster in AWS:
+The following instructions will get you setup with a compute node in 3 commands:
+
+```
+numerai setup
+numerai docker copy-example
+numerai docker deploy
+```
+
+`numerai setup` will prompt your for AWS and Numer.ai API keys. Please refer to the [AWS](#aws) and [Numer.ai API Key](#numerai-api-key) sections for instructions on how to obtain those.
+
+The default example does *not* stake, so you will still have to manually do that every week. Alternatively, check out the bottom of predict.py for example code on how to stake automatically.
+
+You are now completely setup and good to go. Look in the `.numerai/submission_url.txt` file to see your submission url that you will provide to Numer.ai as your webhook url.
+
+### Testing
+
+You can test the webhook url directly like so:
+```
+curl `cat .numerai/submission_url.txt`
+```
+If the curl succeeds, it will return immediately with a status of "pending". This means that your container has been scheduled to run but hasn't actually started yet.
+
+You can check for the running task at https://console.aws.amazon.com/ecs/home?region=us-east-1#/clusters/numerai-submission-ecs-cluster/tasks or logs from your container at https://console.aws.amazon.com/cloudwatch/home?region=us-east-1#logStream:group=/fargate/service/numerai-submission
+
+NOTE: the container takes a little time to schedule. The first time it runs also tends to take longer (2-3min), with subsequent runs starting a lot faster.
+
+## Docker example
+
+Lets look at the docker example's files:
+```
+▶ tree
+.
+├── Dockerfile
+├── model.py
+├── predict.py
+├── requirements.txt
+└── train.py
+```
+
+### Dockerfile
+And then lets look at the Dockerfile:
+```
+FROM python:3
+
+ADD requirements.txt .
+RUN pip install -r requirements.txt
+
+ADD . .
+
+ARG NUMERAI_PUBLIC_ID
+ENV NUMERAI_PUBLIC_ID=$NUMERAI_PUBLIC_ID
+
+ARG NUMERAI_SECRET_KEY
+ENV NUMERAI_SECRET_KEY=$NUMERAI_SECRET_KEY
+
+CMD [ "python", "./predict.py" ]
+```
+
+So breaking this down line by line:
+```
+FROM python:3
+```
+This Dockerfile inherits from `python:3`, which provides us a working Python environment.
+
+```
+ADD requirements.txt .
+RUN pip install -r requirements.txt
+```
+
+We then add the requirements.txt file, and pip install every requirement from it. The `ADD` keyword will take a file from your current directory and copy it over to the Docker container.
+
+```
+ADD . .
+```
+After that, we add everything in the current directory. This will include all of your code, as well as any other files such as serialized models that you've saved to the current directory.
+
+```
+ARG NUMERAI_PUBLIC_ID
+ENV NUMERAI_PUBLIC_ID=$NUMERAI_PUBLIC_ID
+
+ARG NUMERAI_SECRET_KEY
+ENV NUMERAI_SECRET_KEY=$NUMERAI_SECRET_KEY
+```
+
+These are docker aguments that `numera train/run/deploy` will always pass into docker. They are then set in your environment, so that you can access them from your script like so:
+```
+import os
+public_id = os.environ["NUMERAI_PUBLIC_ID"]
+secret_key = os.environ["NUMERAI_SECRET_KEY"]
+```
+
+```
+CMD [ "python", "./predict.py" ]
+```
+
+This sets the default command to run your docker container. This is overriden in the `numerai docker train` command, but otherwise this will be the command that is always run when using `numerai docker run` and `numerai docker deploy`
+
+### model.py
+
+The model code lives in here. We're using numerox, but realistically this file could host any kind of model.
+
+### train.py
+
+The code that gets run when running `numerai docker train`
+
+### predict.py
+
+The code that gets run when running `numerai docker run` and is deployed to run in the numerai compute node after executing `numerai docker deploy`
+
+## Commands
+
+### numerai setup
+
+The following command will setup a full Numer.ai compute cluster in AWS:
 ```
 numerai setup
 ```
@@ -108,16 +219,16 @@ submission_url = https://wzq6vxvj8j.execute-api.us-east-1.amazonaws.com/v1/submi
 
 This command is idempotent and safe to run multiple times.
 
-### Copy docker example (optional)
+### numerai docker copy-example
 
-If you don't have a docker environment already setup, then you should copy over the docker example.
+If you don't have a model already setup, then you should copy over the docker example.
 ```
 numerai docker copy-example
 ```
 
 WARNING: this will overwrite the following files if they exist: Dockerfile, model.py, train.py, and predict.py and requirements.txt
 
-### Docker train (optional, but highly recommended)
+### numerai docker train (optional, but highly recommended)
 
 Trains your model by running `train.py`. This assumes a file called `train.py` exists and serializes your model to this directory. See the example if you want inspiration for how to do this.
 
@@ -125,34 +236,19 @@ Trains your model by running `train.py`. This assumes a file called `train.py` e
 numerai docker train
 ```
 
-### Docker run (optional)
+### numerai docker run (optional)
 
-To test your docker container locally, you can run it with. This will run `predict.py` if you're following the example Dockerfile.
+To test your docker container locally, you can run it with this command. This will run the default CMD for the Dockerfile, which for the default example is `predict.py`.
 ```
 numerai docker run
 ```
 
-### Docker deploy
+### numerai docker deploy
 Builds and pushes your docker image to the AWS docker repo
 
 ```
 numerai docker deploy
 ```
-
-### Test live url
-You're now good to go. You can test your flow by running:
-```
-curl $submission_url
-```
-Where $submission_url is from the AWS Setup step. If you've forgotten it, you can find it by doing `cat .numerai/submission_url.txt`. If the curl succeeds, it will return immediately with a status of "pending". This means that your container has been scheduled to run but hasn't actually started yet.
-
-You can check logs that your container actually ran at https://console.aws.amazon.com/cloudwatch/home?region=us-east-1#logStream:group=/fargate/service/numerai-submission or you can check for the running tasks at https://console.aws.amazon.com/ecs/home?region=us-east-1#/clusters/numerai-submission-ecs-cluster/tasks
-
-NOTE: the container takes a little time to schedule. The first time it runs also tends to take longer (2-3min), with subsequent runs starting a lot faster.
-
-## Docker example
-
-Everything from the current directory is added to the docker container. This means you can pre-train your model, serialize it to a file, and then load it just as you would locally. The docker example provided has separate files, model.py, train.py and predict.py. The model lives in model.py. train.py is run as part of `numerai docker train`, and predict.py is what will run in the Numer.ai compute node. You can test predict.py by running `numerai docker run`.
 
 ## Troubleshooting
 

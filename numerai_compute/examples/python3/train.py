@@ -11,7 +11,7 @@ data = nx.download('numerai_dataset.zip')
 
 for tournament_name in tournaments:
     # create your model
-    m = model.logistic_with_fit(verbose=True)
+    m = model.LogisticModel(verbose=True)
 
     print("fitting model for", tournament_name)
     m.fit(data['train'], tournament_name)

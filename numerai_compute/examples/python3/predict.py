@@ -14,10 +14,10 @@ for tournament_name in tournaments:
     saved_model_name = 'model_trained_' + tournament_name
     if os.path.exists(saved_model_name):
         print("using saved model for", tournament_name)
-        m = model.logistic_with_fit.load(saved_model_name)
+        m = model.LogisticModel.load(saved_model_name)
     else:
         print("saved model not found for", tournament_name)
-        m = model.logistic_with_fit(verbose=True)
+        m = model.LogisticModel(verbose=True)
 
         print("training model for", tournament_name)
         m.fit(data['train'], tournament_name)
