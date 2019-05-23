@@ -112,7 +112,7 @@ You are now completely setup and good to go. Look in the `.numerai/submission_ur
 numerai: command not found
 ```
 
-Try and run `/home/jason/.local/bin/numerai` instead
+Try and run `~/.local/bin/numerai` instead
 
 #### Docker not installed
 ```
@@ -121,6 +121,16 @@ subprocess.CalledProcessError: Command 'docker run --rm -it -v /home/jason/tmp/.
 ```
 
 If you're certain that docker is installed, make sure that your user can execute docker, ie. try to run `docker ps`
+
+#### Wrong AWS key
+
+```
+...
+Error: error validating provider credentials: error calling sts:GetCallerIdentity: InvalidClientTokenId: The security token included in the request is invalid.
+        status code: 403, request id: 32500359-7d9e-11e9-b0ed-596aba1b72c5
+...
+subprocess.CalledProcessError: Command 'docker run -e "AWS_ACCESS_KEY_ID=..." -e "AWS_SECRET_ACCESS_KEY=..." --rm -it -v /home/jason/tmp/.numerai:/opt/plan -w /opt/plan hashicorp/terraform:light apply -auto-approve' returned non-zero exit status 1.
+```
 
 ### Testing
 
