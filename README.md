@@ -69,7 +69,7 @@ sudo apt install docker.io
 Also make sure to add your user to the docker group:
 ```
 sudo groupadd docker
-sudo usermod -aG docker $REPLACE_WITH_USER
+sudo usermod -aG docker $USER
 ```
 
 For other Linux distros, check out https://docs.docker.com/install/linux/docker-ce/centos/ and find your distro on the sidebar.
@@ -120,9 +120,12 @@ Try and run `~/.local/bin/numerai` instead
 subprocess.CalledProcessError: Command 'docker run --rm -it -v /home/jason/tmp/.numerai:/opt/plan -w /opt/plan hashicorp/terraform:light init' returned non-zero exit status 127.
 ```
 
-If you're certain that docker is installed, make sure that your user can execute docker, ie. try to run `docker ps`
+If you're certain that docker is installed, make sure that your user can execute docker, ie. try to run `docker ps`. If that's the issue, it can probably be fixed by running:
+```
+sudo usermod -aG docker $USER
+```
 
-#### Wrong AWS key
+#### Wrong AWS API key
 
 ```
 ...
