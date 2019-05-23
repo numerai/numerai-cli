@@ -137,6 +137,10 @@ def copy_docker_python3():
 
 
 def terraform_setup():
+    if path.abspath(os.getcwd()) == path.abspath(str(Path.home())):
+        raise click.ClickException(
+            "`numerai setup` cannot be run from your $HOME directory. Please create another directory and run this again.")
+
     numerai_dir = get_project_numerai_dir()
     if not path.exists(numerai_dir):
         copy_terraform()
