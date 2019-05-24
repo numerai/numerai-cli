@@ -149,8 +149,6 @@ docker: Error response from daemon: Drive has not been shared
 ```
 Then you need to share your drive. See https://docs.docker.com/docker-for-windows/#shared-drives for details.
 
-#### Wrong AWS API key
-
 ### Testing
 
 You can test the webhook url directly like so:
