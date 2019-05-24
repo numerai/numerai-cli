@@ -57,6 +57,8 @@ This project is completely untested on windows, but is meant to be cross-platfor
 
 Install docker desktop at https://hub.docker.com/editions/community/docker-ce-desktop-windows
 
+After you've installed docker, you *must* enable drive sharing: https://docs.docker.com/docker-for-windows/#shared-drives
+
 #### Linux
 
 Install docker through your distribution.
@@ -113,7 +115,9 @@ You are now completely setup and good to go. Look in the `.numerai/submission_ur
 numerai: command not found
 ```
 
-Try and run `~/.local/bin/numerai` instead
+Try and run `~/.local/bin/numerai` on osx/linux or `%LOCALAPPDATA%\Programs\Python\Python37-32\Scripts\numerai.exe` on Windows.
+
+Alternatively, exit your terminal/command prompt and re-open it. By default, pip will try to add itself to your PATH for subsequent runs, but it requires you to restart the terminal.
 
 #### Docker not installed
 ```
@@ -136,6 +140,16 @@ Error: error validating provider credentials: error calling sts:GetCallerIdentit
 ...
 subprocess.CalledProcessError: Command 'docker run -e "AWS_ACCESS_KEY_ID=..." -e "AWS_SECRET_ACCESS_KEY=..." --rm -it -v /home/jason/tmp/.numerai:/opt/plan -w /opt/plan hashicorp/terraform:light apply -auto-approve' returned non-zero exit status 1.
 ```
+
+#### Drive not shared
+
+If you get:
+```
+docker: Error response from daemon: Drive has not been shared
+```
+Then you need to share your drive. See https://docs.docker.com/docker-for-windows/#shared-drives for details.
+
+#### Wrong AWS API key
 
 ### Testing
 
