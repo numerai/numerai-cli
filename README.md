@@ -18,6 +18,8 @@ All you need is:
 3. Docker setup on your machine
 4. Python3 (your model code doesn't have to use Python3, but this CLI tool needs it)
 
+This project has been tested and found working on OSX, Windows 10, and Ubuntu 18.04
+
 ### AWS
 
 You need to signup for AWS and create an administrative IAM user
@@ -52,8 +54,6 @@ brew cask install docker
 Otherwise you can install manually at https://hub.docker.com/editions/community/docker-ce-desktop-mac
 
 #### Windows
-
-This project is completely untested on windows, but is meant to be cross-platform and *should* work since it only uses python and docker
 
 Install docker desktop at https://hub.docker.com/editions/community/docker-ce-desktop-windows
 
