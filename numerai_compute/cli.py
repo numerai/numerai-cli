@@ -94,6 +94,16 @@ def get_code_dir():
     return path.dirname(__file__)
 
 
+def format_path_if_mingw(p):
+    '''
+    Helper function to format if the system is running docker toolbox + mingw. The paths need to be formatted like unix paths, and the drive letter needs to be lowercased
+    '''
+    if 'DOCKER_TOOLBOX_INSTALL_PATH' in os.environ and 'MSYSTEM' in os.environ:
+        p = '/' + p[0].lower() + p[1:]
+        p = p.replace('\\', '/')
+    return p
+
+
 def get_project_numerai_dir():
     return path.join(os.getcwd(), ".numerai")
 
@@ -153,7 +163,8 @@ def terraform_setup(verbose):
         raise click.ClickException(
             "`numerai setup` cannot be run from your $HOME directory. Please create another directory and run this again.")
 
-    numerai_dir = get_project_numerai_dir()
+    numerai_dir = format_path_if_mingw(get_project_numerai_dir())
+
     if not path.exists(numerai_dir):
         copy_terraform()
 
@@ -191,7 +202,7 @@ def terraform_setup(verbose):
 
 
 def terraform_destroy(verbose):
-    numerai_dir = get_project_numerai_dir()
+    numerai_dir = format_path_if_mingw(get_project_numerai_dir())
     if not path.exists(numerai_dir):
         return
 
@@ -262,8 +273,9 @@ def train(command, verbose):
     docker_build(verbose)
 
     docker_repo = read_docker_repo_file()
+    cur_dir = format_path_if_mingw(os.getcwd())
 
-    c = f'''docker run --rm -it -v {os.getcwd()}:/opt/app -w /opt/app {docker_repo} {command}'''
+    c = f'''docker run --rm -it -v {cur_dir}:/opt/app -w /opt/app {docker_repo} {command}'''
     if verbose:
         click.echo('running: ' + c)
     res = subprocess.run(c, shell=True)
@@ -281,8 +293,9 @@ def run(verbose):
     docker_build(verbose)
 
     docker_repo = read_docker_repo_file()
+    cur_dir = format_path_if_mingw(os.getcwd())
 
-    c = f'''docker run --rm -it -v {os.getcwd()}:/opt/app -w /opt/app {docker_repo} '''
+    c = f'''docker run --rm -it -v {cur_dir}:/opt/app -w /opt/app {docker_repo} '''
     if verbose:
         click.echo('running: ' + c)
     res = subprocess.run(c, shell=True)
