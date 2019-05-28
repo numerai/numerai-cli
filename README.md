@@ -276,7 +276,7 @@ If you don't have a model already setup, then you should copy over the docker ex
 numerai docker copy-example
 ```
 
-WARNING: this will overwrite the following files if they exist: Dockerfile, model.py, train.py, and predict.py and requirements.txt
+WARNING: this will overwrite the following files if they exist: Dockerfile, model.py, train.py, predict.py, and requirements.txt
 
 ### numerai docker train (optional, but highly recommended)
 
