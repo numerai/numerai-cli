@@ -1,5 +1,7 @@
 # numerai-compute-cli
 
+[![CircleCI](https://circleci.com/gh/numerai/numerai-compute-cli.svg?style=svg)](https://circleci.com/gh/numerai/numerai-compute-cli)
+
 This is a CLI for setting up a Numer.ai compute node and deplying your models to it.
 
 * [Prerequisites](#prerequisites)
