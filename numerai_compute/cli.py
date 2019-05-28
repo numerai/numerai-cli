@@ -99,7 +99,7 @@ def format_path_if_mingw(p):
     Helper function to format if the system is running docker toolbox + mingw. The paths need to be formatted like unix paths, and the drive letter needs to be lowercased
     '''
     if 'DOCKER_TOOLBOX_INSTALL_PATH' in os.environ and 'MSYSTEM' in os.environ:
-        p = '/' + p[0].lower() + p[1:]
+        p = '/' + p[0].lower() + p[2:]
         p = p.replace('\\', '/')
     return p
 
@@ -163,10 +163,12 @@ def terraform_setup(verbose):
         raise click.ClickException(
             "`numerai setup` cannot be run from your $HOME directory. Please create another directory and run this again.")
 
-    numerai_dir = format_path_if_mingw(get_project_numerai_dir())
+    numerai_dir = get_project_numerai_dir()
 
     if not path.exists(numerai_dir):
         copy_terraform()
+
+    numerai_dir = format_path_if_mingw(numerai_dir)
 
     keys = load_or_setup_keys()
 

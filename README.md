@@ -55,11 +55,27 @@ brew cask install docker
 ```
 Otherwise you can install manually at https://hub.docker.com/editions/community/docker-ce-desktop-mac
 
+You should also increase the RAM allocated to the VM by changing "Memory" in the following: https://docs.docker.com/docker-for-mac/#advanced
+
 #### Windows
 
 Install docker desktop at https://hub.docker.com/editions/community/docker-ce-desktop-windows
 
 After you've installed docker, you *must* enable drive sharing: https://docs.docker.com/docker-for-windows/#shared-drives
+
+You should also increase the RAM allocated to the VM by changing "Memory" in the following: https://docs.docker.com/docker-for-windows/#advanced
+
+##### Docker Toolbox
+
+If your machine doesn't have Hyper-V enabled, then you will have to install docker toolbox: https://github.com/docker/toolbox/releases
+
+After it's installed, open the "Docker QuickStart Terminal" and run the following to increase its RAM:
+```
+docker-machine rm default
+docker-machine create -d virtualbox --virtualbox-cpu-count=2 --virtualbox-memory=4096 --virtualbox-disk-size=50000 default
+```
+
+Also note, your code must live somewhere under your User directory (ie. C:\Users\USER_NAME\ANY_FOLDER). This is a restriction of docker toolbox not sharing paths correctly otherwise.
 
 #### Linux
 
