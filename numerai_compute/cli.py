@@ -204,9 +204,10 @@ def terraform_setup(verbose):
 
 
 def terraform_destroy(verbose):
-    numerai_dir = format_path_if_mingw(get_project_numerai_dir())
+    numerai_dir = get_project_numerai_dir()
     if not path.exists(numerai_dir):
         return
+    numerai_dir = format_path_if_mingw(numerai_dir)
 
     keys = load_or_setup_keys()
 
