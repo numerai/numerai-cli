@@ -34,7 +34,7 @@ pip3 install numerai-cli
 
 ## Quickstart
 
-The following instructions will get you setup with a compute node in 3 commands:
+The following instructions will get you setup with a compute node in a matter of minutes:
 
 ```
 mkdir example-numerai
@@ -70,7 +70,7 @@ You can test your container locally by running:
 numerai docker run
 ```
 
-This will run the container exactly like it runs in the cloud. Keep in mind that this will be limited by your machine's RAM, and
+This will run the container exactly like it runs in the cloud. Keep in mind that this will be limited by your machine's RAM, or in the case of Windows/OSX, you can increase how much memory is allocated to docker: [Windows](https://docs.docker.com/docker-for-windows/#advanced) or [OSX](https://docs.docker.com/docker-for-mac/#advanced)
 
 ### Common Problems
 
