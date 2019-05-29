@@ -10,6 +10,7 @@ This is a CLI for setting up a Numer.ai compute node and deplying your models to
 * [Docker Example Explained](#docker-example)
 * [Commands](#commands)
 * [Troubleshooting](#troubleshooting)
+* [Prerequisites Help](#prerequisites-help)
 * [Uninstall](#uninstall)
 
 ## Prerequisites
@@ -20,94 +21,15 @@ All you need is:
 3. Docker setup on your machine
 4. Python3 (your model code doesn't have to use Python3, but this CLI tool needs it)
 
-This project has been tested and found working on OSX, Windows 10, and Ubuntu 18.04
+See the [Prerequisites Help](#prerequisites-help) section if you need help getting these setup.
 
-### AWS
-
-You need to signup for AWS and create an administrative IAM user
-1. Sign up for an AWS account: https://portal.aws.amazon.com/billing/signup
-2. Create an IAM user with Administrative access: https://console.aws.amazon.com/iam/home?region=us-east-1#/users$new
-    1. Give user a name and select "Programmatic accesss"
-    2. For permissions, click "Attach existing policies directly" and click the check box next to "AdministratorAccess"
-    3. Save the "Access key ID" and "Secret access key" from the last step. You will need them later
-
-### Numer.ai API Key
-
-1. You will need to create an API key by going to https://numer.ai/account and clicking "Add" under the "Your API keys" section.
-2. Select the following permissions for the key: "Upload submissions", "Make stakes", "View historical submission info", "View user info"
-3. Your secret key will pop up in the bottom left of the page. Copy this somewhere safe.
-4. You public ID will be listed when you click "View" under "Your API keys". Copy this somewhere safe as well.
-
-
-### Python
-
-If you don't already have Python3, you can get it from https://www.python.org/downloads/ or install it from your system's package manager.
-
-[conda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/) is also a good option to get a working Python environment out of the box
-
-### Docker
-
-#### MacOS
-
-If you have homebrew installed:
-```
-brew cask install docker
-```
-Otherwise you can install manually at https://hub.docker.com/editions/community/docker-ce-desktop-mac
-
-You should also increase the RAM allocated to the VM by changing "Memory" in the following: https://docs.docker.com/docker-for-mac/#advanced
-
-#### Windows
-
-Install docker desktop at https://hub.docker.com/editions/community/docker-ce-desktop-windows
-
-After you've installed docker, you *must* enable drive sharing: https://docs.docker.com/docker-for-windows/#shared-drives
-
-You should also increase the RAM allocated to the VM by changing "Memory" in the following: https://docs.docker.com/docker-for-windows/#advanced
-
-##### Docker Toolbox
-
-If your machine doesn't have Hyper-V enabled, then you will have to install docker toolbox: https://github.com/docker/toolbox/releases
-
-After it's installed, open the "Docker QuickStart Terminal" and run the following to increase its RAM:
-```
-docker-machine rm default
-docker-machine create -d virtualbox --virtualbox-cpu-count=2 --virtualbox-memory=4096 --virtualbox-disk-size=50000 default
-```
-
-Also note, your code must live somewhere under your User directory (ie. C:\Users\USER_NAME\ANY_FOLDER). This is a restriction of docker toolbox not sharing paths correctly otherwise.
-
-#### Linux
-
-Install docker through your distribution.
-
-Ubuntu/Debian:
-```
-sudo apt install docker.io
-```
-
-Also make sure to add your user to the docker group:
-```
-sudo groupadd docker
-sudo usermod -aG docker $USER
-```
-Then reboot or logout/login for this to take effect.
-
-For other Linux distros, check out https://docs.docker.com/install/linux/docker-ce/centos/ and find your distro on the sidebar.
+This project has been tested and found working on OSX, Windows 10, and Ubuntu 18.04, but should theoretically work anywhere that docker and Python are available.
 
 ## Setup
-
-Before doing anything below, make sure you have your AWS and Numer.ai API keys ready.
 
 Install this library with:
 ```
 pip3 install numerai-cli
-```
-
-The following commands should be run from wherever your model code lives. If you would rather start from scratch, you can do:
-```
-mkdir example-numerai
-cd example-numerai
 ```
 
 ## Quickstart
@@ -115,6 +37,9 @@ cd example-numerai
 The following instructions will get you setup with a compute node in 3 commands:
 
 ```
+mkdir example-numerai
+cd example-numerai
+
 numerai setup
 numerai docker copy-example
 numerai docker deploy
@@ -122,9 +47,30 @@ numerai docker deploy
 
 `numerai setup` will prompt your for AWS and Numer.ai API keys. Please refer to the [AWS](#aws) and [Numer.ai API Key](#numerai-api-key) sections for instructions on how to obtain those.
 
+You are now completely setup and good to go. Look in the `.numerai/submission_url.txt` file to see your submission url that you will provide to Numer.ai as your webhook url.
+
 The default example does *not* stake, so you will still have to manually do that every week. Alternatively, check out the bottom of predict.py for example code on how to stake automatically.
 
-You are now completely setup and good to go. Look in the `.numerai/submission_url.txt` file to see your submission url that you will provide to Numer.ai as your webhook url.
+### Testing
+
+You can test the webhook url directly like so:
+```
+curl `cat .numerai/submission_url.txt`
+```
+If the curl succeeds, it will return immediately with a status of "pending". This means that your container has been scheduled to run but hasn't actually started yet.
+
+You can check for the running task at https://console.aws.amazon.com/ecs/home?region=us-east-1#/clusters/numerai-submission-ecs-cluster/tasks or logs from your container at https://console.aws.amazon.com/cloudwatch/home?region=us-east-1#logStream:group=/fargate/service/numerai-submission
+
+NOTE: the container takes a little time to schedule. The first time it runs also tends to take longer (2-3min), with subsequent runs starting a lot faster.
+
+#### Local Testing
+
+You can test your container locally by running:
+```
+numerai docker run
+```
+
+This will run the container exactly like it runs in the cloud. Keep in mind that this will be limited by your machine's RAM, and
 
 ### Common Problems
 
@@ -143,7 +89,16 @@ Alternatively, exit your terminal/command prompt and re-open it. By default, pip
 subprocess.CalledProcessError: Command 'docker run --rm -it -v /home/jason/tmp/.numerai:/opt/plan -w /opt/plan hashicorp/terraform:light init' returned non-zero exit status 127.
 ```
 
-If you're certain that docker is installed, make sure that your user can execute docker, ie. try to run `docker ps`. If that's the issue, it can probably be fixed by running:
+If you're certain that docker is installed, make sure that your user can execute docker, ie. try to run `docker ps`. If that's the issue, then depending on your system, you can do the following:
+
+##### Windows/OSX
+
+Make sure the docker application is running and finished booting up. It can take a few minutes to be completely ready. When clicking on the docker tray icon, it should say "Docker Desktop is Running".
+
+If you're using Docker Toolbox on Windows, then make sure you've opened the "Docker Quickstart Terminal".
+
+##### Linux
+
 ```
 sudo usermod -aG docker $USER
 ```
@@ -166,18 +121,6 @@ If you get:
 docker: Error response from daemon: Drive has not been shared
 ```
 Then you need to share your drive. See https://docs.docker.com/docker-for-windows/#shared-drives for details.
-
-### Testing
-
-You can test the webhook url directly like so:
-```
-curl `cat .numerai/submission_url.txt`
-```
-If the curl succeeds, it will return immediately with a status of "pending". This means that your container has been scheduled to run but hasn't actually started yet.
-
-You can check for the running task at https://console.aws.amazon.com/ecs/home?region=us-east-1#/clusters/numerai-submission-ecs-cluster/tasks or logs from your container at https://console.aws.amazon.com/cloudwatch/home?region=us-east-1#logStream:group=/fargate/service/numerai-submission
-
-NOTE: the container takes a little time to schedule. The first time it runs also tends to take longer (2-3min), with subsequent runs starting a lot faster.
 
 ## Docker example
 
@@ -357,6 +300,81 @@ Note: this will raise the costs of running your compute node, see http://fargate
 Unfortunately, there's no automated way to setup billing alerts. If you wish to be alerted when costs pass some threshold, you should follow the instructions at https://www.cloudberrylab.com/resources/blog/how-to-configure-billing-alerts-for-your-aws-account/ to setup one.
 
 We estimate costs to be less than $5 per month unless your compute takes more than 12 hours a week. Also keep in mind that increasing the RAM/CPU as described in the previous section will increase your costs.
+
+## Prerequisites Help
+
+### AWS
+
+You need to signup for AWS and create an administrative IAM user
+1. Sign up for an AWS account: https://portal.aws.amazon.com/billing/signup
+2. Create an IAM user with Administrative access: https://console.aws.amazon.com/iam/home?region=us-east-1#/users$new
+    1. Give user a name and select "Programmatic accesss"
+    2. For permissions, click "Attach existing policies directly" and click the check box next to "AdministratorAccess"
+    3. Save the "Access key ID" and "Secret access key" from the last step. You will need them later
+
+### Numer.ai API Key
+
+1. You will need to create an API key by going to https://numer.ai/account and clicking "Add" under the "Your API keys" section.
+2. Select the following permissions for the key: "Upload submissions", "Make stakes", "View historical submission info", "View user info"
+3. Your secret key will pop up in the bottom left of the page. Copy this somewhere safe.
+4. You public ID will be listed when you click "View" under "Your API keys". Copy this somewhere safe as well.
+
+
+### Python
+
+If you don't already have Python3, you can get it from https://www.python.org/downloads/ or install it from your system's package manager.
+
+[conda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/) is also a good option to get a working Python environment out of the box
+
+### Docker
+
+#### MacOS
+
+If you have homebrew installed:
+```
+brew cask install docker
+```
+Otherwise you can install manually at https://hub.docker.com/editions/community/docker-ce-desktop-mac
+
+You should also increase the RAM allocated to the VM by changing "Memory" in the following: https://docs.docker.com/docker-for-mac/#advanced
+
+#### Windows
+
+Install docker desktop at https://hub.docker.com/editions/community/docker-ce-desktop-windows
+
+After you've installed docker, you *must* enable drive sharing: https://docs.docker.com/docker-for-windows/#shared-drives
+
+You should also increase the RAM allocated to the VM by changing "Memory" in the following: https://docs.docker.com/docker-for-windows/#advanced
+
+##### Docker Toolbox
+
+If your machine doesn't have Hyper-V enabled, then you will have to install docker toolbox: https://github.com/docker/toolbox/releases
+
+After it's installed, open the "Docker QuickStart Terminal" and run the following to increase its RAM:
+```
+docker-machine rm default
+docker-machine create -d virtualbox --virtualbox-cpu-count=2 --virtualbox-memory=4096 --virtualbox-disk-size=50000 default
+```
+
+Also note, your code must live somewhere under your User directory (ie. C:\Users\USER_NAME\ANY_FOLDER). This is a restriction of docker toolbox not sharing paths correctly otherwise.
+
+#### Linux
+
+Install docker through your distribution.
+
+Ubuntu/Debian:
+```
+sudo apt install docker.io
+```
+
+Also make sure to add your user to the docker group:
+```
+sudo groupadd docker
+sudo usermod -aG docker $USER
+```
+Then reboot or logout/login for this to take effect.
+
+For other Linux distros, check out https://docs.docker.com/install/linux/docker-ce/centos/ and find your distro on the sidebar.
 
 ## Uninstall
 
