@@ -117,7 +117,12 @@ def get_submission_url_file():
 
 
 def read_docker_repo_file():
-    with open(get_docker_repo_file(), 'r') as f:
+    docker_file = get_docker_repo_file()
+    if not path.exists(docker_file):
+        raise click.ClickException(
+            "docker repo not found. Make sure you have run `numerai setup` successfully before running this command.")
+
+    with open(docker_file, 'r') as f:
         return f.read().strip()
 
 
@@ -164,27 +169,29 @@ def terraform_setup(verbose):
             "`numerai setup` cannot be run from your $HOME directory. Please create another directory and run this again.")
 
     numerai_dir = get_project_numerai_dir()
-
     if not path.exists(numerai_dir):
         copy_terraform()
-
+    # Format path for mingw after checking that it exists
     numerai_dir = format_path_if_mingw(numerai_dir)
 
     keys = load_or_setup_keys()
 
-    c = f"docker run --rm -it -v {numerai_dir}:/opt/plan -w /opt/plan hashicorp/terraform:light init"
+    c = "docker run --rm -it -v {numerai_dir}:/opt/plan -w /opt/plan hashicorp/terraform:light init".format(
+        **locals())
     if verbose:
         click.echo('running: ' + keys.sanitize_message(c))
     res = subprocess.run(c, shell=True)
     res.check_returncode()
 
-    c = f'''docker run -e "AWS_ACCESS_KEY_ID={keys.aws_public}" -e "AWS_SECRET_ACCESS_KEY={keys.aws_secret}" --rm -it -v {numerai_dir}:/opt/plan -w /opt/plan hashicorp/terraform:light apply -auto-approve'''
+    c = '''docker run -e "AWS_ACCESS_KEY_ID={keys.aws_public}" -e "AWS_SECRET_ACCESS_KEY={keys.aws_secret}" --rm -it -v {numerai_dir}:/opt/plan -w /opt/plan hashicorp/terraform:light apply -auto-approve'''.format(
+        **locals())
     if verbose:
         click.echo('running: ' + keys.sanitize_message(c))
     res = subprocess.run(c, shell=True)
     res.check_returncode()
 
-    c = f'''docker run --rm -it -v {numerai_dir}:/opt/plan -w /opt/plan hashicorp/terraform:light output docker_repo'''
+    c = '''docker run --rm -it -v {numerai_dir}:/opt/plan -w /opt/plan hashicorp/terraform:light output docker_repo'''.format(
+        **locals())
     if verbose:
         click.echo('running: ' + keys.sanitize_message(c))
     res = subprocess.run(c, shell=True, stdout=subprocess.PIPE)
@@ -193,7 +200,8 @@ def terraform_setup(verbose):
         f.write(res.stdout.decode('utf-8').strip())
     click.echo('wrote docker repo to: ' + get_docker_repo_file())
 
-    c = f'''docker run --rm -it -v {numerai_dir}:/opt/plan -w /opt/plan hashicorp/terraform:light output submission_url'''
+    c = '''docker run --rm -it -v {numerai_dir}:/opt/plan -w /opt/plan hashicorp/terraform:light output submission_url'''.format(
+        **locals())
     if verbose:
         click.echo('running: ' + keys.sanitize_message(c))
     res = subprocess.run(c, shell=True, stdout=subprocess.PIPE)
@@ -211,7 +219,8 @@ def terraform_destroy(verbose):
 
     keys = load_or_setup_keys()
 
-    c = f'''docker run -e "AWS_ACCESS_KEY_ID={keys.aws_public}" -e "AWS_SECRET_ACCESS_KEY={keys.aws_secret}" --rm -it -v {numerai_dir}:/opt/plan -w /opt/plan hashicorp/terraform:light destroy -auto-approve'''
+    c = '''docker run -e "AWS_ACCESS_KEY_ID={keys.aws_public}" -e "AWS_SECRET_ACCESS_KEY={keys.aws_secret}" --rm -it -v {numerai_dir}:/opt/plan -w /opt/plan hashicorp/terraform:light destroy -auto-approve'''.format(
+        **locals())
     if verbose:
         click.echo('running: ' + keys.sanitize_message(c))
     res = subprocess.run(c, shell=True)
@@ -225,14 +234,14 @@ def cli():
 
 
 @click.command()
-@click.option('--verbose', '-v', default=False)
+@click.option('--verbose', '-v', is_flag=True)
 def setup(verbose):
     """Sets up a Numer.ai compute node in AWS"""
     terraform_setup(verbose)
 
 
 @click.command()
-@click.option('--verbose', '-v', default=False)
+@click.option('--verbose', '-v', is_flag=True)
 def destroy(verbose):
     """Destroys a previously setup Numer.ai compute node"""
     terraform_destroy(verbose)
@@ -245,7 +254,7 @@ def docker():
 
 
 @docker.command()
-# @click.option('--verbose', '-v', default=False)
+# @click.option('--verbose', '-v', is_flag=True)
 def copy_example():
     """Copies a few example files into the current directory"""
     copy_docker_python3(True)
@@ -256,7 +265,8 @@ def docker_build(verbose):
 
     keys = load_or_setup_keys()
 
-    c = f'''docker build -t {docker_repo} --build-arg NUMERAI_PUBLIC_ID={keys.numerai_public} --build-arg NUMERAI_SECRET_KEY={keys.numerai_secret} .'''
+    c = '''docker build -t {docker_repo} --build-arg NUMERAI_PUBLIC_ID={keys.numerai_public} --build-arg NUMERAI_SECRET_KEY={keys.numerai_secret} .'''.format(
+        **locals())
     if verbose:
         click.echo("running: " + keys.sanitize_message(c))
 
@@ -266,7 +276,7 @@ def docker_build(verbose):
 
 @docker.command()
 @click.option('--command', '-c', default='python train.py', type=(str))
-@click.option('--verbose', '-v', default=False)
+@click.option('--verbose', '-v', is_flag=True)
 def train(command, verbose):
     """
     Run the docker image locally.
@@ -278,7 +288,8 @@ def train(command, verbose):
     docker_repo = read_docker_repo_file()
     cur_dir = format_path_if_mingw(os.getcwd())
 
-    c = f'''docker run --rm -it -v {cur_dir}:/opt/app -w /opt/app {docker_repo} {command}'''
+    c = '''docker run --rm -it -v {cur_dir}:/opt/app -w /opt/app {docker_repo} {command}'''.format(
+        **locals())
     if verbose:
         click.echo('running: ' + c)
     res = subprocess.run(c, shell=True)
@@ -286,7 +297,7 @@ def train(command, verbose):
 
 
 @docker.command()
-@click.option('--verbose', '-v', default=False)
+@click.option('--verbose', '-v', is_flag=True)
 def run(verbose):
     """
     Run the docker image locally.
@@ -298,7 +309,8 @@ def run(verbose):
     docker_repo = read_docker_repo_file()
     cur_dir = format_path_if_mingw(os.getcwd())
 
-    c = f'''docker run --rm -it -v {cur_dir}:/opt/app -w /opt/app {docker_repo} '''
+    c = '''docker run --rm -it -v {cur_dir}:/opt/app -w /opt/app {docker_repo} '''.format(
+        **locals())
     if verbose:
         click.echo('running: ' + c)
     res = subprocess.run(c, shell=True)
@@ -306,14 +318,14 @@ def run(verbose):
 
 
 @docker.command()
-@click.option('--verbose', '-v', default=False)
+@click.option('--verbose', '-v', is_flag=True)
 def build(verbose):
     """Builds the docker image"""
     docker_build(verbose)
 
 
 @docker.command()
-@click.option('--verbose', '-v', default=False)
+@click.option('--verbose', '-v', is_flag=True)
 def deploy(verbose):
     """Deploy the docker image to the Numer.ai compute node"""
     docker_build(verbose)
@@ -332,10 +344,10 @@ def deploy(verbose):
     if verbose:
         click.echo('running: docker login')
     res = subprocess.run(
-        f'''docker login -u {username} -p {password} {docker_repo}''', stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+        '''docker login -u {username} -p {password} {docker_repo}'''.format(**locals()), stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     res.check_returncode()
 
-    c = f'''docker push {docker_repo}'''
+    c = '''docker push {docker_repo}'''.format(**locals())
     if verbose:
         click.echo('running: ' + c)
     res = subprocess.run(c, shell=True)

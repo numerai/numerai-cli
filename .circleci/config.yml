@@ -35,6 +35,6 @@ workflows:
   version: 2
   build:
     jobs:
-      # - build-python35 TODO add this back in
+      - build-python35
       - build-python36
       - build-python37
