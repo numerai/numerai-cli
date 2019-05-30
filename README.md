@@ -7,6 +7,7 @@ This is a CLI for setting up a Numer.ai compute node and deplying your models to
 * [Prerequisites](#prerequisites)
 * [Setup](#setup)
 * [Quickstart](#quickstart)
+* [Compute Node Architecture](#compute-node-architecture)
 * [Docker Example Explained](#docker-example)
 * [Commands](#commands)
 * [Troubleshooting](#troubleshooting)
@@ -47,7 +48,7 @@ numerai docker deploy
 
 `numerai setup` will prompt your for AWS and Numer.ai API keys. Please refer to the [AWS](#aws) and [Numer.ai API Key](#numerai-api-key) sections for instructions on how to obtain those.
 
-You are now completely setup and good to go. Look in the `.numerai/submission_url.txt` file to see your submission url that you will provide to Numer.ai as your webhook url.
+You are now completely setup and good to go. Look in the `.numerai/submission_url.txt` file to see your submission url that you will provide to Numer.ai as your webhook url. Go to [your Numer.ai account](https://numer.ai/account) and select the "Compute" section to enter it there.
 
 The default example does *not* stake, so you will still have to manually do that every week. Alternatively, check out the bottom of predict.py for example code on how to stake automatically.
 
@@ -121,6 +122,16 @@ If you get:
 docker: Error response from daemon: Drive has not been shared
 ```
 Then you need to share your drive. See https://docs.docker.com/docker-for-windows/#shared-drives for details.
+
+
+## Compute Node Architecture
+
+`numerai setup` under the hood uses [Terraform](https://www.terraform.io/) to setup an AWS environment with the following:
+* An ECR (Elastic Container Repository) for storing docker containers
+* A Fargate task to run your compute job in the ECS (Elastic Container Service)
+* A lambda endpoint that schedules your compute job to run
+
+There's actually a bunch of other bits of glue in AWS that are setup to run this, but these 3 are the most important. The lambda endpoint corresponds to the submission url that your provide back to Numer.ai. The ECR is where `numerai docker deploy` will push your image to. Fargate is where your task actually runs in the ECS, and it's where you'll want to look if things don't appear to be actually submitting.
 
 ## Docker example
 
