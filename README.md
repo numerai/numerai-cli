@@ -2,7 +2,7 @@
 
 [![CircleCI](https://circleci.com/gh/numerai/numerai-compute-cli.svg?style=svg)](https://circleci.com/gh/numerai/numerai-compute-cli)
 
-This is a CLI for setting up a Numer.ai compute node and deplying your models to it.
+This is a CLI for setting up a Numer.ai compute node and deplying your models to it. This sets up a compute cluster in AWS (Amazon Web Services), and is architected to cost a minimal amount of money to run (on average, you will spend less than $1 per month).
 
 * [Prerequisites](#prerequisites)
 * [Setup](#setup)
