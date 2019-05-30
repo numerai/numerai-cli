@@ -20,6 +20,8 @@ setup(name='numerai-cli',
       install_requires=[
           "click>=7",
           "boto3",
+          "numerapi",
+          "colorama",
       ],
       entry_points={
           'console_scripts': ['numerai=numerai_compute.cli:main'],

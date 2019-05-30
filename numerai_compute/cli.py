@@ -8,6 +8,12 @@ import shutil
 import subprocess
 import base64
 import boto3
+import numerapi
+from colorama import init, Fore, Back, Style
+
+
+def exception_with_msg(msg):
+    return click.ClickException(Fore.RED + msg)
 
 
 def get_key_file():
@@ -65,10 +71,32 @@ def load_or_setup_keys():
     return setup_keys()
 
 
-def setup_keys():
-    click.echo("Setting up key file at " + get_key_file())
+def check_aws_validity(key_id, secret):
+    try:
+        client = boto3.client('s3', aws_access_key_id=key_id,
+                              aws_secret_access_key=secret)
+        client.list_buckets()
+        return True
 
-    click.echo("Please type in the following keys:")
+    except:
+        return False
+
+
+def check_numerai_validity(key_id, secret):
+    try:
+        napi = numerapi.NumerAPI(key_id, secret)
+        napi.get_user()
+        return True
+
+    except Exception:
+        return False
+
+
+def setup_keys():
+    click.echo(Fore.YELLOW + "Setting up key file at " + get_key_file())
+
+    click.echo()
+    click.echo(Fore.RED + "Please type in the following keys:")
     aws_public = click.prompt('AWS_ACCESS_KEY_ID', hide_input=True).strip()
     aws_private = click.prompt(
         'AWS_SECRET_ACCESS_KEY', hide_input=True).strip()
@@ -83,6 +111,14 @@ def setup_keys():
         "NUMERAI_PUBLIC_ID": numerai_public,
         "NUMERAI_SECRET_KEY": numerai_private,
     }
+
+    if not check_aws_validity(aws_public, aws_private):
+        raise exception_with_msg(
+            '''AWS keys seem to be invalid. Make sure you've entered them correctly and that your user has the "AdministratorAccess" policy.''')
+
+    if not check_numerai_validity(numerai_public, numerai_private):
+        raise exception_with_msg(
+            '''Numerai keys seem to be invalid. Make sure you've entered them correctly.''')
 
     with open(get_key_file(), 'w') as configfile:
         config.write(configfile)
@@ -119,7 +155,7 @@ def get_submission_url_file():
 def read_docker_repo_file():
     docker_file = get_docker_repo_file()
     if not path.exists(docker_file):
-        raise click.ClickException(
+        raise exception_with_msg(
             "docker repo not found. Make sure you have run `numerai setup` successfully before running this command.")
 
     with open(docker_file, 'r') as f:
@@ -134,27 +170,27 @@ def copy_terraform():
 
 def copy_docker_python3(verbose):
     if verbose:
-        click.echo("copying Dockerfile")
+        click.echo(Fore.YELLOW + "copying Dockerfile")
     shutil.copy(path.join(get_code_dir(), "examples",
                           "python3", "Dockerfile"), "Dockerfile")
 
     if verbose:
-        click.echo("copying model.py")
+        click.echo(Fore.YELLOW + "copying model.py")
     shutil.copy(path.join(get_code_dir(), "examples",
                           "python3", "model.py"), "model.py")
 
     if verbose:
-        click.echo("copying train.py")
+        click.echo(Fore.YELLOW + "copying train.py")
     shutil.copy(path.join(get_code_dir(), "examples",
                           "python3", "train.py"), "train.py")
 
     if verbose:
-        click.echo("copying predict.py")
+        click.echo(Fore.YELLOW + "copying predict.py")
     shutil.copy(path.join(get_code_dir(), "examples",
                           "python3", "predict.py"), "predict.py")
 
     if verbose:
-        click.echo("copying requirements.txt")
+        click.echo(Fore.YELLOW + "copying requirements.txt")
     shutil.copy(path.join(get_code_dir(), "examples",
                           "python3", "requirements.txt"), "requirements.txt")
 
@@ -165,7 +201,7 @@ def copy_docker_python3(verbose):
 
 def terraform_setup(verbose):
     if path.abspath(os.getcwd()) == path.abspath(str(Path.home())):
-        raise click.ClickException(
+        raise exception_with_msg(
             "`numerai setup` cannot be run from your $HOME directory. Please create another directory and run this again.")
 
     numerai_dir = get_project_numerai_dir()
@@ -198,7 +234,7 @@ def terraform_setup(verbose):
 
     with open(get_docker_repo_file(), 'w') as f:
         f.write(res.stdout.decode('utf-8').strip())
-    click.echo('wrote docker repo to: ' + get_docker_repo_file())
+    click.echo(Fore.YELLOW + 'wrote docker repo to: ' + get_docker_repo_file())
 
     c = '''docker run --rm -it -v {numerai_dir}:/opt/plan -w /opt/plan hashicorp/terraform:light output submission_url'''.format(
         **locals())
@@ -208,7 +244,8 @@ def terraform_setup(verbose):
 
     with open(get_submission_url_file(), 'w') as f:
         f.write(res.stdout.decode('utf-8').strip())
-    click.echo('wrote submission url to: ' + get_submission_url_file())
+    click.echo(Fore.YELLOW + 'wrote submission url to: ' +
+               get_submission_url_file())
 
 
 def terraform_destroy(verbose):
@@ -355,6 +392,8 @@ def deploy(verbose):
 
 
 def main():
+    init(autoreset=True)
+
     cli.add_command(setup)
     cli.add_command(destroy)
 
