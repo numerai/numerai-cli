@@ -78,8 +78,13 @@ def check_aws_validity(key_id, secret):
         client.list_buckets()
         return True
 
-    except:
-        return False
+    except Exception as e:
+        if 'NotSignedUp' in str(e):
+            raise exception_with_msg(
+                '''Your AWS keys are valid, but the account is not finished signing up. You either need to update your credit card in AWS at https://portal.aws.amazon.com/billing/signup?type=resubscribe#/resubscribed, or wait up to 24 hours for their verification process to complete.''')
+
+        raise exception_with_msg(
+            '''AWS keys seem to be invalid. Make sure you've entered them correctly and that your user has the "AdministratorAccess" policy.''')
 
 
 def check_numerai_validity(key_id, secret):
@@ -89,7 +94,8 @@ def check_numerai_validity(key_id, secret):
         return True
 
     except Exception:
-        return False
+        raise exception_with_msg(
+            '''Numerai keys seem to be invalid. Make sure you've entered them correctly.''')
 
 
 def setup_keys():
@@ -97,12 +103,12 @@ def setup_keys():
 
     click.echo()
     click.echo(Fore.RED + "Please type in the following keys:")
-    aws_public = click.prompt('AWS_ACCESS_KEY_ID', hide_input=True).strip()
+    aws_public = click.prompt('AWS_ACCESS_KEY_ID').strip()
     aws_private = click.prompt(
-        'AWS_SECRET_ACCESS_KEY', hide_input=True).strip()
-    numerai_public = click.prompt('NUMERAI_PUBLIC_ID', hide_input=True).strip()
+        'AWS_SECRET_ACCESS_KEY').strip()
+    numerai_public = click.prompt('NUMERAI_PUBLIC_ID').strip()
     numerai_private = click.prompt(
-        'NUMERAI_SECRET_KEY', hide_input=True).strip()
+        'NUMERAI_SECRET_KEY').strip()
 
     config = configparser.ConfigParser()
     config['default'] = {
@@ -112,13 +118,8 @@ def setup_keys():
         "NUMERAI_SECRET_KEY": numerai_private,
     }
 
-    if not check_aws_validity(aws_public, aws_private):
-        raise exception_with_msg(
-            '''AWS keys seem to be invalid. Make sure you've entered them correctly and that your user has the "AdministratorAccess" policy.''')
-
-    if not check_numerai_validity(numerai_public, numerai_private):
-        raise exception_with_msg(
-            '''Numerai keys seem to be invalid. Make sure you've entered them correctly.''')
+    check_aws_validity(aws_public, aws_private)
+    check_numerai_validity(numerai_public, numerai_private)
 
     with open(get_key_file(), 'w') as configfile:
         config.write(configfile)
