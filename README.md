@@ -1,8 +1,9 @@
 # numerai-compute-cli
 
 [![CircleCI](https://circleci.com/gh/numerai/numerai-compute-cli.svg?style=svg)](https://circleci.com/gh/numerai/numerai-compute-cli)
+[![PyPI](https://img.shields.io/pypi/v/numerai-cli.svg?color=brightgreen)](https://pypi.org/project/numerai-cli/)
 
-This is a CLI for setting up a Numer.ai compute node and deplying your models to it. This sets up a compute cluster in AWS (Amazon Web Services), and is architected to cost a minimal amount of money to run (on average, you will spend less than $1 per month).
+This is a CLI for setting up a Numerai compute node and deplying your models to it. This sets up a compute cluster in AWS (Amazon Web Services), and is architected to cost a minimal amount of money to run (on average, you will spend less than $1 per month).
 
 * [Prerequisites](#prerequisites)
 * [Setup](#setup)
@@ -18,7 +19,7 @@ This is a CLI for setting up a Numer.ai compute node and deplying your models to
 
 All you need is:
 1. AWS (Amazon Web Services) account setup with an API key
-2. A Numer.ai API key
+2. A Numerai API key
 3. Docker setup on your machine
 4. Python3 (your model code doesn't have to use Python3, but this CLI tool needs it)
 
@@ -46,9 +47,9 @@ numerai docker copy-example
 numerai docker deploy
 ```
 
-`numerai setup` will prompt your for AWS and Numer.ai API keys. Please refer to the [AWS](#aws) and [Numer.ai API Key](#numerai-api-key) sections for instructions on how to obtain those.
+`numerai setup` will prompt your for AWS and Numerai API keys. Please refer to the [AWS](#aws) and [Numerai API Key](#numerai-api-key) sections for instructions on how to obtain those.
 
-You are now completely setup and good to go. Look in the `.numerai/submission_url.txt` file to see your submission url that you will provide to Numer.ai as your webhook url. Go to [your Numer.ai account](https://numer.ai/account) and select the "Compute" section to enter it there.
+You are now completely setup and good to go. Look in the `.numerai/submission_url.txt` file to see your submission url that you will provide to Numerai as your webhook url. Go to [your Numerai account](https://numer.ai/account) and select the "Compute" section to enter it there.
 
 The default example does *not* stake, so you will still have to manually do that every week. Alternatively, check out the bottom of predict.py for example code on how to stake automatically.
 
@@ -131,7 +132,7 @@ Then you need to share your drive. See https://docs.docker.com/docker-for-window
 * A Fargate task to run your compute job in the ECS (Elastic Container Service)
 * A lambda endpoint that schedules your compute job to run
 
-There's actually a bunch of other bits of glue in AWS that are setup to run this, but these 3 are the most important. The lambda endpoint corresponds to the submission url that your provide back to Numer.ai. The ECR is where `numerai docker deploy` will push your image to. Fargate is where your task actually runs in the ECS, and it's where you'll want to look if things don't appear to be actually submitting.
+There's actually a bunch of other bits of glue in AWS that are setup to run this, but these 3 are the most important. The lambda endpoint corresponds to the submission url that your provide back to Numerai. The ECR is where `numerai docker deploy` will push your image to. Fargate is where your task actually runs in the ECS, and it's where you'll want to look if things don't appear to be actually submitting.
 
 ## Docker example
 
@@ -191,7 +192,7 @@ ARG NUMERAI_SECRET_KEY
 ENV NUMERAI_SECRET_KEY=$NUMERAI_SECRET_KEY
 ```
 
-These are docker aguments that `numera train/run/deploy` will always pass into docker. They are then set in your environment, so that you can access them from your script like so:
+These are docker aguments that `numerai train/run/deploy` will always pass into docker. They are then set in your environment, so that you can access them from your script like so:
 ```
 import os
 public_id = os.environ["NUMERAI_PUBLIC_ID"]
@@ -220,12 +221,12 @@ The code that gets run when running `numerai docker run` and is deployed to run 
 
 ### numerai setup
 
-The following command will setup a full Numer.ai compute cluster in AWS:
+The following command will setup a full Numerai compute cluster in AWS:
 ```
 numerai setup
 ```
 
-If this is your first time running, it will also ask for your AWS and Numer.ai API keys. These keys are stored in $HOME/.numerai for future runs.
+If this is your first time running, it will also ask for your AWS and Numerai API keys. These keys are stored in $HOME/.numerai for future runs.
 
 There will be a bunch of output about how it's setting up the AWS cluster, but the only important part is at the end:
 ```
@@ -236,7 +237,7 @@ docker_repo = 505651907052.dkr.ecr.us-east-1.amazonaws.com/numerai-submission
 submission_url = https://wzq6vxvj8j.execute-api.us-east-1.amazonaws.com/v1/submit
 ```
 
-* submission_url is your webhook url that you will provide to Numer.ai. Save this for later. If you forget it, a copy is stored in `.numerai/submission_url.txt`.
+* submission_url is your webhook url that you will provide to Numerai. Save this for later. If you forget it, a copy is stored in `.numerai/submission_url.txt`.
 * docker_repo will be used in the next step but you don't need to worry about it since it's all automated for you
 
 This command is idempotent and safe to run multiple times.
@@ -287,7 +288,7 @@ This command is idempotent and safe to run multiple times.
 
 ### Container uses up too much memory and gets killed
 
-By default, Numer.ai compute nodes are limited to 8GB of RAM. If you need more, you can open up `.numerai/variables.tf` and update the `fargate_cpu` and `fargate_memory` settings to the following:
+By default, Numerai compute nodes are limited to 8GB of RAM. If you need more, you can open up `.numerai/variables.tf` and update the `fargate_cpu` and `fargate_memory` settings to the following:
 ```
 variable "fargate_cpu" {
   description = "Fargate instance CPU units to provision (1 vCPU = 1024 CPU units)"
@@ -323,7 +324,7 @@ You need to signup for AWS and create an administrative IAM user
     2. For permissions, click "Attach existing policies directly" and click the check box next to "AdministratorAccess"
     3. Save the "Access key ID" and "Secret access key" from the last step. You will need them later
 
-### Numer.ai API Key
+### Numerai API Key
 
 1. You will need to create an API key by going to https://numer.ai/account and clicking "Add" under the "Your API keys" section.
 2. Select the following permissions for the key: "Upload submissions", "Make stakes", "View historical submission info", "View user info"
