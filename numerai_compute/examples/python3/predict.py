@@ -42,7 +42,7 @@ for tournament_name in tournaments:
     prediction_filename = '/tmp/prediction_' + tournament_name + '.csv'
 
     submission_id = nx.upload(
-        prediction_filename, tournament_name, public_id, secret_key, block=False)
+        prediction_filename, tournament_name, public_id, secret_key, block=False, n_tries=3)
 
 # staking variables
 # confidence = .501 # increase this number to signify your confidence in a minimum AUC. Can't go below .501
