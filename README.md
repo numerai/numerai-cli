@@ -49,7 +49,7 @@ numerai docker deploy
 
 `numerai setup` will prompt your for AWS and Numerai API keys. Please refer to the [AWS](#aws) and [Numerai API Key](#numerai-api-key) sections for instructions on how to obtain those.
 
-You are now completely setup and good to go. Look in the `.numerai/submission_url.txt` file to see your submission url that you will provide to Numerai as your webhook url. Go to [your Numerai account](https://numer.ai/account) and select the "Compute" section to enter it there.
+Your compute node is now setup and ready to run. Look in the `.numerai/submission_url.txt` file to see your submission url that you will provide to Numerai as your webhook url. Go to [your Numerai account](https://numer.ai/account) and select the "Compute" section to enter it there.
 
 The default example does *not* stake, so you will still have to manually do that every week. Alternatively, check out the bottom of predict.py for example code on how to stake automatically.
 

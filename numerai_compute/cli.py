@@ -169,35 +169,26 @@ def copy_terraform():
                     get_project_numerai_dir(), copy_function=shutil.copy)
 
 
+def copy_file(verbose, directory, filename):
+    if verbose:
+        click.echo(Fore.YELLOW + "copying " + filename)
+    shutil.copy(path.join(directory, filename), filename)
+
+
 def copy_docker_python3(verbose):
-    if verbose:
-        click.echo(Fore.YELLOW + "copying Dockerfile")
-    shutil.copy(path.join(get_code_dir(), "examples",
-                          "python3", "Dockerfile"), "Dockerfile")
+    code_dir = path.join(get_code_dir(), "examples", "python3")
+    copy_file(verbose, code_dir, "Dockerfile")
+    copy_file(verbose, code_dir, "model.py")
+    copy_file(verbose, code_dir, "train.py")
+    copy_file(verbose, code_dir, "predict.py")
+    copy_file(verbose, code_dir, "requirements.txt")
 
-    if verbose:
-        click.echo(Fore.YELLOW + "copying model.py")
-    shutil.copy(path.join(get_code_dir(), "examples",
-                          "python3", "model.py"), "model.py")
 
-    if verbose:
-        click.echo(Fore.YELLOW + "copying train.py")
-    shutil.copy(path.join(get_code_dir(), "examples",
-                          "python3", "train.py"), "train.py")
-
-    if verbose:
-        click.echo(Fore.YELLOW + "copying predict.py")
-    shutil.copy(path.join(get_code_dir(), "examples",
-                          "python3", "predict.py"), "predict.py")
-
-    if verbose:
-        click.echo(Fore.YELLOW + "copying requirements.txt")
-    shutil.copy(path.join(get_code_dir(), "examples",
-                          "python3", "requirements.txt"), "requirements.txt")
-
-    with open('.dockerignore', 'a+') as f:
-        f.write(".numerai\n")
-        f.write("numerai_dataset.zip\n")
+def copy_docker_rlang(verbose):
+    code_dir = path.join(get_code_dir(), "examples", "rlang")
+    copy_file(verbose, code_dir, "Dockerfile")
+    copy_file(verbose, code_dir, "install_packages.R")
+    copy_file(verbose, code_dir, "main.R")
 
 
 def terraform_setup(verbose):
@@ -292,10 +283,18 @@ def docker():
 
 
 @docker.command()
-# @click.option('--verbose', '-v', is_flag=True)
-def copy_example():
+@click.option('--quiet', '-q', is_flag=True)
+@click.option('--rlang', '-r', is_flag=True)
+def copy_example(quiet, rlang):
     """Copies a few example files into the current directory"""
-    copy_docker_python3(True)
+    if rlang:
+        copy_docker_rlang(not quiet)
+    else:
+        copy_docker_python3(not quiet)
+
+    with open('.dockerignore', 'a+') as f:
+        f.write(".numerai\n")
+        f.write("numerai_dataset.zip\n")
 
 
 def docker_build(verbose):
