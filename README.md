@@ -5,23 +5,26 @@
 
 This is a CLI for setting up a Numerai compute node and deplying your models to it. This sets up a compute cluster in AWS (Amazon Web Services), and is architected to cost a minimal amount of money to run (on average, you will spend less than $1 per month).
 
-* [Prerequisites](#prerequisites)
-* [Setup](#setup)
-* [Quickstart](#quickstart)
-* [Compute Node Architecture](#compute-node-architecture)
-* [Docker Example Explained](#docker-example)
-* [Commands](#commands)
-* [Troubleshooting](#troubleshooting)
-* [Prerequisites Help](#prerequisites-help)
-* [Uninstall](#uninstall)
+![Architecture Diagram](https://github.com/numerai/numerai-compute-cli/blob/master/docs/compute_architecture.png)
+
+- [Prerequisites](#prerequisites)
+- [Setup](#setup)
+- [Quickstart](#quickstart)
+- [Compute Node Architecture](#compute-node-architecture)
+- [Docker Example Explained](#docker-example)
+- [Commands](#commands)
+- [Troubleshooting](#troubleshooting)
+- [Prerequisites Help](#prerequisites-help)
+- [Uninstall](#uninstall)
 
 ## Prerequisites
 
 All you need is:
-1. AWS (Amazon Web Services) account setup with an API key
-2. A Numerai API key
-3. Docker setup on your machine
-4. Python3 (your model code doesn't have to use Python3, but this CLI tool needs it)
+
+1.  AWS (Amazon Web Services) account setup with an API key
+2.  A Numerai API key
+3.  Docker setup on your machine
+4.  Python3 (your model code doesn't have to use Python3, but this CLI tool needs it)
 
 See the [Prerequisites Help](#prerequisites-help) section if you need help getting these setup.
 
@@ -30,6 +33,7 @@ This project has been tested and found working on OSX, Windows 10, and Ubuntu 18
 ## Setup
 
 Install this library with:
+
 ```
 pip3 install numerai-cli
 ```
@@ -51,14 +55,16 @@ numerai docker deploy
 
 Your compute node is now setup and ready to run. Look in the `.numerai/submission_url.txt` file to see your submission url that you will provide to Numerai as your webhook url. Go to [your Numerai account](https://numer.ai/account) and select the "Compute" section to enter it there.
 
-The default example does *not* stake, so you will still have to manually do that every week. Alternatively, check out the bottom of predict.py for example code on how to stake automatically.
+The default example does _not_ stake, so you will still have to manually do that every week. Alternatively, check out the bottom of predict.py for example code on how to stake automatically.
 
 ### Testing
 
 You can test the webhook url directly like so:
+
 ```
 curl `cat .numerai/submission_url.txt`
 ```
+
 If the curl succeeds, it will return immediately with a status of "pending". This means that your container has been scheduled to run but hasn't actually started yet.
 
 You can check for the running task at https://console.aws.amazon.com/ecs/home?region=us-east-1#/clusters/numerai-submission-ecs-cluster/tasks or logs from your container at https://console.aws.amazon.com/cloudwatch/home?region=us-east-1#logStream:group=/fargate/service/numerai-submission
@@ -68,6 +74,7 @@ NOTE: the container takes a little time to schedule. The first time it runs also
 #### Local Testing
 
 You can test your container locally by running:
+
 ```
 numerai docker run
 ```
@@ -77,6 +84,7 @@ This will run the container exactly like it runs in the cloud. Keep in mind that
 ### Common Problems
 
 #### `numerai` not in PATH
+
 ```
 numerai: command not found
 ```
@@ -86,6 +94,7 @@ Try and run `~/.local/bin/numerai` on osx/linux or `%LOCALAPPDATA%\Programs\Pyth
 Alternatively, exit your terminal/command prompt and re-open it. By default, pip will try to add itself to your PATH for subsequent runs, but it requires you to restart the terminal.
 
 #### Docker not installed
+
 ```
 ...
 subprocess.CalledProcessError: Command 'docker run --rm -it -v /home/jason/tmp/.numerai:/opt/plan -w /opt/plan hashicorp/terraform:light init' returned non-zero exit status 127.
@@ -104,6 +113,7 @@ If you're using Docker Toolbox on Windows, then make sure you've opened the "Doc
 ```
 sudo usermod -aG docker $USER
 ```
+
 Then reboot or logout/login for this to take effect.
 
 #### Wrong AWS API key
@@ -119,24 +129,27 @@ subprocess.CalledProcessError: Command 'docker run -e "AWS_ACCESS_KEY_ID=..." -e
 #### Drive not shared
 
 If you get:
+
 ```
 docker: Error response from daemon: Drive has not been shared
 ```
-Then you need to share your drive. See https://docs.docker.com/docker-for-windows/#shared-drives for details.
 
+Then you need to share your drive. See https://docs.docker.com/docker-for-windows/#shared-drives for details.
 
 ## Compute Node Architecture
 
 `numerai setup` under the hood uses [Terraform](https://www.terraform.io/) to setup an AWS environment with the following:
-* An ECR (Elastic Container Repository) for storing docker containers
-* A Fargate task to run your compute job in the ECS (Elastic Container Service)
-* A lambda endpoint that schedules your compute job to run
+
+- An ECR (Elastic Container Repository) for storing docker containers
+- A Fargate task to run your compute job in the ECS (Elastic Container Service)
+- A lambda endpoint that schedules your compute job to run
 
 There's actually a bunch of other bits of glue in AWS that are setup to run this, but these 3 are the most important. The lambda endpoint corresponds to the submission url that your provide back to Numerai. The ECR is where `numerai docker deploy` will push your image to. Fargate is where your task actually runs in the ECS, and it's where you'll want to look if things don't appear to be actually submitting.
 
 ## Docker example
 
 Lets look at the docker example's files:
+
 ```
 ▶ tree
 .
@@ -148,7 +161,9 @@ Lets look at the docker example's files:
 ```
 
 ### Dockerfile
+
 And then lets look at the Dockerfile:
+
 ```
 FROM python:3
 
@@ -167,9 +182,11 @@ CMD [ "python", "./predict.py" ]
 ```
 
 So breaking this down line by line:
+
 ```
 FROM python:3
 ```
+
 This Dockerfile inherits from `python:3`, which provides us a working Python environment.
 
 ```
@@ -182,6 +199,7 @@ We then add the requirements.txt file, and pip install every requirement from it
 ```
 ADD . .
 ```
+
 After that, we add everything in the current directory. This will include all of your code, as well as any other files such as serialized models that you've saved to the current directory.
 
 ```
@@ -193,6 +211,7 @@ ENV NUMERAI_SECRET_KEY=$NUMERAI_SECRET_KEY
 ```
 
 These are docker aguments that `numerai train/run/deploy` will always pass into docker. They are then set in your environment, so that you can access them from your script like so:
+
 ```
 import os
 public_id = os.environ["NUMERAI_PUBLIC_ID"]
@@ -222,6 +241,7 @@ The code that gets run when running `numerai docker run` and is deployed to run 
 ### numerai setup
 
 The following command will setup a full Numerai compute cluster in AWS:
+
 ```
 numerai setup
 ```
@@ -229,6 +249,7 @@ numerai setup
 If this is your first time running, it will also ask for your AWS and Numerai API keys. These keys are stored in $HOME/.numerai for future runs.
 
 There will be a bunch of output about how it's setting up the AWS cluster, but the only important part is at the end:
+
 ```
 ...
 Outputs:
@@ -237,14 +258,15 @@ docker_repo = 505651907052.dkr.ecr.us-east-1.amazonaws.com/numerai-submission
 submission_url = https://wzq6vxvj8j.execute-api.us-east-1.amazonaws.com/v1/submit
 ```
 
-* submission_url is your webhook url that you will provide to Numerai. Save this for later. If you forget it, a copy is stored in `.numerai/submission_url.txt`.
-* docker_repo will be used in the next step but you don't need to worry about it since it's all automated for you
+- submission_url is your webhook url that you will provide to Numerai. Save this for later. If you forget it, a copy is stored in `.numerai/submission_url.txt`.
+- docker_repo will be used in the next step but you don't need to worry about it since it's all automated for you
 
 This command is idempotent and safe to run multiple times.
 
 ### numerai docker copy-example
 
 If you don't have a model already setup, then you should copy over the docker example.
+
 ```
 numerai docker copy-example
 ```
@@ -262,11 +284,13 @@ numerai docker train
 ### numerai docker run (optional)
 
 To test your docker container locally, you can run it with this command. This will run the default CMD for the Dockerfile, which for the default example is `predict.py`.
+
 ```
 numerai docker run
 ```
 
 ### numerai docker deploy
+
 Builds and pushes your docker image to the AWS docker repo
 
 ```
@@ -276,6 +300,7 @@ numerai docker deploy
 ### numerai destroy
 
 If you ever want to delete the AWS environment to save costs or start from scratch, you can run the following:
+
 ```
 numerai destroy
 ```
@@ -289,6 +314,7 @@ This command is idempotent and safe to run multiple times.
 ### Container uses up too much memory and gets killed
 
 By default, Numerai compute nodes are limited to 8GB of RAM. If you need more, you can open up `.numerai/variables.tf` and update the `fargate_cpu` and `fargate_memory` settings to the following:
+
 ```
 variable "fargate_cpu" {
   description = "Fargate instance CPU units to provision (1 vCPU = 1024 CPU units)"
@@ -318,19 +344,19 @@ We estimate costs to be less than $5 per month unless your compute takes more th
 ### AWS
 
 You need to signup for AWS and create an administrative IAM user
-1. Sign up for an AWS account: https://portal.aws.amazon.com/billing/signup
-2. Create an IAM user with Administrative access: https://console.aws.amazon.com/iam/home?region=us-east-1#/users$new
-    1. Give user a name and select "Programmatic accesss"
-    2. For permissions, click "Attach existing policies directly" and click the check box next to "AdministratorAccess"
-    3. Save the "Access key ID" and "Secret access key" from the last step. You will need them later
+
+1.  Sign up for an AWS account: https://portal.aws.amazon.com/billing/signup
+2.  Create an IAM user with Administrative access: https://console.aws.amazon.com/iam/home?region=us-east-1#/users$new
+    1.  Give user a name and select "Programmatic accesss"
+    2.  For permissions, click "Attach existing policies directly" and click the check box next to "AdministratorAccess"
+    3.  Save the "Access key ID" and "Secret access key" from the last step. You will need them later
 
 ### Numerai API Key
 
-1. You will need to create an API key by going to https://numer.ai/account and clicking "Add" under the "Your API keys" section.
-2. Select the following permissions for the key: "Upload submissions", "Make stakes", "View historical submission info", "View user info"
-3. Your secret key will pop up in the bottom left of the page. Copy this somewhere safe.
-4. You public ID will be listed when you click "View" under "Your API keys". Copy this somewhere safe as well.
-
+1.  You will need to create an API key by going to https://numer.ai/account and clicking "Add" under the "Your API keys" section.
+2.  Select the following permissions for the key: "Upload submissions", "Make stakes", "View historical submission info", "View user info"
+3.  Your secret key will pop up in the bottom left of the page. Copy this somewhere safe.
+4.  You public ID will be listed when you click "View" under "Your API keys". Copy this somewhere safe as well.
 
 ### Python
 
@@ -343,9 +369,11 @@ If you don't already have Python3, you can get it from https://www.python.org/do
 #### MacOS
 
 If you have homebrew installed:
+
 ```
 brew cask install docker
 ```
+
 Otherwise you can install manually at https://hub.docker.com/editions/community/docker-ce-desktop-mac
 
 You should also increase the RAM allocated to the VM by changing "Memory" in the following: https://docs.docker.com/docker-for-mac/#advanced
@@ -354,7 +382,7 @@ You should also increase the RAM allocated to the VM by changing "Memory" in the
 
 Install docker desktop at https://hub.docker.com/editions/community/docker-ce-desktop-windows
 
-After you've installed docker, you *must* enable drive sharing: https://docs.docker.com/docker-for-windows/#shared-drives
+After you've installed docker, you _must_ enable drive sharing: https://docs.docker.com/docker-for-windows/#shared-drives
 
 You should also increase the RAM allocated to the VM by changing "Memory" in the following: https://docs.docker.com/docker-for-windows/#advanced
 
@@ -363,6 +391,7 @@ You should also increase the RAM allocated to the VM by changing "Memory" in the
 If your machine doesn't have Hyper-V enabled, then you will have to install docker toolbox: https://github.com/docker/toolbox/releases
 
 After it's installed, open the "Docker QuickStart Terminal" and run the following to increase its RAM:
+
 ```
 docker-machine rm default
 docker-machine create -d virtualbox --virtualbox-cpu-count=2 --virtualbox-memory=4096 --virtualbox-disk-size=50000 default
@@ -375,15 +404,18 @@ Also note, your code must live somewhere under your User directory (ie. C:\Users
 Install docker through your distribution.
 
 Ubuntu/Debian:
+
 ```
 sudo apt install docker.io
 ```
 
 Also make sure to add your user to the docker group:
+
 ```
 sudo groupadd docker
 sudo usermod -aG docker $USER
 ```
+
 Then reboot or logout/login for this to take effect.
 
 For other Linux distros, check out https://docs.docker.com/install/linux/docker-ce/centos/ and find your distro on the sidebar.
@@ -391,16 +423,18 @@ For other Linux distros, check out https://docs.docker.com/install/linux/docker-
 ## Uninstall
 
 Destroy the AWS environment
+
 ```
 numerai destroy
 ```
 
 And then uninstall the package:
+
 ```
 pip3 uninstall numerai-cli
 ```
 
 ## Contributions
 
-* Thanks to [uuazed](https://github.com/uuazed) for their work on [numerapi](https://github.com/uuazed/numerapi)
-* Thanks to [kwgoodman](https://github.com/kwgoodman) for their work on [numerox](https://github.com/kwgoodman/numerox)
+- Thanks to [uuazed](https://github.com/uuazed) for their work on [numerapi](https://github.com/uuazed/numerapi)
+- Thanks to [kwgoodman](https://github.com/kwgoodman) for their work on [numerox](https://github.com/kwgoodman/numerox)
