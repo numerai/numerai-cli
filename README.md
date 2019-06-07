@@ -273,6 +273,11 @@ numerai docker copy-example
 
 WARNING: this will overwrite the following files if they exist: Dockerfile, model.py, train.py, predict.py, and requirements.txt
 
+There is also an example for R:
+```
+numerai docker copy-example --rlang
+```
+
 ### numerai docker train (optional, but highly recommended)
 
 Trains your model by running `train.py`. This assumes a file called `train.py` exists and serializes your model to this directory. See the example if you want inspiration for how to do this.

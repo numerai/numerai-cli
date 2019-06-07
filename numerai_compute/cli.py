@@ -1,5 +1,3 @@
-import numerai_compute
-import click
 from pathlib import Path
 import os
 from os import path
@@ -7,6 +5,10 @@ import configparser
 import shutil
 import subprocess
 import base64
+import sys
+import platform
+
+import click
 import boto3
 import numerapi
 from colorama import init, Fore, Back, Style
@@ -191,6 +193,22 @@ def copy_docker_rlang(verbose):
     copy_file(verbose, code_dir, "main.R")
 
 
+def is_win10_professional():
+    name = sys.platform
+    if name != 'win32':
+        return False
+
+    version = platform.win32_ver()[0]
+
+    if version == '10':
+        # for windows 10 only, we need to know if it's pro vs home
+        import winreg
+        with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Windows NT\CurrentVersion") as key:
+            return winreg.QueryValueEx(key, "EditionID")[0] == 'Professional'
+
+    return False
+
+
 def terraform_setup(verbose):
     if path.abspath(os.getcwd()) == path.abspath(str(Path.home())):
         raise exception_with_msg(
@@ -208,8 +226,69 @@ def terraform_setup(verbose):
         **locals())
     if verbose:
         click.echo('running: ' + keys.sanitize_message(c))
-    res = subprocess.run(c, shell=True)
+    res = subprocess.run(
+        c, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+    click.echo(
+        'setting up .numerai with terraform. this can take a couple minutes on the first run')
+    # error checking for docker not being installed correctly
+    # sadly this is a mess, since there's tons of ways to mess up your docker install, especially on windows
+    if res.returncode != 0:
+        if b'is not recognized as an internal or external command' in res.stderr:
+            if sys.platform == 'win32':
+                if is_win10_professional():
+                    raise exception_with_msg('''Docker does not appear to be installed. Make sure to download/install docker from https://hub.docker.com/editions/community/docker-ce-desktop-windows
+
+If you're sure docker is already installed, then for some reason it isn't in your PATH like expected. Restarting may fix it.''')
+                else:
+                    raise exception_with_msg('''Docker does not appear to be installed. Make sure to download/install docker from https://github.com/docker/toolbox/releases and run "Docker Quickstart Terminal" when you're done.
+
+If you're sure docker is already installed, then for some reason it isn't in your PATH like expected. Restarting may fix it.''')
+        if b'command not found' in res.stderr:
+            if sys.platform == 'darwin':
+                raise exception_with_msg(
+                    '''Docker does not appear to be installed. You can install it with `brew cask install docker` or from https://hub.docker.com/editions/community/docker-ce-desktop-mac''')
+            else:
+                raise exception_with_msg(
+                    '''docker command not found. Please install docker and make sure that the `docker` command is in your $PATH''')
+
+        if b'This error may also indicate that the docker daemon is not running' in res.stderr or b'Is the docker daemon running' in res.stderr:
+            if sys.platform == 'darwin':
+                raise exception_with_msg(
+                    '''Docker daemon not running. Make sure you've started "Docker Desktop" and then run this command again.''')
+            elif sys.platform == 'linux2':
+                raise exception_with_msg(
+                    '''Docker daemon not running or this user cannot acccess the docker socket. Make sure docker is running and that your user has permissions to run docker. On most systems, you can add your user to the docker group like so: `sudo groupadd docker; sudo usermod -aG docker $USER` and then restarting your computer.''')
+            elif sys.platform == 'win32':
+                if 'DOCKER_TOOLBOX_INSTALL_PATH' in os.environ:
+                    raise exception_with_msg(
+                        '''Docker daemon not running. Make sure you've started "Docker Quickstart Terminal" and then run this command again.''')
+                else:
+                    raise exception_with_msg(
+                        '''Docker daemon not running. Make sure you've started "Docker Desktop" and then run this command again.''')
+                # else:
+        if b'invalid mode: /opt/plan' in res.stderr:
+            if sys.platform == 'win32':
+                raise exception_with_msg(
+                    '''It appears that you're running Docker Toolbox, but you're not using the "Docker Quickstart Terminal". Please re-run `numerai setup` from that terminal.''')
+
+        if b'No configuration files' in res.stdout:
+            if sys.platform == 'win32':
+                if 'DOCKER_TOOLBOX_INSTALL_PATH' in os.environ:
+                    raise exception_with_msg(
+                        r'''It appears that you're running from a directory that isn't shared to your docker Daemon. Try running from a directory under your HOME, e.g. C:\Users\$YOUR_NAME\$ANY_FOLDER''')
+                else:
+                    raise exception_with_msg(
+                        r'''It appears that you're running from a directory that isn't shared to your docker Daemon. Try running from a directory under your HOME, e.g. C:\Users\$YOUR_NAME\$ANY_FOLDER, and make sure your home directory is shared through Docker Desktop: https://docs.docker.com/docker-for-windows/#shared-drives''')
+        if b'Drive has not been shared' in res.stderr:
+            raise exception_with_msg(
+                r'''It appears that you're running from a directory that isn't shared to your docker Daemon. Make sure your directory is shared through Docker Desktop: https://docs.docker.com/docker-for-windows/#shared-drives''')
+
+        print(res.stdout.decode('utf8'))
+        print(res.stderr.decode('utf8'), file=sys.stderr)
+
     res.check_returncode()
+    click.echo('succesfully setup .numerai with terraform')
 
     c = '''docker run -e "AWS_ACCESS_KEY_ID={keys.aws_public}" -e "AWS_SECRET_ACCESS_KEY={keys.aws_secret}" --rm -it -v {numerai_dir}:/opt/plan -w /opt/plan hashicorp/terraform:light apply -auto-approve'''.format(
         **locals())
