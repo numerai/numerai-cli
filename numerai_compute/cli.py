@@ -227,7 +227,7 @@ def terraform_setup(verbose):
     if verbose:
         click.echo('running: ' + keys.sanitize_message(c))
     res = subprocess.run(
-        c, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        c, shell=True, stderr=subprocess.PIPE)
 
     click.echo(
         'setting up .numerai with terraform. this can take a couple minutes on the first run')
@@ -271,20 +271,10 @@ If you're sure docker is already installed, then for some reason it isn't in you
             if sys.platform == 'win32':
                 raise exception_with_msg(
                     '''It appears that you're running Docker Toolbox, but you're not using the "Docker Quickstart Terminal". Please re-run `numerai setup` from that terminal.''')
-
-        if b'No configuration files' in res.stdout:
-            if sys.platform == 'win32':
-                if 'DOCKER_TOOLBOX_INSTALL_PATH' in os.environ:
-                    raise exception_with_msg(
-                        r'''It appears that you're running from a directory that isn't shared to your docker Daemon. Try running from a directory under your HOME, e.g. C:\Users\$YOUR_NAME\$ANY_FOLDER''')
-                else:
-                    raise exception_with_msg(
-                        r'''It appears that you're running from a directory that isn't shared to your docker Daemon. Try running from a directory under your HOME, e.g. C:\Users\$YOUR_NAME\$ANY_FOLDER, and make sure your home directory is shared through Docker Desktop: https://docs.docker.com/docker-for-windows/#shared-drives''')
         if b'Drive has not been shared' in res.stderr:
             raise exception_with_msg(
                 r'''It appears that you're running from a directory that isn't shared to your docker Daemon. Make sure your directory is shared through Docker Desktop: https://docs.docker.com/docker-for-windows/#shared-drives''')
 
-        print(res.stdout.decode('utf8'))
         print(res.stderr.decode('utf8'), file=sys.stderr)
 
     res.check_returncode()
@@ -294,7 +284,19 @@ If you're sure docker is already installed, then for some reason it isn't in you
         **locals())
     if verbose:
         click.echo('running: ' + keys.sanitize_message(c))
-    res = subprocess.run(c, shell=True)
+    res = subprocess.run(c, shell=True, stderr=subprocess.PIPE)
+
+    if res.returncode != 0:
+        if b'No configuration files' in res.stderr:
+            if sys.platform == 'win32':
+                if 'DOCKER_TOOLBOX_INSTALL_PATH' in os.environ:
+                    raise exception_with_msg(
+                        r'''It appears that you're running from a directory that isn't shared to your docker Daemon. Try running from a directory under your HOME, e.g. C:\Users\$YOUR_NAME\$ANY_FOLDER''')
+                else:
+                    raise exception_with_msg(
+                        r'''It appears that you're running from a directory that isn't shared to your docker Daemon. Try running from a directory under your HOME, e.g. C:\Users\$YOUR_NAME\$ANY_FOLDER, and make sure your home directory is shared through Docker Desktop: https://docs.docker.com/docker-for-windows/#shared-drives''')
+
+        print(res.stderr.decode('utf8'), file=sys.stderr)
     res.check_returncode()
 
     c = '''docker run --rm -it -v {numerai_dir}:/opt/plan -w /opt/plan hashicorp/terraform:light output docker_repo'''.format(
