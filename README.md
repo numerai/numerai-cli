@@ -69,7 +69,7 @@ If the command succeeds, it will return quickly with a status of "pending". This
 
 You can check that your job has been scheduled by running:
 ```
-numerai compute task-status
+numerai compute status
 ```
 
 And once it's in the `RUNNING` state, you can look at the logs:

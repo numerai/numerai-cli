@@ -183,38 +183,43 @@ def copy_terraform():
                     get_project_numerai_dir(), copy_function=shutil.copy)
 
 
-def copy_file(verbose, directory, filename):
+def copy_file(directory, filename, verbose, force):
     if verbose:
         click.echo(Fore.YELLOW + "copying " + filename)
+    if os.path.exists(filename):
+        overwrite = click.prompt(
+            filename + ' already exists. Overwrite? [y]/n').strip()
+        if overwrite != "" and overwrite != "y" and overwrite != "yes":
+            return
     shutil.copy(path.join(directory, filename), filename)
 
 
-def copy_docker_python3(verbose):
+def copy_docker_python3(verbose, force):
     code_dir = path.join(get_code_dir(), "examples", "python3")
-    copy_file(verbose, code_dir, "Dockerfile")
-    copy_file(verbose, code_dir, "model.py")
-    copy_file(verbose, code_dir, "train.py")
-    copy_file(verbose, code_dir, "predict.py")
-    copy_file(verbose, code_dir, "requirements.txt")
+    copy_file(code_dir, "Dockerfile", verbose, force)
+    copy_file(code_dir, "model.py", verbose, force)
+    copy_file(code_dir, "train.py", verbose, force)
+    copy_file(code_dir, "predict.py", verbose, force)
+    copy_file(code_dir, "requirements.txt", verbose, force)
 
 
-def copy_docker_python3_multiaccount(verbose):
+def copy_docker_python3_multiaccount(verbose, force):
     code_dir = path.join(get_code_dir(), "examples", "python3-multiaccount")
-    copy_file(verbose, code_dir, "Dockerfile")
-    copy_file(verbose, code_dir, "model.py")
-    copy_file(verbose, code_dir, "train.py")
-    copy_file(verbose, code_dir, "predict.py")
-    copy_file(verbose, code_dir, "requirements.txt")
-    copy_file(verbose, code_dir, ".numerai-api-keys")
+    copy_file(code_dir, "Dockerfile", verbose, force)
+    copy_file(code_dir, "model.py", verbose, force)
+    copy_file(code_dir, "train.py", verbose, force)
+    copy_file(code_dir, "predict.py", verbose, force)
+    copy_file(code_dir, "requirements.txt", verbose, force)
+    copy_file(code_dir, ".numerai-api-keys", verbose, force)
     if verbose:
         click.echo(Fore.RED + "You need to manually fill in all of your Numerai API keys in the .numerai-api-keys file that has been created for you in this directory.")
 
 
-def copy_docker_rlang(verbose):
+def copy_docker_rlang(verbose, force):
     code_dir = path.join(get_code_dir(), "examples", "rlang")
-    copy_file(verbose, code_dir, "Dockerfile")
-    copy_file(verbose, code_dir, "install_packages.R")
-    copy_file(verbose, code_dir, "main.R")
+    copy_file(code_dir, "Dockerfile", verbose, force)
+    copy_file(code_dir, "install_packages.R", verbose, force)
+    copy_file(code_dir, "main.R", verbose, force)
 
 
 def is_win10_professional():
@@ -390,16 +395,17 @@ def docker():
 
 @docker.command()
 @click.option('--quiet', '-q', is_flag=True)
+@click.option('--force', '-f', is_flag=True)
 @click.option('--rlang', '-r', is_flag=True)
 @click.option('--python3-multiaccount', '-m', is_flag=True)
-def copy_example(quiet, rlang, python3_multiaccount):
+def copy_example(quiet, force, rlang, python3_multiaccount):
     """Copies a few example files into the current directory"""
     if rlang:
-        copy_docker_rlang(not quiet)
+        copy_docker_rlang(not quiet, force)
     elif python3_multiaccount:
-        copy_docker_python3_multiaccount(not quiet)
+        copy_docker_python3_multiaccount(not quiet, force)
     else:
-        copy_docker_python3(not quiet)
+        copy_docker_python3(not quiet, force)
 
     with open('.dockerignore', 'a+') as f:
         f.write(".numerai\n")
@@ -524,14 +530,10 @@ def test_webhook(quiet):
         click.echo("request success")
         click.echo(req.json())
 
-        click.echo("You can now run `numerai compute status` or `numerai compute logs` to see your compute node running. Note that `numerai compute logs` won't work until the task is in the RUNNING state, so watch `numerai compute status` for that to happen.")
+        click.echo(Fore.YELLOW + "You can now run `numerai compute status` or `numerai compute logs` to see your compute node running. Note that `numerai compute logs` won't work until the task is in the RUNNING state, so watch `numerai compute status` for that to happen.")
 
 
-@compute.command()
-@click.option('--verbose', '-v', is_flag=True)
-def task_status(verbose):
-    keys = load_keys()
-
+def get_latest_task(keys, verbose):
     ecs_client = boto3.client('ecs', region_name='us-east-1',
                               aws_access_key_id=keys.aws_public, aws_secret_access_key=keys.aws_secret)
     tasks = ecs_client.list_tasks(
@@ -541,16 +543,26 @@ def task_status(verbose):
             cluster='numerai-submission-ecs-cluster', desiredStatus="STOPPED")
 
     if len(tasks["taskArns"]) == 0:
-        raise exception_with_msg(
-            "No tasks in the PENDING/RUNNING/STOPPED state found. This may mean that your task has been finished for a long time, and no longer exists. Check `numerai compute logs` and `numerai compute logs -l lambda` to see what happened.")
-    else:
-        task_id = tasks["taskArns"][0].split('/')[-1]
-        click.echo("task ID: " + task_id)
+        return None
 
     tasks = ecs_client.describe_tasks(
         cluster='numerai-submission-ecs-cluster', tasks=[tasks["taskArns"][0]])
 
-    task = tasks['tasks'][0]
+    return tasks['tasks'][0]
+
+
+@compute.command()
+@click.option('--verbose', '-v', is_flag=True)
+def status(verbose):
+    keys = load_keys()
+
+    task = get_latest_task(keys, verbose)
+
+    if task is None:
+        raise exception_with_msg(
+            "No tasks in the PENDING/RUNNING/STOPPED state found. This may mean that your task has been finished for a long time, and no longer exists. Check `numerai compute logs` and `numerai compute logs -l lambda` to see what happened.")
+
+    click.echo("task ID: " + task["taskArn"])
     click.echo("status : " + task["lastStatus"])
     click.echo("created: " + str(task["createdAt"]))
 
@@ -579,7 +591,7 @@ def logs(verbose, num_lines, log_type, follow_tail):
 
     if len(streams['logStreams']) == 0:
         raise exception_with_msg(
-            "No logs found. Make sure the webhook has triggered (check 'numerai compute logs -l lambda'). If it has, then check `numerai compute task-status` and make sure it's in the RUNNING state (this can take a few minutes). Also, make sure your webhook has triggered at least once by running 'curl `cat .numerai/submission_url.txt`'")
+            "No logs found. Make sure the webhook has triggered (check 'numerai compute logs -l lambda'). If it has, then check `numerai compute status` and make sure it's in the RUNNING state (this can take a few minutes). Also, make sure your webhook has triggered at least once by running 'curl `cat .numerai/submission_url.txt`'")
     name = streams['logStreams'][0]['logStreamName']
 
     events = logs_client.get_log_events(
@@ -592,6 +604,43 @@ def logs(verbose, num_lines, log_type, follow_tail):
         click.echo(str(datetime.fromtimestamp(
             event['timestamp']/1000)) + ':' + event['message'])
 
+    taskID = name.split('/')[-1]
+
+    def latest_task_printer(keys, verbose):
+        task = get_latest_task(keys, verbose)
+        if task is None:
+            click.echo(
+                Fore.RED + "task not found or is in the STOPPED state")
+        elif task['desiredStatus'] == 'RUNNING' and task['lastStatus'] != 'RUNNING':
+            click.echo(
+                Fore.RED + "there is another task in the PENDING state. Check its status with `numerai compute status` and then rerun the logs command once it is RUNNING.")
+
+    def task_status(taskID, tailing):
+        ecs_client = boto3.client('ecs', region_name='us-east-1',
+                                  aws_access_key_id=keys.aws_public, aws_secret_access_key=keys.aws_secret)
+        resp = ecs_client.describe_tasks(
+            cluster='numerai-submission-ecs-cluster', tasks=[taskID])
+
+        tasks = resp['tasks']
+        if len(tasks) == 0:
+            latest_task_printer(keys, verbose)
+
+            return False
+        else:
+            if not tailing:
+                click.echo(Fore.YELLOW + "task is in the " +
+                           tasks[0]["lastStatus"] + " state")
+                latest_task_printer(keys, verbose)
+            if tasks[0]["lastStatus"] == "STOPPED":
+                if tailing:
+                    click.echo(Fore.YELLOW + "task is in the " +
+                               tasks[0]["lastStatus"] + " state")
+                return False
+        return True
+
+    if not task_status(taskID, tailing=False):
+        return
+
     if follow_tail:
         while True:
             events = logs_client.get_log_events(
@@ -599,6 +648,8 @@ def logs(verbose, num_lines, log_type, follow_tail):
             for event in events["events"]:
                 click.echo(str(datetime.fromtimestamp(
                     event['timestamp']/1000)) + ':' + event['message'])
+            if not task_status(taskID, tailing=True):
+                return
 
 
 def main():

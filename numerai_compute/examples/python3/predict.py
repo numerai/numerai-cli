@@ -22,7 +22,7 @@ for tournament_name in tournaments:
         print("training model for", tournament_name)
         m.fit(data['train'], tournament_name)
 
-    print("running predictions for", tournament_name)
+    print("running predictions for", tournament_name, flush=True)
     # fit model with train data and make predictions for tournament data
     prediction = nx.production(m, data, tournament=tournament_name)
 
