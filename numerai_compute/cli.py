@@ -7,6 +7,7 @@ import subprocess
 import base64
 import sys
 import platform
+from datetime import datetime
 
 import click
 import boto3
@@ -473,6 +474,86 @@ def deploy(verbose):
     res.check_returncode()
 
 
+@click.group()
+def compute():
+    """A collection of compute commands for inspecting your running compute node"""
+    pass
+
+
+@compute.command()
+@click.option('--verbose', '-v', is_flag=True)
+def task_status(verbose):
+    keys = load_keys()
+
+    ecs_client = boto3.client('ecs', region_name='us-east-1',
+                              aws_access_key_id=keys.aws_public, aws_secret_access_key=keys.aws_secret)
+    tasks = ecs_client.list_tasks(
+        cluster='numerai-submission-ecs-cluster', desiredStatus="RUNNING")
+    if len(tasks["taskArns"]) == 0:
+        tasks = ecs_client.list_tasks(
+            cluster='numerai-submission-ecs-cluster', desiredStatus="STOPPED")
+
+    if len(tasks["taskArns"]) == 0:
+        raise exception_with_msg(
+            "No tasks in the PENDING/RUNNING/STOPPED state found. This may mean that your task has been finished for a long time, and no longer exists. Check `numerai compute logs` and `numerai compute logs -l lambda` to see what happened.")
+    else:
+        task_id = tasks["taskArns"][0].split('/')[-1]
+        click.echo("task ID: " + task_id)
+
+    tasks = ecs_client.describe_tasks(
+        cluster='numerai-submission-ecs-cluster', tasks=[tasks["taskArns"][0]])
+
+    task = tasks['tasks'][0]
+    click.echo("status : " + task["lastStatus"])
+    click.echo("created: " + str(task["createdAt"]))
+
+
+@compute.command()
+@click.option('--verbose', '-v', is_flag=True)
+@click.option('--num-lines', '-n', help="the number of log lines to return", default=20, type=(int))
+@click.option("--log-type", "-l", help="the log type to lookup. Options are fargate|lambda. Default is fargate", default="fargate")
+@click.option("--follow-tail", "-f", help="tail the logs constantly", is_flag=True)
+def logs(verbose, num_lines, log_type, follow_tail):
+    if log_type == "fargate":
+        family = "/fargate/service/numerai-submission"
+    elif log_type == "lambda":
+        family = "/aws/lambda/numerai-submission"
+    else:
+        raise exception_with_msg(
+            "Unknown log type, expected 'fargate' or 'lambda': got " + log_type)
+
+    keys = load_keys()
+
+    logs_client = boto3.client('logs', region_name='us-east-1',
+                               aws_access_key_id=keys.aws_public, aws_secret_access_key=keys.aws_secret)
+
+    streams = logs_client.describe_log_streams(
+        logGroupName=family, orderBy="LastEventTime", descending=True)
+
+    if len(streams['logStreams']) == 0:
+        raise exception_with_msg(
+            "No logs found. Make sure the webhook has triggered (check 'numerai compute logs -l lambda'). If it has, then check `numerai compute task-status` and make sure it's in the RUNNING state (this can take a few minutes). Also, make sure your webhook has triggered at least once by running 'curl `cat .numerai/submission_url.txt`'")
+    name = streams['logStreams'][0]['logStreamName']
+
+    events = logs_client.get_log_events(
+        logGroupName=family, logStreamName=name, limit=num_lines)
+
+    click.echo("log for " + family + ":" + name + ":")
+    if len(events["events"]) == num_lines:
+        click.echo('...more log lines available: use -n option to get more...')
+    for event in events["events"]:
+        click.echo(str(datetime.fromtimestamp(
+            event['timestamp']/1000)) + ':' + event['message'])
+
+    if follow_tail:
+        while True:
+            events = logs_client.get_log_events(
+                logGroupName=family, logStreamName=name, nextToken=events['nextForwardToken'])
+            for event in events["events"]:
+                click.echo(str(datetime.fromtimestamp(
+                    event['timestamp']/1000)) + ':' + event['message'])
+
+
 def main():
     init(autoreset=True)
 
@@ -480,6 +561,7 @@ def main():
     cli.add_command(destroy)
 
     cli.add_command(docker)
+    cli.add_command(compute)
     cli()
 
 
