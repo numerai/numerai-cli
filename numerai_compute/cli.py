@@ -13,6 +13,7 @@ import click
 import boto3
 import numerapi
 from colorama import init, Fore, Back, Style
+import requests
 
 
 def exception_with_msg(msg):
@@ -166,6 +167,16 @@ def read_docker_repo_file():
         return f.read().strip()
 
 
+def read_submission_url_file():
+    f = get_submission_url_file()
+    if not path.exists(f):
+        raise exception_with_msg(
+            "submission url file not found. Make sure you have run `numerai setup` successfully before running this command.")
+
+    with open(f, 'r') as f:
+        return f.read().strip()
+
+
 def copy_terraform():
     click.echo("Creating .numerai directory in current project")
     shutil.copytree(path.join(get_code_dir(), "terraform"),
@@ -185,6 +196,18 @@ def copy_docker_python3(verbose):
     copy_file(verbose, code_dir, "train.py")
     copy_file(verbose, code_dir, "predict.py")
     copy_file(verbose, code_dir, "requirements.txt")
+
+
+def copy_docker_python3_multiaccount(verbose):
+    code_dir = path.join(get_code_dir(), "examples", "python3-multiaccount")
+    copy_file(verbose, code_dir, "Dockerfile")
+    copy_file(verbose, code_dir, "model.py")
+    copy_file(verbose, code_dir, "train.py")
+    copy_file(verbose, code_dir, "predict.py")
+    copy_file(verbose, code_dir, "requirements.txt")
+    copy_file(verbose, code_dir, ".numerai-api-keys")
+    if verbose:
+        click.echo(Fore.RED + "You need to manually fill in all of your Numerai API keys in the .numerai-api-keys file that has been created for you in this directory.")
 
 
 def copy_docker_rlang(verbose):
@@ -368,10 +391,13 @@ def docker():
 @docker.command()
 @click.option('--quiet', '-q', is_flag=True)
 @click.option('--rlang', '-r', is_flag=True)
-def copy_example(quiet, rlang):
+@click.option('--python3-multiaccount', '-m', is_flag=True)
+def copy_example(quiet, rlang, python3_multiaccount):
     """Copies a few example files into the current directory"""
     if rlang:
         copy_docker_rlang(not quiet)
+    elif python3_multiaccount:
+        copy_docker_python3_multiaccount(not quiet)
     else:
         copy_docker_python3(not quiet)
 
@@ -383,7 +409,7 @@ def copy_example(quiet, rlang):
 def docker_build(verbose):
     docker_repo = read_docker_repo_file()
 
-    keys = load_or_setup_keys()
+    keys = load_keys()
 
     c = '''docker build -t {docker_repo} --build-arg NUMERAI_PUBLIC_ID={keys.numerai_public} --build-arg NUMERAI_SECRET_KEY={keys.numerai_secret} .'''.format(
         **locals())
@@ -452,7 +478,7 @@ def deploy(verbose):
 
     docker_repo = read_docker_repo_file()
 
-    keys = load_or_setup_keys()
+    keys = load_keys()
 
     ecr_client = boto3.client('ecr', region_name='us-east-1',
                               aws_access_key_id=keys.aws_public, aws_secret_access_key=keys.aws_secret)
@@ -478,6 +504,27 @@ def deploy(verbose):
 def compute():
     """A collection of compute commands for inspecting your running compute node"""
     pass
+
+
+@compute.command()
+@click.option('--quiet', '-q', is_flag=True)
+def test_webhook(quiet):
+    url = read_submission_url_file()
+
+    round_json = {
+        "roundNumber": -1,
+        "dataVersion": 1,
+    }
+
+    req = requests.post(url, json=round_json)
+
+    req.raise_for_status()
+
+    if not quiet:
+        click.echo("request success")
+        click.echo(req.json())
+
+        click.echo("You can now run `numerai compute status` or `numerai compute logs` to see your compute node running. Note that `numerai compute logs` won't work until the task is in the RUNNING state, so watch `numerai compute status` for that to happen.")
 
 
 @compute.command()

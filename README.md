@@ -62,12 +62,22 @@ The default example does _not_ stake, so you will still have to manually do that
 You can test the webhook url directly like so:
 
 ```
-curl `cat .numerai/submission_url.txt`
+numerai compute test-webhook
 ```
 
-If the curl succeeds, it will return immediately with a status of "pending". This means that your container has been scheduled to run but hasn't actually started yet.
+If the command succeeds, it will return quickly with a status of "pending". This means that your container has been scheduled to run but hasn't actually started yet.
 
-You can check for the running task at https://console.aws.amazon.com/ecs/home?region=us-east-1#/clusters/numerai-submission-ecs-cluster/tasks or logs from your container at https://console.aws.amazon.com/cloudwatch/home?region=us-east-1#logStream:group=/fargate/service/numerai-submission
+You can check that your job has been scheduled by running:
+```
+numerai compute task-status
+```
+
+And once it's in the `RUNNING` state, you can look at the logs:
+```
+numerai compute logs
+```
+
+You can also check for the raw AWS logs at https://console.aws.amazon.com/ecs/home?region=us-east-1#/clusters/numerai-submission-ecs-cluster/tasks or logs from your container at https://console.aws.amazon.com/cloudwatch/home?region=us-east-1#logStream:group=/fargate/service/numerai-submission
 
 NOTE: the container takes a little time to schedule. The first time it runs also tends to take longer (2-3min), with subsequent runs starting a lot faster.
 
@@ -273,7 +283,11 @@ numerai docker copy-example
 
 WARNING: this will overwrite the following files if they exist: Dockerfile, model.py, train.py, predict.py, and requirements.txt
 
-There is also an example for R:
+There is also a more complicated example using multiple Numerai accounts:
+```
+numerai docker copy-example --python3-multiaccount
+```
+As well as using R:
 ```
 numerai docker copy-example --rlang
 ```

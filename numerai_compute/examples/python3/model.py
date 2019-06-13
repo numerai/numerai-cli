@@ -1,5 +1,5 @@
-import pickle
 import numerox as nx
+import joblib
 
 from sklearn.linear_model import LogisticRegression
 
@@ -17,8 +17,6 @@ class LogisticModel(nx.Model):
         self.model.fit(dfit.x, dfit.y[tournament])
 
     def fit_predict(self, dfit, dpre, tournament):
-        # create a sklearn.LogisticRegression model
-
         # fit is done separately in `.fit()`
 
         # predict
@@ -28,10 +26,8 @@ class LogisticModel(nx.Model):
         return dpre.ids, yhat
 
     def save(self, filename):
-        with open(filename, 'wb') as f:
-            pickle.dump(self, f)
+        joblib.dump(self, filename)
 
     @classmethod
     def load(cls, filename):
-        with open(filename, 'rb') as f:
-            return pickle.load(f)
+        return joblib.load(filename)

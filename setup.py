@@ -22,6 +22,7 @@ setup(name='numerai-cli',
           "boto3",
           "numerapi",
           "colorama",
+          "requests",
       ],
       entry_points={
           'console_scripts': ['numerai=numerai_compute.cli:main'],

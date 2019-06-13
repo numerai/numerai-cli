@@ -1,0 +1,12 @@
+# You will need to create an API key by going to https://numer.ai/account and clicking "Add" under the "Your API keys" section.
+# Select the following permissions for the key: "Upload submissions", "Make stakes", "View historical submission info", "View user info"
+export NUMERAI_PUBLIC_ID_1=foo
+export NUMERAI_SECRET_KEY_1=foo
+
+# do this again, but while logged into your 2nd account
+export NUMERAI_PUBLIC_ID_2=bar
+export NUMERAI_SECRET_KEY_2=bar
+
+# same with the 3rd account
+export NUMERAI_PUBLIC_ID_3=baz
+export NUMERAI_SECRET_KEY_3=baz

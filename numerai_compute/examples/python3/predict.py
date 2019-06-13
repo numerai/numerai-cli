@@ -45,6 +45,7 @@ for tournament_name in tournaments:
         prediction_filename, tournament_name, public_id, secret_key, block=False, n_tries=3)
 
 # staking variables
+# change block in nx.upload to block=True. This is because you can't stake until the submission has finished its checks, which take a few minutes
 # confidence = .501 # increase this number to signify your confidence in a minimum AUC. Can't go below .501
 # stake_value = .1 # the amount of NMR to stake
 
