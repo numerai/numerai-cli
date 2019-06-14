@@ -156,6 +156,10 @@ Then you need to share your drive. See https://docs.docker.com/docker-for-window
 
 There's actually a bunch of other bits of glue in AWS that are setup to run this, but these 3 are the most important. The lambda endpoint corresponds to the submission url that your provide back to Numerai. The ECR is where `numerai docker deploy` will push your image to. Fargate is where your task actually runs in the ECS, and it's where you'll want to look if things don't appear to be actually submitting.
 
+### Submission Webhook URL
+
+This is the url that you provide back to Numerai. It's the thing that triggers the lambda and schedules your job to run. Once you've setup the webhook in your Numerai account, it will be called Saturday morning right after a new round opens, and if your job fails (determined by not having submitted all submissions sucessfully) then it will be triggered again around 24 hours later.
+
 ## Docker example
 
 Lets look at the docker example's files:

@@ -1,6 +1,6 @@
 from setuptools import setup
 
-# read the contents of your README file
+# read the contents of the README file
 from os import path
 this_directory = path.abspath(path.dirname(__file__))
 with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
@@ -9,7 +9,7 @@ with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
 setup(name='numerai-cli',
       version='0.1.13',
       description='A library for helping to deploy a Numer.ai compute node',
-      url='https://github.com/numerai/numerai-compute-cli',
+      url='https://github.com/numerai/numerai-cli',
       author='Numer.ai',
       author_email='contact@numer.ai',
       license='MIT',

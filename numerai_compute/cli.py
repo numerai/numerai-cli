@@ -431,9 +431,7 @@ def docker_build(verbose):
 @click.option('--verbose', '-v', is_flag=True)
 def train(command, verbose):
     """
-    Run the docker image locally.
-
-    Requires that `build` has already run and succeeded. Useful for local testing of the docker container
+    Run the docker image locally and output trained models. This runs train.py (by default)
     """
     docker_build(verbose)
 
@@ -452,9 +450,7 @@ def train(command, verbose):
 @click.option('--verbose', '-v', is_flag=True)
 def run(verbose):
     """
-    Run the docker image locally.
-
-    Requires that `build` has already run and succeeded. Useful for local testing of the docker container
+    Run the docker image locally and submit predictions. This runs the default CMD in your docker container (predict.py if you're using the example)
     """
     docker_build(verbose)
 
@@ -515,6 +511,11 @@ def compute():
 @compute.command()
 @click.option('--quiet', '-q', is_flag=True)
 def test_webhook(quiet):
+    """
+    This will POST to your webhook, and trigger compute to run in the cloud
+
+    You can observe the logs for the running job by running `numerai compute logs`
+    """
     url = read_submission_url_file()
 
     round_json = {
@@ -554,6 +555,9 @@ def get_latest_task(keys, verbose):
 @compute.command()
 @click.option('--verbose', '-v', is_flag=True)
 def status(verbose):
+    """
+    Get the status of the latest task in compute
+    """
     keys = load_keys()
 
     task = get_latest_task(keys, verbose)
@@ -573,6 +577,11 @@ def status(verbose):
 @click.option("--log-type", "-l", help="the log type to lookup. Options are fargate|lambda. Default is fargate", default="fargate")
 @click.option("--follow-tail", "-f", help="tail the logs constantly", is_flag=True)
 def logs(verbose, num_lines, log_type, follow_tail):
+    """
+    Get the logs from the last run task
+
+    Keep in mind, logs are not created until a task is in the RUNNING state, so the logs returned by this command might be out of date
+    """
     if log_type == "fargate":
         family = "/fargate/service/numerai-submission"
     elif log_type == "lambda":
