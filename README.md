@@ -5,6 +5,8 @@
 
 This is a CLI for setting up a Numerai compute node and deplying your models to it. This sets up a compute cluster in AWS (Amazon Web Services), and is architected to cost a minimal amount of money to run (on average, you will spend less than $1 per month).
 
+Questions or feedback? Join us at [RocketChat](https://community.numer.ai/channel/compute)
+
 ![Architecture Diagram](https://github.com/numerai/numerai-cli/blob/master/docs/compute_architecture.png)
 
 - [Prerequisites](#prerequisites)
