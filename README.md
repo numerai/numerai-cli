@@ -57,6 +57,8 @@ numerai docker deploy
 
 Your compute node is now setup and ready to run. Look in the `.numerai/submission_url.txt` file to see your submission url that you will provide to Numerai as your webhook url. Go to [your Numerai account](https://numer.ai/account) and select the "Compute" section to enter it there.
 
+![Account Settings](https://github.com/numerai/numerai-cli/blob/master/docs/account_settings.png)
+
 The default example does _not_ stake, so you will still have to manually do that every week. Alternatively, check out the bottom of predict.py for example code on how to stake automatically.
 
 ### Testing
@@ -70,11 +72,13 @@ numerai compute test-webhook
 If the command succeeds, it will return quickly with a status of "pending". This means that your container has been scheduled to run but hasn't actually started yet.
 
 You can check that your job has been scheduled by running:
+
 ```
 numerai compute status
 ```
 
 And once it's in the `RUNNING` state, you can look at the logs:
+
 ```
 numerai compute logs
 ```
@@ -290,10 +294,13 @@ numerai docker copy-example
 WARNING: this will overwrite the following files if they exist: Dockerfile, model.py, train.py, predict.py, and requirements.txt
 
 There is also a more complicated example using multiple Numerai accounts:
+
 ```
 numerai docker copy-example --python3-multiaccount
 ```
+
 As well as using R:
+
 ```
 numerai docker copy-example --rlang
 ```
