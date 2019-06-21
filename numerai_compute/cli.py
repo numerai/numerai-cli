@@ -410,6 +410,7 @@ def copy_example(quiet, force, rlang, python3_multiaccount):
     with open('.dockerignore', 'a+') as f:
         f.write(".numerai\n")
         f.write("numerai_dataset.zip\n")
+        f.write(".git\n")
 
 
 def docker_build(verbose):
@@ -472,6 +473,40 @@ def build(verbose):
     docker_build(verbose)
 
 
+def docker_cleanup(verbose):
+    keys = load_keys()
+
+    ecr_client = boto3.client('ecr', region_name='us-east-1',
+                              aws_access_key_id=keys.aws_public, aws_secret_access_key=keys.aws_secret)
+
+    resp = ecr_client.list_images(
+        repositoryName='numerai-submission',
+        filter={
+            'tagStatus': 'UNTAGGED',
+        }
+    )
+
+    imageIds = resp['imageIds']
+    if len(imageIds) == 0:
+        return
+
+    resp = ecr_client.batch_delete_image(
+        repositoryName='numerai-submission',
+        imageIds=imageIds,
+    )
+
+    imageIds = resp['imageIds']
+    if len(imageIds) > 0:
+        click.echo(Fore.YELLOW + "deleted " + str(len(imageIds)) +
+                   " old image(s) from remote docker repo")
+
+
+@docker.command()
+@click.option('--verbose', '-v', is_flag=True)
+def cleanup(verbose):
+    docker_cleanup(verbose)
+
+
 @docker.command()
 @click.option('--verbose', '-v', is_flag=True)
 def deploy(verbose):
@@ -500,6 +535,8 @@ def deploy(verbose):
         click.echo('running: ' + c)
     res = subprocess.run(c, shell=True)
     res.check_returncode()
+
+    docker_cleanup(verbose)
 
 
 @click.group()
