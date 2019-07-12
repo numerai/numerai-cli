@@ -14,6 +14,7 @@ import boto3
 import numerapi
 from colorama import init, Fore, Back, Style
 import requests
+import time
 
 
 def exception_with_msg(msg):
@@ -619,41 +620,52 @@ def logs(verbose, num_lines, log_type, follow_tail):
 
     Keep in mind, logs are not created until a task is in the RUNNING state, so the logs returned by this command might be out of date
     """
-    if log_type == "fargate":
-        family = "/fargate/service/numerai-submission"
-    elif log_type == "lambda":
-        family = "/aws/lambda/numerai-submission"
-    else:
-        raise exception_with_msg(
-            "Unknown log type, expected 'fargate' or 'lambda': got " + log_type)
+    def print_logs(events, limit):
+        if len(events["events"]) == limit:
+            click.echo(
+                '...more log lines available: use -n option to get more...')
+        for event in events["events"]:
+            click.echo(str(datetime.fromtimestamp(
+                event['timestamp']/1000)) + ':' + event['message'])
+
+    def get_name_and_print_logs(logs_client, family, limit, nextToken=None, raise_on_error=True):
+        streams = logs_client.describe_log_streams(
+            logGroupName=family, orderBy="LastEventTime", descending=True)
+
+        if len(streams['logStreams']) == 0:
+            if not raise_on_error:
+                return False
+            raise exception_with_msg(
+                "No logs found. Make sure the webhook has triggered (check 'numerai compute logs -l lambda'). If it has, then check `numerai compute status` and make sure it's in the RUNNING state (this can take a few minutes). Also, make sure your webhook has triggered at least once by running 'curl `cat .numerai/submission_url.txt`'")
+        name = streams['logStreams'][0]['logStreamName']
+
+        kwargs = {}  # boto is weird, and doesn't allow `None` for parameters
+        if nextToken is not None:
+            kwargs['nextToken'] = nextToken
+        if limit is not None:
+            kwargs['limit'] = limit
+        events = logs_client.get_log_events(
+            logGroupName=family, logStreamName=name, **kwargs)
+        click.echo("log for " + family + ":" + name + ":")
+        print_logs(events, limit)
+        return True
 
     keys = load_keys()
 
     logs_client = boto3.client('logs', region_name='us-east-1',
                                aws_access_key_id=keys.aws_public, aws_secret_access_key=keys.aws_secret)
 
-    streams = logs_client.describe_log_streams(
-        logGroupName=family, orderBy="LastEventTime", descending=True)
-
-    if len(streams['logStreams']) == 0:
+    if log_type == "fargate":
+        family = "/fargate/service/numerai-submission"
+    elif log_type == "lambda":
+        family = "/aws/lambda/numerai-submission"
+        get_name_and_print_logs(logs_client, family, limit=num_lines)
+        return
+    else:
         raise exception_with_msg(
-            "No logs found. Make sure the webhook has triggered (check 'numerai compute logs -l lambda'). If it has, then check `numerai compute status` and make sure it's in the RUNNING state (this can take a few minutes). Also, make sure your webhook has triggered at least once by running 'curl `cat .numerai/submission_url.txt`'")
-    name = streams['logStreams'][0]['logStreamName']
+            "Unknown log type, expected 'fargate' or 'lambda': got " + log_type)
 
-    events = logs_client.get_log_events(
-        logGroupName=family, logStreamName=name, limit=num_lines)
-
-    click.echo("log for " + family + ":" + name + ":")
-    if len(events["events"]) == num_lines:
-        click.echo('...more log lines available: use -n option to get more...')
-    for event in events["events"]:
-        click.echo(str(datetime.fromtimestamp(
-            event['timestamp']/1000)) + ':' + event['message'])
-
-    taskID = name.split('/')[-1]
-
-    def latest_task_printer(keys, verbose):
-        task = get_latest_task(keys, verbose)
+    def latest_task_printer(task, keys, verbose):
         if task is None:
             click.echo(
                 Fore.RED + "task not found or is in the STOPPED state")
@@ -661,31 +673,52 @@ def logs(verbose, num_lines, log_type, follow_tail):
             click.echo(
                 Fore.RED + "there is another task in the PENDING state. Check its status with `numerai compute status` and then rerun the logs command once it is RUNNING.")
 
-    def task_status(taskID, tailing):
+    def task_status(task):
         ecs_client = boto3.client('ecs', region_name='us-east-1',
                                   aws_access_key_id=keys.aws_public, aws_secret_access_key=keys.aws_secret)
         resp = ecs_client.describe_tasks(
-            cluster='numerai-submission-ecs-cluster', tasks=[taskID])
+            cluster='numerai-submission-ecs-cluster', tasks=[task["taskArn"]])
 
         tasks = resp['tasks']
         if len(tasks) == 0:
-            latest_task_printer(keys, verbose)
+            return None
+        return tasks[0]
 
-            return False
-        else:
-            if not tailing:
-                click.echo(Fore.YELLOW + "task is in the " +
-                           tasks[0]["lastStatus"] + " state")
-                latest_task_printer(keys, verbose)
-            if tasks[0]["lastStatus"] == "STOPPED":
-                if tailing:
-                    click.echo(Fore.YELLOW + "task is in the " +
-                               tasks[0]["lastStatus"] + " state")
-                return False
-        return True
+    def get_log_for_task_id(task_id):
+        streams = logs_client.describe_log_streams(
+            logGroupName=family, orderBy="LastEventTime", descending=True)
+        if len(streams['logStreams']) == 0:
+            raise exception_with_msg(
+                "No logs found. Make sure the webhook has triggered (check 'numerai compute logs -l lambda'). If it has, then check `numerai compute status` and make sure it's in the RUNNING state (this can take a few minutes). Also, make sure your webhook has triggered at least once by running 'curl `cat .numerai/submission_url.txt`'")
 
-    if not task_status(taskID, tailing=False):
+        for stream in streams['logStreams']:
+            if stream['logStreamName'].endswith(task_id):
+                return stream['logStreamName']
+        return None
+
+    task = get_latest_task(keys, verbose)
+    status = task_status(task)
+    if status is None or status["lastStatus"] == "STOPPED":
+        get_name_and_print_logs(logs_client, family, limit=num_lines)
+        latest_task_printer(task, keys, verbose)
         return
+
+    task_id = task["taskArn"].split('/')[-1]
+
+    name = get_log_for_task_id(task_id)
+    if name is None:
+        print("Log file has not been created yet. Waiting.", end='')
+    while name is None:
+        print('.', end='')
+        time.sleep(2)
+        name = get_log_for_task_id(task_id)
+
+    task = get_latest_task(keys, verbose)
+    events = logs_client.get_log_events(
+        logGroupName=family, logStreamName=name, limit=num_lines)
+
+    click.echo("log for " + family + ":" + name + ":")
+    print_logs(events, num_lines)
 
     if follow_tail:
         while True:
@@ -694,7 +727,10 @@ def logs(verbose, num_lines, log_type, follow_tail):
             for event in events["events"]:
                 click.echo(str(datetime.fromtimestamp(
                     event['timestamp']/1000)) + ':' + event['message'])
-            if not task_status(taskID, tailing=True):
+            status = task_status(task)["lastStatus"]
+            if status != "RUNNING":
+                click.echo(Fore.YELLOW + "Task is now in the " +
+                           task_status(task) + " state")
                 return
 
 
