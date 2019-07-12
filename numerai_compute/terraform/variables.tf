@@ -25,10 +25,10 @@ variable "gateway_stage_path" {
 
 variable "fargate_cpu" {
   description = "Fargate instance CPU units to provision (1 vCPU = 1024 CPU units)"
-  default     = "1024"
+  default     = "2048"
 }
 
 variable "fargate_memory" {
   description = "Fargate instance memory to provision (in MiB)"
-  default     = "8192"
+  default     = "16384"
 }
