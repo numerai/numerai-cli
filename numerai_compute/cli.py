@@ -239,7 +239,7 @@ def is_win10_professional():
     return False
 
 
-def terraform_setup(verbose):
+def terraform_setup(verbose, cpu, memory):
     if path.abspath(os.getcwd()) == path.abspath(str(Path.home())):
         raise exception_with_msg(
             "`numerai setup` cannot be run from your $HOME directory. Please create another directory and run this again.")
@@ -247,6 +247,18 @@ def terraform_setup(verbose):
     numerai_dir = get_project_numerai_dir()
     if not path.exists(numerai_dir):
         copy_terraform()
+
+    if cpu is not None or memory is not None:
+        if cpu is None:
+            cpu = 1024
+        if memory is None:
+            memory = 8192
+
+        with open(path.join(get_code_dir(), "terraform_variables_template.tf"), 'r') as template:
+            with open(path.join(get_project_numerai_dir(), 'variables.tf'), 'w') as out:
+                out.write(template.read().format(
+                    fargate_cpu=cpu, fargate_memory=memory))
+
     # Format path for mingw after checking that it exists
     numerai_dir = format_path_if_mingw(numerai_dir)
 
@@ -376,9 +388,11 @@ def cli():
 
 @click.command()
 @click.option('--verbose', '-v', is_flag=True)
-def setup(verbose):
+@click.option('--cpu', '-c', help="the cpu to use in the compute container (defaults to 1024). See https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-cpu-memory-error.html for possible settings", type=(int))
+@click.option('--memory', '-m', help="the memory to use in the compute container (defaults to 8192). See https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-cpu-memory-error.html for possible settings", type=(int))
+def setup(verbose, cpu, memory):
     """Sets up a Numer.ai compute node in AWS"""
-    terraform_setup(verbose)
+    terraform_setup(verbose, cpu, memory)
 
 
 @click.command()
@@ -697,6 +711,10 @@ def logs(verbose, num_lines, log_type, follow_tail):
         return None
 
     task = get_latest_task(keys, verbose)
+    if task is None:
+        get_name_and_print_logs(logs_client, family, limit=num_lines)
+        return
+
     status = task_status(task)
     if status is None or status["lastStatus"] == "STOPPED":
         get_name_and_print_logs(logs_client, family, limit=num_lines)
@@ -730,7 +748,7 @@ def logs(verbose, num_lines, log_type, follow_tail):
             status = task_status(task)["lastStatus"]
             if status != "RUNNING":
                 click.echo(Fore.YELLOW + "Task is now in the " +
-                           task_status(task) + " state")
+                           status + " state")
                 return
 
 
