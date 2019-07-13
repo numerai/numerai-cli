@@ -1,17 +1,16 @@
 import numerox as nx
 import joblib
 
-from sklearn.linear_model import LogisticRegression
+from sklearn.linear_model import LinearRegression
 
 # define a model that can be trained separately and saved
 
 
-class LogisticModel(nx.Model):
+class LinearModel(nx.Model):
 
-    def __init__(self, inverse_l2=0.0001, verbose=False):
+    def __init__(self, verbose=False):
         self.verbose = verbose
-        self.model = LogisticRegression(
-            C=inverse_l2, solver='liblinear', verbose=verbose)
+        self.model = LinearRegression()
 
     def fit(self, dfit, tournament):
         self.model.fit(dfit.x, dfit.y[tournament])
@@ -20,7 +19,7 @@ class LogisticModel(nx.Model):
         # fit is done separately in `.fit()`
 
         # predict
-        yhat = self.model.predict_proba(dpre.x)[:, 1]
+        yhat = self.model.predict(dpre.x)
 
         # return predictions along with the original ids
         return dpre.ids, yhat
