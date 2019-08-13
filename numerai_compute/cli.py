@@ -51,7 +51,10 @@ class KeyConfig:
         return self._numerai_secret
 
     def sanitize_message(self, message):
-        return message.replace(self.aws_public, '...').replace(self.aws_secret, '...').replace(self.numerai_public, '...').replace(self.numerai_secret, '...')
+        return message.replace(self.aws_public,
+                               '...').replace(self.aws_secret, '...').replace(
+                                   self.numerai_public,
+                                   '...').replace(self.numerai_secret, '...')
 
 
 def load_keys():
@@ -60,11 +63,10 @@ def load_keys():
     config = configparser.ConfigParser()
     config.read(key_file)
 
-    return KeyConfig(
-        aws_public=config['default']['AWS_ACCESS_KEY_ID'],
-        aws_secret=config['default']['AWS_SECRET_ACCESS_KEY'],
-        numerai_public=config['default']['NUMERAI_PUBLIC_ID'],
-        numerai_secret=config['default']['NUMERAI_SECRET_KEY'])
+    return KeyConfig(aws_public=config['default']['AWS_ACCESS_KEY_ID'],
+                     aws_secret=config['default']['AWS_SECRET_ACCESS_KEY'],
+                     numerai_public=config['default']['NUMERAI_PUBLIC_ID'],
+                     numerai_secret=config['default']['NUMERAI_SECRET_KEY'])
 
 
 def load_or_setup_keys():
@@ -78,7 +80,8 @@ def load_or_setup_keys():
 
 def check_aws_validity(key_id, secret):
     try:
-        client = boto3.client('s3', aws_access_key_id=key_id,
+        client = boto3.client('s3',
+                              aws_access_key_id=key_id,
                               aws_secret_access_key=secret)
         client.list_buckets()
         return True
@@ -86,10 +89,12 @@ def check_aws_validity(key_id, secret):
     except Exception as e:
         if 'NotSignedUp' in str(e):
             raise exception_with_msg(
-                '''Your AWS keys are valid, but the account is not finished signing up. You either need to update your credit card in AWS at https://portal.aws.amazon.com/billing/signup?type=resubscribe#/resubscribed, or wait up to 24 hours for their verification process to complete.''')
+                '''Your AWS keys are valid, but the account is not finished signing up. You either need to update your credit card in AWS at https://portal.aws.amazon.com/billing/signup?type=resubscribe#/resubscribed, or wait up to 24 hours for their verification process to complete.'''
+            )
 
         raise exception_with_msg(
-            '''AWS keys seem to be invalid. Make sure you've entered them correctly and that your user has the "AdministratorAccess" policy.''')
+            '''AWS keys seem to be invalid. Make sure you've entered them correctly and that your user has the "AdministratorAccess" policy.'''
+        )
 
 
 def check_numerai_validity(key_id, secret):
@@ -100,7 +105,8 @@ def check_numerai_validity(key_id, secret):
 
     except Exception:
         raise exception_with_msg(
-            '''Numerai keys seem to be invalid. Make sure you've entered them correctly.''')
+            '''Numerai keys seem to be invalid. Make sure you've entered them correctly.'''
+        )
 
 
 def setup_keys():
@@ -109,11 +115,9 @@ def setup_keys():
     click.echo()
     click.echo(Fore.RED + "Please type in the following keys:")
     aws_public = click.prompt('AWS_ACCESS_KEY_ID').strip()
-    aws_private = click.prompt(
-        'AWS_SECRET_ACCESS_KEY').strip()
+    aws_private = click.prompt('AWS_SECRET_ACCESS_KEY').strip()
     numerai_public = click.prompt('NUMERAI_PUBLIC_ID').strip()
-    numerai_private = click.prompt(
-        'NUMERAI_SECRET_KEY').strip()
+    numerai_private = click.prompt('NUMERAI_SECRET_KEY').strip()
 
     config = configparser.ConfigParser()
     config['default'] = {
@@ -162,7 +166,8 @@ def read_docker_repo_file():
     docker_file = get_docker_repo_file()
     if not path.exists(docker_file):
         raise exception_with_msg(
-            "docker repo not found. Make sure you have run `numerai setup` successfully before running this command.")
+            "docker repo not found. Make sure you have run `numerai setup` successfully before running this command."
+        )
 
     with open(docker_file, 'r') as f:
         return f.read().strip()
@@ -172,7 +177,8 @@ def read_submission_url_file():
     f = get_submission_url_file()
     if not path.exists(f):
         raise exception_with_msg(
-            "submission url file not found. Make sure you have run `numerai setup` successfully before running this command.")
+            "submission url file not found. Make sure you have run `numerai setup` successfully before running this command."
+        )
 
     with open(f, 'r') as f:
         return f.read().strip()
@@ -181,15 +187,16 @@ def read_submission_url_file():
 def copy_terraform():
     click.echo("Creating .numerai directory in current project")
     shutil.copytree(path.join(get_code_dir(), "terraform"),
-                    get_project_numerai_dir(), copy_function=shutil.copy)
+                    get_project_numerai_dir(),
+                    copy_function=shutil.copy)
 
 
 def copy_file(directory, filename, verbose, force):
     if verbose:
         click.echo(Fore.YELLOW + "copying " + filename)
     if os.path.exists(filename):
-        overwrite = click.prompt(
-            filename + ' already exists. Overwrite? [y]/n').strip()
+        overwrite = click.prompt(filename +
+                                 ' already exists. Overwrite? [y]/n').strip()
         if overwrite != "" and overwrite != "y" and overwrite != "yes":
             return
     shutil.copy(path.join(directory, filename), filename)
@@ -213,7 +220,10 @@ def copy_docker_python3_multiaccount(verbose, force):
     copy_file(code_dir, "requirements.txt", verbose, force)
     copy_file(code_dir, ".numerai-api-keys", verbose, force)
     if verbose:
-        click.echo(Fore.RED + "You need to manually fill in all of your Numerai API keys in the .numerai-api-keys file that has been created for you in this directory.")
+        click.echo(
+            Fore.RED +
+            "You need to manually fill in all of your Numerai API keys in the .numerai-api-keys file that has been created for you in this directory."
+        )
 
 
 def copy_docker_rlang(verbose, force):
@@ -233,7 +243,9 @@ def is_win10_professional():
     if version == '10':
         # for windows 10 only, we need to know if it's pro vs home
         import winreg
-        with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Windows NT\CurrentVersion") as key:
+        with winreg.OpenKey(
+                winreg.HKEY_LOCAL_MACHINE,
+                r"SOFTWARE\Microsoft\Windows NT\CurrentVersion") as key:
             return winreg.QueryValueEx(key, "EditionID")[0] == 'Professional'
 
     return False
@@ -242,7 +254,8 @@ def is_win10_professional():
 def terraform_setup(verbose, cpu, memory):
     if path.abspath(os.getcwd()) == path.abspath(str(Path.home())):
         raise exception_with_msg(
-            "`numerai setup` cannot be run from your $HOME directory. Please create another directory and run this again.")
+            "`numerai setup` cannot be run from your $HOME directory. Please create another directory and run this again."
+        )
 
     numerai_dir = get_project_numerai_dir()
     if not path.exists(numerai_dir):
@@ -254,10 +267,12 @@ def terraform_setup(verbose, cpu, memory):
         if memory is None:
             memory = 8192
 
-        with open(path.join(get_code_dir(), "terraform_variables_template.tf"), 'r') as template:
-            with open(path.join(get_project_numerai_dir(), 'variables.tf'), 'w') as out:
-                out.write(template.read().format(
-                    fargate_cpu=cpu, fargate_memory=memory))
+        with open(path.join(get_code_dir(), "terraform_variables_template.tf"),
+                  'r') as template:
+            with open(path.join(get_project_numerai_dir(), 'variables.tf'),
+                      'w') as out:
+                out.write(template.read().format(fargate_cpu=cpu,
+                                                 fargate_memory=memory))
 
     # Format path for mingw after checking that it exists
     numerai_dir = format_path_if_mingw(numerai_dir)
@@ -268,8 +283,7 @@ def terraform_setup(verbose, cpu, memory):
         **locals())
     if verbose:
         click.echo('running: ' + keys.sanitize_message(c))
-    res = subprocess.run(
-        c, shell=True, stderr=subprocess.PIPE)
+    res = subprocess.run(c, shell=True, stderr=subprocess.PIPE)
 
     # error checking for docker not being installed correctly
     # sadly this is a mess, since there's tons of ways to mess up your docker install, especially on windows
@@ -277,43 +291,55 @@ def terraform_setup(verbose, cpu, memory):
         if b'is not recognized as an internal or external command' in res.stderr:
             if sys.platform == 'win32':
                 if is_win10_professional():
-                    raise exception_with_msg('''Docker does not appear to be installed. Make sure to download/install docker from https://hub.docker.com/editions/community/docker-ce-desktop-windows
+                    raise exception_with_msg(
+                        '''Docker does not appear to be installed. Make sure to download/install docker from https://hub.docker.com/editions/community/docker-ce-desktop-windows
 
-If you're sure docker is already installed, then for some reason it isn't in your PATH like expected. Restarting may fix it.''')
+If you're sure docker is already installed, then for some reason it isn't in your PATH like expected. Restarting may fix it.'''
+                    )
                 else:
-                    raise exception_with_msg('''Docker does not appear to be installed. Make sure to download/install docker from https://github.com/docker/toolbox/releases and run "Docker Quickstart Terminal" when you're done.
+                    raise exception_with_msg(
+                        '''Docker does not appear to be installed. Make sure to download/install docker from https://github.com/docker/toolbox/releases and run "Docker Quickstart Terminal" when you're done.
 
-If you're sure docker is already installed, then for some reason it isn't in your PATH like expected. Restarting may fix it.''')
+If you're sure docker is already installed, then for some reason it isn't in your PATH like expected. Restarting may fix it.'''
+                    )
         if b'command not found' in res.stderr:
             if sys.platform == 'darwin':
                 raise exception_with_msg(
-                    '''Docker does not appear to be installed. You can install it with `brew cask install docker` or from https://hub.docker.com/editions/community/docker-ce-desktop-mac''')
+                    '''Docker does not appear to be installed. You can install it with `brew cask install docker` or from https://hub.docker.com/editions/community/docker-ce-desktop-mac'''
+                )
             else:
                 raise exception_with_msg(
-                    '''docker command not found. Please install docker and make sure that the `docker` command is in your $PATH''')
+                    '''docker command not found. Please install docker and make sure that the `docker` command is in your $PATH'''
+                )
 
         if b'This error may also indicate that the docker daemon is not running' in res.stderr or b'Is the docker daemon running' in res.stderr:
             if sys.platform == 'darwin':
                 raise exception_with_msg(
-                    '''Docker daemon not running. Make sure you've started "Docker Desktop" and then run this command again.''')
+                    '''Docker daemon not running. Make sure you've started "Docker Desktop" and then run this command again.'''
+                )
             elif sys.platform == 'linux2':
                 raise exception_with_msg(
-                    '''Docker daemon not running or this user cannot acccess the docker socket. Make sure docker is running and that your user has permissions to run docker. On most systems, you can add your user to the docker group like so: `sudo groupadd docker; sudo usermod -aG docker $USER` and then restarting your computer.''')
+                    '''Docker daemon not running or this user cannot acccess the docker socket. Make sure docker is running and that your user has permissions to run docker. On most systems, you can add your user to the docker group like so: `sudo groupadd docker; sudo usermod -aG docker $USER` and then restarting your computer.'''
+                )
             elif sys.platform == 'win32':
                 if 'DOCKER_TOOLBOX_INSTALL_PATH' in os.environ:
                     raise exception_with_msg(
-                        '''Docker daemon not running. Make sure you've started "Docker Quickstart Terminal" and then run this command again.''')
+                        '''Docker daemon not running. Make sure you've started "Docker Quickstart Terminal" and then run this command again.'''
+                    )
                 else:
                     raise exception_with_msg(
-                        '''Docker daemon not running. Make sure you've started "Docker Desktop" and then run this command again.''')
+                        '''Docker daemon not running. Make sure you've started "Docker Desktop" and then run this command again.'''
+                    )
                 # else:
         if b'invalid mode: /opt/plan' in res.stderr:
             if sys.platform == 'win32':
                 raise exception_with_msg(
-                    '''It appears that you're running Docker Toolbox, but you're not using the "Docker Quickstart Terminal". Please re-run `numerai setup` from that terminal.''')
+                    '''It appears that you're running Docker Toolbox, but you're not using the "Docker Quickstart Terminal". Please re-run `numerai setup` from that terminal.'''
+                )
         if b'Drive has not been shared' in res.stderr:
             raise exception_with_msg(
-                r'''It appears that you're running from a directory that isn't shared to your docker Daemon. Make sure your directory is shared through Docker Desktop: https://docs.docker.com/docker-for-windows/#shared-drives''')
+                r'''It appears that you're running from a directory that isn't shared to your docker Daemon. Make sure your directory is shared through Docker Desktop: https://docs.docker.com/docker-for-windows/#shared-drives'''
+            )
 
         print(res.stderr.decode('utf8'), file=sys.stderr)
 
@@ -328,12 +354,15 @@ If you're sure docker is already installed, then for some reason it isn't in you
     if sys.platform == 'win32' and 'DOCKER_TOOLBOX_INSTALL_PATH' in os.environ:
         click.echo(
             'running aws setup through terraform. this can take a few minutes')
-        res = subprocess.run(
-            c, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        res = subprocess.run(c,
+                             shell=True,
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE)
         if res.returncode != 0:
             if b'No configuration files' in res.stdout:
                 raise exception_with_msg(
-                    r'''It appears that you're running from a directory that isn't shared to your docker Daemon. Try running from a directory under your HOME, e.g. C:\Users\$YOUR_NAME\$ANY_FOLDER''')
+                    r'''It appears that you're running from a directory that isn't shared to your docker Daemon. Try running from a directory under your HOME, e.g. C:\Users\$YOUR_NAME\$ANY_FOLDER'''
+                )
 
         print(res.stdout.decode('utf8'))
         print(res.stderr.decode('utf8'), file=sys.stderr)
@@ -388,8 +417,18 @@ def cli():
 
 @click.command()
 @click.option('--verbose', '-v', is_flag=True)
-@click.option('--cpu', '-c', help="the cpu to use in the compute container (defaults to 1024). See https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-cpu-memory-error.html for possible settings", type=(int))
-@click.option('--memory', '-m', help="the memory to use in the compute container (defaults to 8192). See https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-cpu-memory-error.html for possible settings", type=(int))
+@click.option(
+    '--cpu',
+    '-c',
+    help=
+    "the cpu to use in the compute container (defaults to 1024). See https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-cpu-memory-error.html for possible settings",
+    type=(int))
+@click.option(
+    '--memory',
+    '-m',
+    help=
+    "the memory to use in the compute container (defaults to 8192). See https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-cpu-memory-error.html for possible settings",
+    type=(int))
 def setup(verbose, cpu, memory):
     """Sets up a Numer.ai compute node in AWS"""
     terraform_setup(verbose, cpu, memory)
@@ -491,15 +530,15 @@ def build(verbose):
 def docker_cleanup(verbose):
     keys = load_keys()
 
-    ecr_client = boto3.client('ecr', region_name='us-east-1',
-                              aws_access_key_id=keys.aws_public, aws_secret_access_key=keys.aws_secret)
+    ecr_client = boto3.client('ecr',
+                              region_name='us-east-1',
+                              aws_access_key_id=keys.aws_public,
+                              aws_secret_access_key=keys.aws_secret)
 
-    resp = ecr_client.list_images(
-        repositoryName='numerai-submission',
-        filter={
-            'tagStatus': 'UNTAGGED',
-        }
-    )
+    resp = ecr_client.list_images(repositoryName='numerai-submission',
+                                  filter={
+                                      'tagStatus': 'UNTAGGED',
+                                  })
 
     imageIds = resp['imageIds']
     if len(imageIds) == 0:
@@ -532,17 +571,24 @@ def deploy(verbose):
 
     keys = load_keys()
 
-    ecr_client = boto3.client('ecr', region_name='us-east-1',
-                              aws_access_key_id=keys.aws_public, aws_secret_access_key=keys.aws_secret)
+    ecr_client = boto3.client('ecr',
+                              region_name='us-east-1',
+                              aws_access_key_id=keys.aws_public,
+                              aws_secret_access_key=keys.aws_secret)
 
     token = ecr_client.get_authorization_token()  # TODO: use registryIds
     username, password = base64.b64decode(
-        token['authorizationData'][0]['authorizationToken']).decode().split(':')
+        token['authorizationData'][0]['authorizationToken']).decode().split(
+            ':')
 
     if verbose:
         click.echo('running: docker login')
     res = subprocess.run(
-        '''docker login -u {username} -p {password} {docker_repo}'''.format(**locals()), stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+        '''docker login -u {username} -p {password} {docker_repo}'''.format(
+            **locals()),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        shell=True)
     res.check_returncode()
 
     c = '''docker push {docker_repo}'''.format(**locals())
@@ -583,23 +629,28 @@ def test_webhook(quiet):
         click.echo("request success")
         click.echo(req.json())
 
-        click.echo(Fore.YELLOW + "You can now run `numerai compute status` or `numerai compute logs` to see your compute node running. Note that `numerai compute logs` won't work until the task is in the RUNNING state, so watch `numerai compute status` for that to happen.")
+        click.echo(
+            Fore.YELLOW +
+            "You can now run `numerai compute status` or `numerai compute logs` to see your compute node running. Note that `numerai compute logs` won't work until the task is in the RUNNING state, so watch `numerai compute status` for that to happen."
+        )
 
 
 def get_latest_task(keys, verbose):
-    ecs_client = boto3.client('ecs', region_name='us-east-1',
-                              aws_access_key_id=keys.aws_public, aws_secret_access_key=keys.aws_secret)
-    tasks = ecs_client.list_tasks(
-        cluster='numerai-submission-ecs-cluster', desiredStatus="RUNNING")
+    ecs_client = boto3.client('ecs',
+                              region_name='us-east-1',
+                              aws_access_key_id=keys.aws_public,
+                              aws_secret_access_key=keys.aws_secret)
+    tasks = ecs_client.list_tasks(cluster='numerai-submission-ecs-cluster',
+                                  desiredStatus="RUNNING")
     if len(tasks["taskArns"]) == 0:
-        tasks = ecs_client.list_tasks(
-            cluster='numerai-submission-ecs-cluster', desiredStatus="STOPPED")
+        tasks = ecs_client.list_tasks(cluster='numerai-submission-ecs-cluster',
+                                      desiredStatus="STOPPED")
 
     if len(tasks["taskArns"]) == 0:
         return None
 
-    tasks = ecs_client.describe_tasks(
-        cluster='numerai-submission-ecs-cluster', tasks=[tasks["taskArns"][0]])
+    tasks = ecs_client.describe_tasks(cluster='numerai-submission-ecs-cluster',
+                                      tasks=[tasks["taskArns"][0]])
 
     return tasks['tasks'][0]
 
@@ -616,7 +667,8 @@ def status(verbose):
 
     if task is None:
         raise exception_with_msg(
-            "No tasks in the PENDING/RUNNING/STOPPED state found. This may mean that your task has been finished for a long time, and no longer exists. Check `numerai compute logs` and `numerai compute logs -l lambda` to see what happened.")
+            "No tasks in the PENDING/RUNNING/STOPPED state found. This may mean that your task has been finished for a long time, and no longer exists. Check `numerai compute logs` and `numerai compute logs -l lambda` to see what happened."
+        )
 
     click.echo("task ID: " + task["taskArn"])
     click.echo("status : " + task["lastStatus"])
@@ -625,9 +677,21 @@ def status(verbose):
 
 @compute.command()
 @click.option('--verbose', '-v', is_flag=True)
-@click.option('--num-lines', '-n', help="the number of log lines to return", default=20, type=(int))
-@click.option("--log-type", "-l", help="the log type to lookup. Options are fargate|lambda. Default is fargate", default="fargate")
-@click.option("--follow-tail", "-f", help="tail the logs constantly", is_flag=True)
+@click.option('--num-lines',
+              '-n',
+              help="the number of log lines to return",
+              default=20,
+              type=(int))
+@click.option(
+    "--log-type",
+    "-l",
+    help=
+    "the log type to lookup. Options are fargate|lambda. Default is fargate",
+    default="fargate")
+@click.option("--follow-tail",
+              "-f",
+              help="tail the logs constantly",
+              is_flag=True)
 def logs(verbose, num_lines, log_type, follow_tail):
     """
     Get the logs from the last run task
@@ -639,18 +703,25 @@ def logs(verbose, num_lines, log_type, follow_tail):
             click.echo(
                 '...more log lines available: use -n option to get more...')
         for event in events["events"]:
-            click.echo(str(datetime.fromtimestamp(
-                event['timestamp']/1000)) + ':' + event['message'])
+            click.echo(
+                str(datetime.fromtimestamp(event['timestamp'] / 1000)) + ':' +
+                event['message'])
 
-    def get_name_and_print_logs(logs_client, family, limit, nextToken=None, raise_on_error=True):
-        streams = logs_client.describe_log_streams(
-            logGroupName=family, orderBy="LastEventTime", descending=True)
+    def get_name_and_print_logs(logs_client,
+                                family,
+                                limit,
+                                nextToken=None,
+                                raise_on_error=True):
+        streams = logs_client.describe_log_streams(logGroupName=family,
+                                                   orderBy="LastEventTime",
+                                                   descending=True)
 
         if len(streams['logStreams']) == 0:
             if not raise_on_error:
                 return False
             raise exception_with_msg(
-                "No logs found. Make sure the webhook has triggered (check 'numerai compute logs -l lambda'). If it has, then check `numerai compute status` and make sure it's in the RUNNING state (this can take a few minutes). Also, make sure your webhook has triggered at least once by running 'curl `cat .numerai/submission_url.txt`'")
+                "No logs found. Make sure the webhook has triggered (check 'numerai compute logs -l lambda'). If it has, then check `numerai compute status` and make sure it's in the RUNNING state (this can take a few minutes). Also, make sure your webhook has triggered at least once by running 'curl `cat .numerai/submission_url.txt`'"
+            )
         name = streams['logStreams'][0]['logStreamName']
 
         kwargs = {}  # boto is weird, and doesn't allow `None` for parameters
@@ -658,16 +729,19 @@ def logs(verbose, num_lines, log_type, follow_tail):
             kwargs['nextToken'] = nextToken
         if limit is not None:
             kwargs['limit'] = limit
-        events = logs_client.get_log_events(
-            logGroupName=family, logStreamName=name, **kwargs)
+        events = logs_client.get_log_events(logGroupName=family,
+                                            logStreamName=name,
+                                            **kwargs)
         click.echo("log for " + family + ":" + name + ":")
         print_logs(events, limit)
         return True
 
     keys = load_keys()
 
-    logs_client = boto3.client('logs', region_name='us-east-1',
-                               aws_access_key_id=keys.aws_public, aws_secret_access_key=keys.aws_secret)
+    logs_client = boto3.client('logs',
+                               region_name='us-east-1',
+                               aws_access_key_id=keys.aws_public,
+                               aws_secret_access_key=keys.aws_secret)
 
     if log_type == "fargate":
         family = "/fargate/service/numerai-submission"
@@ -677,19 +751,24 @@ def logs(verbose, num_lines, log_type, follow_tail):
         return
     else:
         raise exception_with_msg(
-            "Unknown log type, expected 'fargate' or 'lambda': got " + log_type)
+            "Unknown log type, expected 'fargate' or 'lambda': got " +
+            log_type)
 
     def latest_task_printer(task, keys, verbose):
         if task is None:
+            click.echo(Fore.RED + "task not found or is in the STOPPED state")
+        elif task['desiredStatus'] == 'RUNNING' and task[
+                'lastStatus'] != 'RUNNING':
             click.echo(
-                Fore.RED + "task not found or is in the STOPPED state")
-        elif task['desiredStatus'] == 'RUNNING' and task['lastStatus'] != 'RUNNING':
-            click.echo(
-                Fore.RED + "there is another task in the PENDING state. Check its status with `numerai compute status` and then rerun the logs command once it is RUNNING.")
+                Fore.RED +
+                "there is another task in the PENDING state. Check its status with `numerai compute status` and then rerun the logs command once it is RUNNING."
+            )
 
     def task_status(task):
-        ecs_client = boto3.client('ecs', region_name='us-east-1',
-                                  aws_access_key_id=keys.aws_public, aws_secret_access_key=keys.aws_secret)
+        ecs_client = boto3.client('ecs',
+                                  region_name='us-east-1',
+                                  aws_access_key_id=keys.aws_public,
+                                  aws_secret_access_key=keys.aws_secret)
         resp = ecs_client.describe_tasks(
             cluster='numerai-submission-ecs-cluster', tasks=[task["taskArn"]])
 
@@ -699,11 +778,13 @@ def logs(verbose, num_lines, log_type, follow_tail):
         return tasks[0]
 
     def get_log_for_task_id(task_id):
-        streams = logs_client.describe_log_streams(
-            logGroupName=family, orderBy="LastEventTime", descending=True)
+        streams = logs_client.describe_log_streams(logGroupName=family,
+                                                   orderBy="LastEventTime",
+                                                   descending=True)
         if len(streams['logStreams']) == 0:
             raise exception_with_msg(
-                "No logs found. Make sure the webhook has triggered (check 'numerai compute logs -l lambda'). If it has, then check `numerai compute status` and make sure it's in the RUNNING state (this can take a few minutes). Also, make sure your webhook has triggered at least once by running 'curl `cat .numerai/submission_url.txt`'")
+                "No logs found. Make sure the webhook has triggered (check 'numerai compute logs -l lambda'). If it has, then check `numerai compute status` and make sure it's in the RUNNING state (this can take a few minutes). Also, make sure your webhook has triggered at least once by running 'curl `cat .numerai/submission_url.txt`'"
+            )
 
         for stream in streams['logStreams']:
             if stream['logStreamName'].endswith(task_id):
@@ -732,8 +813,9 @@ def logs(verbose, num_lines, log_type, follow_tail):
         name = get_log_for_task_id(task_id)
 
     task = get_latest_task(keys, verbose)
-    events = logs_client.get_log_events(
-        logGroupName=family, logStreamName=name, limit=num_lines)
+    events = logs_client.get_log_events(logGroupName=family,
+                                        logStreamName=name,
+                                        limit=num_lines)
 
     click.echo("log for " + family + ":" + name + ":")
     print_logs(events, num_lines)
@@ -741,14 +823,17 @@ def logs(verbose, num_lines, log_type, follow_tail):
     if follow_tail:
         while True:
             events = logs_client.get_log_events(
-                logGroupName=family, logStreamName=name, nextToken=events['nextForwardToken'])
+                logGroupName=family,
+                logStreamName=name,
+                nextToken=events['nextForwardToken'])
             for event in events["events"]:
-                click.echo(str(datetime.fromtimestamp(
-                    event['timestamp']/1000)) + ':' + event['message'])
+                click.echo(
+                    str(datetime.fromtimestamp(event['timestamp'] / 1000)) +
+                    ':' + event['message'])
             status = task_status(task)["lastStatus"]
             if status != "RUNNING":
-                click.echo(Fore.YELLOW + "Task is now in the " +
-                           status + " state")
+                click.echo(Fore.YELLOW + "Task is now in the " + status +
+                           " state")
                 return
 
 
