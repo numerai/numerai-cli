@@ -631,7 +631,7 @@ def test_webhook(quiet):
 
         click.echo(
             Fore.YELLOW +
-            "You can now run `numerai compute status` or `numerai compute logs` to see your compute node running. Note that `numerai compute logs` won't work until the task is in the RUNNING state, so watch `numerai compute status` for that to happen."
+            "You can now run `numerai compute status` or `numerai compute logs -f` to see your compute node running."
         )
 
 
@@ -781,10 +781,6 @@ def logs(verbose, num_lines, log_type, follow_tail):
         streams = logs_client.describe_log_streams(logGroupName=family,
                                                    orderBy="LastEventTime",
                                                    descending=True)
-        if len(streams['logStreams']) == 0:
-            raise exception_with_msg(
-                "No logs found. Make sure the webhook has triggered (check 'numerai compute logs -l lambda'). If it has, then check `numerai compute status` and make sure it's in the RUNNING state (this can take a few minutes). Also, make sure your webhook has triggered at least once by running 'curl `cat .numerai/submission_url.txt`'"
-            )
 
         for stream in streams['logStreams']:
             if stream['logStreamName'].endswith(task_id):
