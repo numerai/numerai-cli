@@ -3,7 +3,7 @@
 [![CircleCI](https://circleci.com/gh/numerai/numerai-cli.svg?style=svg)](https://circleci.com/gh/numerai/numerai-cli)
 [![PyPI](https://img.shields.io/pypi/v/numerai-cli.svg?color=brightgreen)](https://pypi.org/project/numerai-cli/)
 
-This is a CLI for setting up a Numerai compute node and deplying your models to it. This sets up a compute cluster in AWS (Amazon Web Services), and is architected to cost a minimal amount of money to run (on average, you will spend less than $1 per month).
+This is a CLI for setting up a Numerai compute node and deploying your models to it. This sets up a compute cluster in AWS (Amazon Web Services), and is architected to cost a minimal amount of money to run (on average, you will spend less than $1 per month).
 
 Questions or feedback? Join us at [RocketChat](https://community.numer.ai/channel/compute)
 
@@ -164,7 +164,7 @@ There's actually a bunch of other bits of glue in AWS that are setup to run this
 
 ### Submission Webhook URL
 
-This is the url that you provide back to Numerai. It's the thing that triggers the lambda and schedules your job to run. Once you've setup the webhook in your Numerai account, it will be called Saturday morning right after a new round opens, and if your job fails (determined by not having submitted all submissions sucessfully) then it will be triggered again around 24 hours later.
+This is the url that you provide back to Numerai. It's the thing that triggers the lambda and schedules your job to run. Once you've setup the webhook in your Numerai account, it will be called Saturday morning right after a new round opens, and if your job fails (determined by not having submitted all submissions successfully) then it will be triggered again around 24 hours later.
 
 ## Docker example
 
@@ -230,7 +230,7 @@ ARG NUMERAI_SECRET_KEY
 ENV NUMERAI_SECRET_KEY=$NUMERAI_SECRET_KEY
 ```
 
-These are docker aguments that `numerai train/run/deploy` will always pass into docker. They are then set in your environment, so that you can access them from your script like so:
+These are docker arguments that `numerai train/run/deploy` will always pass into docker. They are then set in your environment, so that you can access them from your script like so:
 
 ```
 import os
@@ -242,7 +242,7 @@ secret_key = os.environ["NUMERAI_SECRET_KEY"]
 CMD [ "python", "./predict.py" ]
 ```
 
-This sets the default command to run your docker container. This is overriden in the `numerai docker train` command, but otherwise this will be the command that is always run when using `numerai docker run` and `numerai docker deploy`
+This sets the default command to run your docker container. This is overridden in the `numerai docker train` command, but otherwise this will be the command that is always run when using `numerai docker run` and `numerai docker deploy`
 
 ### model.py
 
@@ -379,7 +379,7 @@ You need to signup for AWS and create an administrative IAM user
 
 1.  Sign up for an AWS account: https://portal.aws.amazon.com/billing/signup
 2.  Create an IAM user with Administrative access: https://console.aws.amazon.com/iam/home?region=us-east-1#/users$new
-    1.  Give user a name and select "Programmatic accesss"
+    1.  Give user a name and select "Programmatic access"
     2.  For permissions, click "Attach existing policies directly" and click the check box next to "AdministratorAccess"
     3.  Save the "Access key ID" and "Secret access key" from the last step. You will need them later
 
