@@ -3,6 +3,7 @@ import os
 from os import path
 import configparser
 import shutil
+from stat import S_IRGRP, S_IROTH
 import subprocess
 import base64
 import sys
@@ -70,6 +71,12 @@ def load_keys():
 
 
 def load_or_setup_keys():
+    # Check permission and prompt to fix
+    if path.exists(key_file) and os.stat(key_file).st_mode & (S_IRGRP | S_IROTH):
+        click.secho("WARNING: %s is readable by others" % key_file, fg='red')
+        if click.confirm('Fix permissions?', default=True, show_default=True):
+            os.chmod(key_file, 0o600)
+
     try:
         return load_keys()
     except:
@@ -130,7 +137,7 @@ def setup_keys():
     check_aws_validity(aws_public, aws_private)
     check_numerai_validity(numerai_public, numerai_private)
 
-    with open(get_key_file(), 'w') as configfile:
+    with open(os.open(get_key_file(), os.O_CREAT | os.O_WRONLY, 0o600), 'w') as configfile:
         config.write(configfile)
 
     return load_keys()
