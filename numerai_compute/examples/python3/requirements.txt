@@ -1,1 +1,1 @@
-numerox>=4
+numerox>=4.1.1
