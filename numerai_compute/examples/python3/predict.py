@@ -42,7 +42,13 @@ for tournament_name in tournaments:
     prediction_filename = '/tmp/prediction_' + tournament_name + '.csv'
 
     submission_id = nx.upload(
-        prediction_filename, tournament_name, public_id, secret_key, block=False, n_tries=3)
+        prediction_filename,
+        tournament_name,
+        public_id,
+        secret_key,
+        block=False,
+        n_tries=3,
+        model_id=model.model_id)
 
 # staking variables
 # change block in nx.upload to block=True. This is because you can't stake until the submission has finished its checks, which take a few minutes
