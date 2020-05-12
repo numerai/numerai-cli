@@ -100,7 +100,7 @@ def check_aws_validity(key_id, secret):
 def check_numerai_validity(key_id, secret):
     try:
         napi = numerapi.NumerAPI(key_id, secret)
-        napi.get_user()
+        napi.get_account()
         return True
 
     except Exception:
