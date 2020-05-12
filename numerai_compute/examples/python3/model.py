@@ -8,6 +8,9 @@ from sklearn.linear_model import LinearRegression
 
 class LinearModel(nx.Model):
 
+    # You can find your model_id at https://numer.ai/models
+    model_id = None
+
     def __init__(self, verbose=False):
         self.verbose = verbose
         self.model = LinearRegression()

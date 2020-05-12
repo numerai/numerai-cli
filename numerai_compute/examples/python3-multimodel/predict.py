@@ -71,5 +71,5 @@ if __name__ == '__main__':
     logger.info('Downloading dataset')
     data = nx.download('numerai_dataset.zip')
 
-    for model_class in model.models[1:]:
+    for model_class in model.models:
         predict_and_submit(data, model_class)

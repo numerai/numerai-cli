@@ -293,10 +293,10 @@ numerai docker copy-example
 
 WARNING: this will overwrite the following files if they exist: Dockerfile, model.py, train.py, predict.py, and requirements.txt
 
-There is also a more complicated example using multiple Numerai accounts:
+***If you manage multiple tournament models, you should copy the `python3-multimodel` example***
 
 ```
-numerai docker copy-example --python3-multiaccount
+numerai docker copy-example --python3-multimodel
 ```
 
 As well as using R:

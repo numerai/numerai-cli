@@ -211,8 +211,8 @@ def copy_docker_python3(verbose, force):
     copy_file(code_dir, "requirements.txt", verbose, force)
 
 
-def copy_docker_python3_multiaccount(verbose, force):
-    code_dir = path.join(get_code_dir(), "examples", "python3-multiaccount")
+def copy_docker_python3_multimodel(verbose, force):
+    code_dir = path.join(get_code_dir(), "examples", "python3-multimodel")
     copy_file(code_dir, "Dockerfile", verbose, force)
     copy_file(code_dir, "model.py", verbose, force)
     copy_file(code_dir, "train.py", verbose, force)
@@ -451,13 +451,13 @@ def docker():
 @click.option('--quiet', '-q', is_flag=True)
 @click.option('--force', '-f', is_flag=True)
 @click.option('--rlang', '-r', is_flag=True)
-@click.option('--python3-multiaccount', '-m', is_flag=True)
-def copy_example(quiet, force, rlang, python3_multiaccount):
+@click.option('--python3-multimodel', '-m', is_flag=True)
+def copy_example(quiet, force, rlang, python3_multimodel):
     """Copies a few example files into the current directory"""
     if rlang:
         copy_docker_rlang(not quiet, force)
-    elif python3_multiaccount:
-        copy_docker_python3_multiaccount(not quiet, force)
+    elif python3_multimodel:
+        copy_docker_python3_multimodel(not quiet, force)
     else:
         copy_docker_python3(not quiet, force)
 
