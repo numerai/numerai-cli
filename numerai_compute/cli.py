@@ -435,6 +435,12 @@ def setup(verbose, cpu, memory):
 
 
 @click.command()
+def configure():
+    """Setup configuration file with Numer.ai and AWS secrets"""
+    setup_keys()
+
+
+@click.command()
 @click.option('--verbose', '-v', is_flag=True)
 def destroy(verbose):
     """Destroys a previously setup Numer.ai compute node"""
@@ -838,6 +844,7 @@ def main():
 
     cli.add_command(setup)
     cli.add_command(destroy)
+    cli.add_command(configure)
 
     cli.add_command(docker)
     cli.add_command(compute)
