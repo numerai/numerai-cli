@@ -48,7 +48,7 @@ for tournament_name in tournaments:
         secret_key,
         block=False,
         n_tries=3,
-        model_id=model.model_id)
+        model_id=m.model_id)
 
 # staking variables
 # change block in nx.upload to block=True. This is because you can't stake until the submission has finished its checks, which take a few minutes
