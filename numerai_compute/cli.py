@@ -261,19 +261,6 @@ def terraform_setup(verbose, cpu, memory):
     if not path.exists(numerai_dir):
         copy_terraform()
 
-    if cpu is not None or memory is not None:
-        if cpu is None:
-            cpu = 1024
-        if memory is None:
-            memory = 8192
-
-        with open(path.join(get_code_dir(), "terraform_variables_template.tf"),
-                  'r') as template:
-            with open(path.join(get_project_numerai_dir(), 'variables.tf'),
-                      'w') as out:
-                out.write(template.read().format(fargate_cpu=cpu,
-                                                 fargate_memory=memory))
-
     # Format path for mingw after checking that it exists
     numerai_dir = format_path_if_mingw(numerai_dir)
 
@@ -346,7 +333,7 @@ If you're sure docker is already installed, then for some reason it isn't in you
     res.check_returncode()
     click.echo('succesfully setup .numerai with terraform')
 
-    c = '''docker run -e "AWS_ACCESS_KEY_ID={keys.aws_public}" -e "AWS_SECRET_ACCESS_KEY={keys.aws_secret}" --rm -it -v {numerai_dir}:/opt/plan -w /opt/plan hashicorp/terraform:light apply -auto-approve'''.format(
+    c = '''docker run -e "AWS_ACCESS_KEY_ID={keys.aws_public}" -e "AWS_SECRET_ACCESS_KEY={keys.aws_secret}" --rm -it -v {numerai_dir}:/opt/plan -w /opt/plan hashicorp/terraform:light apply -var="fargate_cpu={cpu}" -var="fargate_memory={memory}" -auto-approve'''.format(
         **locals())
     if verbose:
         click.echo('running: ' + keys.sanitize_message(c))

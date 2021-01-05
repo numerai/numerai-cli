@@ -198,9 +198,20 @@ resource "aws_iam_role_policy_attachment" "lambda_ecsTaskExecutionRole" {
 }
 
 resource "archive_file" "exports_js" {
-  source_file = "exports.js"
+  source_file = "lambda/exports.js"
   output_path = "exports.zip"
   type = "zip"
+}
+
+resource "archive_file" "node_modules" {
+  source_dir = "lambda/nodejs"
+  output_path = "nodejs.zip"
+  type = "zip"
+}
+
+resource "aws_lambda_layer_version" "node_modules" {
+  layer_name = "node_modules"
+  filename = archive_file.node_modules.output_path
 }
 
 resource "aws_lambda_function" "submission" {
@@ -216,9 +227,9 @@ resource "aws_lambda_function" "submission" {
 
   runtime    = "nodejs10.x"
   depends_on = [
-    "aws_iam_role_policy_attachment.lambda_logs",
-    "aws_iam_role_policy_attachment.lambda_ecsTaskExecutionRole",
-    "aws_cloudwatch_log_group.lambda"
+    aws_iam_role_policy_attachment.lambda_logs,
+    aws_iam_role_policy_attachment.lambda_ecsTaskExecutionRole,
+    aws_cloudwatch_log_group.lambda
   ]
 
   environment {

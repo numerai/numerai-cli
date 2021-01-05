@@ -103,8 +103,21 @@ venv.bak/
 # mypy
 .mypy_cache/
 
-node_modules
+# User-specific
+.numerai*
+*/node_modules
 .terraform*
-terraform.tfstate*
+terraform.tfstate
+
+# created by copy_example
+.dockerignore
+Dockerfile
+model.py
+predict.py
+requirements.txt
+train.py
 
 *.zip
+
+.idea/
+.DS_STORE
