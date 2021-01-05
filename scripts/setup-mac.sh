@@ -1,5 +1,4 @@
 #!/bin/bash
-set -e
 
 if [[ $(which brew) = "brew not installed" ]]; then
   echo "Homebrew not found, installing now..."

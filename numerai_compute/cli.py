@@ -181,7 +181,7 @@ def read_submission_url_file():
         )
 
     with open(f, 'r') as f:
-        return f.read().strip()
+        return f.read().strip().replace('"', '')
 
 
 def copy_terraform():
@@ -279,7 +279,7 @@ def terraform_setup(verbose, cpu, memory):
 
     keys = load_or_setup_keys()
 
-    c = "docker run --rm -it -v {numerai_dir}:/opt/plan -w /opt/plan hashicorp/terraform:light init".format(
+    c = "docker run --rm -it -v {numerai_dir}:/opt/plan -w /opt/plan hashicorp/terraform:0.14.3 init -upgrade".format(
         **locals())
     if verbose:
         click.echo('running: ' + keys.sanitize_message(c))
