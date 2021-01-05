@@ -2,6 +2,10 @@ terraform {
   required_version = "~> 0.14.0"
 }
 
+provider "archive" {
+  version = "~> 2.0.0"
+}
+
 # Specify the provider and access details
 provider "aws" {
   profile = "default"
@@ -107,9 +111,9 @@ resource "aws_ecs_task_definition" "app" {
 
   container_definitions = jsonencode([
     {
-      cpu:var.fargate_cpu,
+      cpu: var.fargate_cpu,
       image: aws_ecr_repository.app.repository_url,
-      memory:var.fargate_memory,
+      memory: var.fargate_memory,
       name: "app",
       networkMode: "awsvpc",
       portMappings: [
@@ -215,7 +219,7 @@ resource "aws_lambda_layer_version" "node_modules" {
 }
 
 resource "aws_lambda_function" "submission" {
-  filename      = archive_file.exports_js
+  filename      = archive_file.exports_js.output_path
   function_name = var.app_name
   role          = aws_iam_role.iam_for_lambda.arn
   handler       = "exports.handler"
@@ -230,6 +234,10 @@ resource "aws_lambda_function" "submission" {
     aws_iam_role_policy_attachment.lambda_logs,
     aws_iam_role_policy_attachment.lambda_ecsTaskExecutionRole,
     aws_cloudwatch_log_group.lambda
+  ]
+
+  layers = [
+    aws_lambda_layer_version.node_modules.arn
   ]
 
   environment {
