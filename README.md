@@ -23,12 +23,13 @@ Questions or feedback? Join us at [RocketChat](https://community.numer.ai/channe
 
 All you need is:
 
-1.  AWS (Amazon Web Services) account setup with API keys
-2.  Numerai API Key (Public ID and secret key)
-3.  Docker setup on your machine
-4.  Python3 (your model code doesn't have to use Python3, but this CLI tool needs it)
+1.  AWS (Amazon Web Services) account setup 
+2.  AWS API keys (Access key ID and Secret Access Key)
+3.  Numerai API Key (Public ID and secret key)
+4.  Docker setup on your machine
+5.  Python3 (your model code doesn't have to use Python3, but this CLI tool needs it)
 
-For OSX, you can run the `setup-mac.sh` script from your terminal by running `. /scripts/setup-mac.sh` from the numerai-cli directory.
+For OSX, you can download and run `scripts/setup-mac.sh` to setup your computer for this tool.
 See the [Prerequisites Help](#prerequisites-help) section if you need help getting these setup.
 
 This project has been tested and found working on OSX, Windows 10, and Ubuntu 18.04, but should theoretically work anywhere that docker and Python are available.

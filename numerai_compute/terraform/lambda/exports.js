@@ -24,7 +24,7 @@ exports.handler = async (event) => {
     console.log("running task with taskDefinition:", params.taskDefinition);
     const taskStart = await ecs.runTask(params).promise();
 
-    console.log("started task ", JSON.stringify(taskStart));
+    console.log("started task with id:", taskStart.tasks[0].taskArn);
 
     const message = { status: "pending" };
     // TODO: poll for a few minutes and check all submissions in numerapi

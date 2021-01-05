@@ -208,14 +208,14 @@ resource "archive_file" "exports_js" {
 }
 
 resource "archive_file" "node_modules" {
-  source_dir = "lambda/nodejs"
+  source_dir = ""
   output_path = "nodejs.zip"
   type = "zip"
 }
 
 resource "aws_lambda_layer_version" "node_modules" {
   layer_name = "node_modules"
-  filename = archive_file.node_modules.output_path
+  filename = "lambda/layer.zip"
 }
 
 resource "aws_lambda_function" "submission" {
