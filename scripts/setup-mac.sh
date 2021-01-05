@@ -1,18 +1,33 @@
-if [ $(which brew) = 'brew not installed' ]; then
+#!/bin/bash
+set -e
+
+if [[ $(which brew) = "brew not installed" ]]; then
   echo "Homebrew not found, installing now..."
   xcode-select --install
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
+  echo "Homebrew installed! Updating..."
+else
+  echo "Homebrew installed! Updating..."
 fi
-echo "Homebrew installed! Updating..."
 brew update
 
-if [ $(which python3) = 'python3 not installed' ]; then
+if [[ $(which python3) = "python3 not installed" ]]; then
   echo "Python 3 not found, installing with homebrew now..."
   brew install python
+  echo "Python 3 installed!"
+else
+  echo "Python 3 installed!"
 fi
-echo "Python 3 installed!"
 
-if [ $(which docker) = 'docker not found' ]; then
+if [[ $(which numerai) = "numerai not found" ]]; then
+  echo "Numerai CLI not found, installing with pip3..."
+  pip3 install numerai-cli
+  echo "Numerai CLI installed!"
+else
+  echo "Numerai CLI installed!"
+fi
+
+if [[ $(which docker) = "docker not found" ]]; then
   echo "Docker not found, downloading Docker Desktop now..."
   curl https://desktop.docker.com/mac/stable/Docker.dmg --output docker.dmg
 
@@ -25,10 +40,11 @@ if [ $(which docker) = 'docker not found' ]; then
   rm docker.dmg
 
   echo "Starting Docker, please walk through the setup steps to finish the installation..."
-  open ./Applications/Docker.app
+  open /Applications/Docker.app
 
   echo "Docker started! After finishing the install, run 'docker' in your terminal to ensure it's installed."
+else
+  echo "Docker installed!"
 fi
-echo "Docker installed!"
 
 echo "Setup done :)"
