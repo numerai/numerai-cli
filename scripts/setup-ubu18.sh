@@ -1,8 +1,10 @@
-apt update
+#!bin/bash
+
 {
+  apt update
   if [[ $(which python3) = "" ]]; then
     echo "Python 3 not found, installing with apt now..."
-    apt install -y python3
+    apt install -y python3 python3-pip
     echo "Python 3 installed!"
   else
     echo "Python 3 installed!"

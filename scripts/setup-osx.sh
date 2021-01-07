@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -e
-
 {
   # Install xcode cli tools if not found
   if [[ $(which xcode-select) = "xcode-select not installed" ]]; then
@@ -14,11 +12,10 @@ set -e
     echo "Python 3 not found, installing now..."
 
     sys_ver_os=$(system_profiler SPSoftwareDataType | grep "System Version:")
-    if [[ $sys_ver =~ .*[macOS 11\.|OS X 10\.[9|1\d]] || ]]; then
+    if [[ sys_ver_os =~ (.*[macOS|OS X] [10\.9|10.1\d|11\.]) ]]; then
       echo "Mac OS 10.9 or later detected, installing Python 3.9.1"
 
-      sys_ver_chip=$(system_profiler SPHardwareDataType | grep "Processor Name:" )
-      if [[ $sys_ver_chip =~ .*Intel.* ]]; then
+      if [[ $(system_profiler SPHardwareDataType | grep "Processor Name:" ) =~ .*Intel.* ]]; then
         echo "Intel chip detected..."
         curl https://www.python.org/ftp/python/3.9.1/python-3.9.1-macosx10.9.pkg --output ~/Downloads/python-3.9.1-installer.pkg
       else
@@ -29,7 +26,7 @@ set -e
 
     else
       echo "Your Mac OS version is too old, consider updating to 10.9 before installing python..."
-      echo $sys_ver
+      echo $sys_ver_os
       exit 1
     fi
 
