@@ -36,8 +36,12 @@ try {
     echo "Installation locations:"
     Get-Command python -errorAction SilentlyContinue
     Get-Command docker -errorAction SilentlyContinue
+
+    echo "Setup done, ready for you to install numerai-cli :)"
 }
 Catch [Exception] {
+    echo "Setup script failed, please include the following along with the error if you report this:"
     Write-Host $_.Exception | format-list -force
+    Get-ComputerInfo
 }
 
