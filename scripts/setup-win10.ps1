@@ -1,4 +1,4 @@
-# to run: Powershell.exe -File setup-win.ps1
+
 [CmdletBinding()] Param(
     $downloadsDir = "C:\Users\$env:UserName\Downloads",
     $installsDir = "C:\Program Files",
