@@ -1,61 +1,90 @@
-import numerox as nx
-import numerapi
 import os
-import model
+import logging
+import joblib
+import numerapi
+import pandas as pd
+from sklearn.linear_model import LinearRegression
 
-tournaments = nx.tournament_names()
-print(tournaments)
+TRAINED_MODEL_PATH = './trained_model'
+
+# initialize our numerai api client
+napi = numerapi.NumerAPI()
 
 
-# download dataset from numerai
-data = nx.download('numerai_dataset.zip')
+def download_data():
+    logging.info('downloading tournament data files')
+    # create an API client and download current data
+    file_path = napi.download_current_dataset()
+    file_path = file_path.split('.zip')[0]         # we only want the unzipped directory
+    logging.info(f'output path: {file_path}')
 
-for tournament_name in tournaments:
-    saved_model_name = 'model_trained_' + tournament_name
-    if os.path.exists(saved_model_name):
-        print("using saved model for", tournament_name)
-        m = model.LinearModel.load(saved_model_name)
-    else:
-        print("saved model not found for", tournament_name)
-        m = model.LinearModel(verbose=True)
+    train_data_path = f'{file_path}/numerai_training_data.csv'
+    predict_data_path = f'{file_path}/numerai_tournament_data.csv'
+    predict_output_path = f'{file_path}/predictions.csv'
 
-        print("training model for", tournament_name)
-        m.fit(data['train'], tournament_name)
+    return train_data_path, predict_data_path, predict_output_path
 
-    print("running predictions for", tournament_name, flush=True)
-    # fit model with train data and make predictions for tournament data
-    prediction = nx.production(m, data, tournament=tournament_name)
 
-    # save predictions to csv file
-    prediction_filename = '/tmp/prediction_' + tournament_name + '.csv'
-    prediction.to_csv(prediction_filename, verbose=True)
+def train(train_data_path, force_training=False):
+    # if we have a trained model already and we aren't forcing a training session
+    if os.path.exists(TRAINED_MODEL_PATH) and not force_training:
+        logging.info('loading existing trained model')
+        model = joblib.load(TRAINED_MODEL_PATH)
+        return model
 
-# submit the prediction
+    logging.info(f'reading training data')
+    train_data = pd.read_csv(train_data_path)
 
-# Numerai API key
-# You will need to create an API key by going to https://numer.ai/account and clicking "Add" under the "Your API keys" section.
-# Select the following permissions for the key: "Upload submissions", "Make stakes", "View historical submission info", "View user info"
-public_id = os.environ["NUMERAI_PUBLIC_ID"]
-secret_key = os.environ["NUMERAI_SECRET_KEY"]
+    logging.info('extracting features and targets')
+    train_ids = train_data.iloc[:, 0]           # get all rows and only first column
+    train_eras = train_data.iloc[:, 1]          # get all rows and only second column
+    train_features = train_data.iloc[:, 3:-1]   # get all rows and all columns from 4th to last-1
+    train_targets = train_data.iloc[:, -1]      # get all rows and only last column
 
-for tournament_name in tournaments:
-    prediction_filename = '/tmp/prediction_' + tournament_name + '.csv'
+    logging.info(f'training model')
+    model = LinearRegression()
+    model.fit(X=train_features, y=train_targets)
 
-    submission_id = nx.upload(
-        prediction_filename,
-        tournament_name,
-        public_id,
-        secret_key,
-        block=False,
-        n_tries=3,
-        model_id=m.model_id)
+    logging.info('saving features')
+    joblib.dump(model, TRAINED_MODEL_PATH)
 
-# staking variables
-# change block in nx.upload to block=True. This is because you can't stake until the submission has finished its checks, which take a few minutes
-# confidence = .501 # increase this number to signify your confidence in a minimum AUC. Can't go below .501
-# stake_value = .1 # the amount of NMR to stake
+    return model
 
-# napi = numerapi.NumerAPI(public_id, secret_key)
 
-# for tournament_name in tournaments:
-#   napi.stake(confidence, stake_value, nx.tournament_int(tournament_name))
+def predict(model, predict_data_path):
+    logging.info(f'reading prediction data')
+    predict_data = pd.read_csv(predict_data_path)
+
+    logging.info('extracting features')
+    predict_ids = predict_data.iloc[:, 0]           # get all rows and only first column
+    predict_eras = predict_data.iloc[:, 1]            # get all rows and only second column
+    predict_features = predict_data.iloc[:, 3:-1]   # get all rows and all columns from 4th to last-1
+    predict_targets = predict_data.iloc[:, -1]      # get all rows and only last column
+
+    logging.info(f'generating predictions')
+    predictions = model.predict(predict_features)
+    predictions = pd.DataFrame(predictions, columns=['prediction'])
+    predictions.insert(0, "id", predict_ids)
+
+    return predictions
+
+
+def submit(predictions):
+    logging.info('writing predictions to file')
+    # numerai doesn't want the index, so don't write it to our file
+    predictions.to_csv(predict_output_path, index=False)
+
+    # Numerai API uses Environment variables to find your keys: NUMERAI_PUBLIC_ID and NUMERAI_SECRET_KEY
+    # these are set by docker via the numerai cli; see README for more info
+    logging.info(f'submitting')
+    napi.upload_predictions(predict_output_path)
+
+
+if __name__ == '__main__':
+    train_data_path, predict_data_path, predict_output_path = download_data()
+
+    model = train(train_data_path)
+
+    predictions = predict(model, predict_data_path)
+
+    submit(predictions)

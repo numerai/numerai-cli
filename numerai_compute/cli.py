@@ -205,7 +205,6 @@ def copy_file(directory, filename, verbose, force):
 def copy_docker_python3(verbose, force):
     code_dir = path.join(get_code_dir(), "examples", "python3")
     copy_file(code_dir, "Dockerfile", verbose, force)
-    copy_file(code_dir, "model.py", verbose, force)
     copy_file(code_dir, "train.py", verbose, force)
     copy_file(code_dir, "predict.py", verbose, force)
     copy_file(code_dir, "requirements.txt", verbose, force)
