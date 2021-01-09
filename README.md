@@ -29,7 +29,7 @@ All you need is:
 4.  Docker setup on your machine
 5.  Python3 (your model code doesn't have to use Python3, but this CLI tool needs it)
 
-For your convenience, we've included setup scripts in the `scripts` directory.
+For your convenience, we've included setup scripts in the `scripts` directory that will ensure the prerequisites are installed.
 You can download your setup script by selecting scripts > setup-[your OS] > Raw > right-click > Save As
 Then run one of the following commands in the same directory as your downloaded script:
     - Mac: `sudo . setup-mac.sh`
