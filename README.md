@@ -26,21 +26,32 @@ All you need is:
 1.  AWS (Amazon Web Services) account setup 
 2.  AWS API keys (Access key ID and Secret Access Key)
 3.  Numerai API Key (Public ID and secret key)
-4.  Docker setup on your machine
-5.  Python3 (your model code doesn't have to use Python3, but this CLI tool needs it)
+
+
+## Setup
 
 For your convenience, we've included setup scripts in the `scripts` directory that will ensure the prerequisites are installed.
-You can download your setup script by selecting scripts > setup-[your OS] > Raw > right-click > Save As
-Then run one of the following commands in the same directory as your downloaded script:
-    - Mac: `sudo . setup-mac.sh`
-    - Ubuntu 18: `sudo . setup-ubu18.sh`
-    - Windows 10: `Powershell.exe -File setup-win.ps1`
+You can download and run the setup script for your OS with one of the following commands:
+
+- Mac Terminal(cmd + space, type `terminal`, select `terminal.app`):
+    ```
+    curl https://raw.githubusercontent.com/numerai/numerai-cli/ndharasz/setup-scripts/scripts/setup-mac.sh | bash
+    ```
+
+- Ubuntu 18 Terminal (ctrl + alt + t):
+    ```
+    apt update && apt install -y libcurl4 curl && curl https://raw.githubusercontent.com/numerai/numerai-cli/ndharasz/setup-scripts/scripts/setup-ubu18.sh | bash
+    ```
+
+- Windows Command Prompt (windows key, type `cmd`, select Command Prompt):
+    ```
+    powershell -command "$Script = Invoke-WebRequest 'https://raw.githubusercontent.com/numerai/numerai-cli/ndharasz/setup-scripts/scripts/setup-win10.ps1'; $ScriptBlock = [ScriptBlock]::Create($Script.Content); Invoke-Command -ScriptBlock $ScriptBlock"
+    ```
 
 See the [Prerequisites Help](#prerequisites-help) section if you need further help getting these setup.
 
-This project has been tested and found working on OSX, Windows 10, and Ubuntu 18.04, but should theoretically work anywhere that docker and Python are available.
-
-## Setup
+The CLI has been tested and found working on MacOS/OSX, Windows 10, and Ubuntu 18.04, 
+but should theoretically work anywhere that docker and Python are available.
 
 Install this library with:
 
