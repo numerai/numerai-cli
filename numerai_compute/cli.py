@@ -377,7 +377,7 @@ If you're sure docker is already installed, then for some reason it isn't in you
     res = subprocess.run(c, shell=True, stdout=subprocess.PIPE)
 
     with open(get_docker_repo_file(), 'w') as f:
-        f.write(res.stdout.decode('utf-8').strip())
+        f.write(res.stdout.decode('utf-8').strip().replace('"', ''))
     click.echo(Fore.YELLOW + 'wrote docker repo to: ' + get_docker_repo_file())
 
     c = '''docker run --rm -it -v {numerai_dir}:/opt/plan -w /opt/plan hashicorp/terraform:light output submission_url'''.format(
@@ -387,7 +387,7 @@ If you're sure docker is already installed, then for some reason it isn't in you
     res = subprocess.run(c, shell=True, stdout=subprocess.PIPE)
 
     with open(get_submission_url_file(), 'w') as f:
-        f.write(res.stdout.decode('utf-8').strip())
+        f.write(res.stdout.decode('utf-8').strip().replace('"', ''))
     click.echo(Fore.YELLOW + 'wrote submission url to: ' +
                get_submission_url_file())
 

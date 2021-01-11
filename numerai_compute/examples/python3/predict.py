@@ -50,7 +50,6 @@ def train(train_data_path, model_id, model, force_training=False):
     train_targets = train_data.iloc[:, -1]      # get all rows and only last column
 
     logging.info(f'training model')
-    model = LinearRegression()
     model.fit(X=train_features, y=train_targets)
 
     logging.info('saving features')
