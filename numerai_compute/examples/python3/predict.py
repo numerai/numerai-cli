@@ -5,9 +5,17 @@ import numerapi
 import pandas as pd
 from sklearn.linear_model import LinearRegression
 
-TRAINED_MODEL_PATH = './trained_model'
 
-# initialize our numerai api client
+TRAINED_MODEL_PREFIX = './trained_model'
+# Define models here as (ID, model instance),
+# a model ID of None is submitted as your default model
+MODEL_CONFIGS = [
+    (None, LinearRegression()),
+    # (YOUR MODEL ID, LinearRegression(n_jobs=10))
+    #  etc...
+]
+
+# initialize API client
 napi = numerapi.NumerAPI()
 
 
@@ -25,19 +33,19 @@ def download_data():
     return train_data_path, predict_data_path, predict_output_path
 
 
-def train(train_data_path, force_training=False):
-    # if we have a trained model already and we aren't forcing a training session
-    if os.path.exists(TRAINED_MODEL_PATH) and not force_training:
+def train(train_data_path, model_id, model, force_training=False):
+    model_name = f'{TRAINED_MODEL_PREFIX}_{model_id or ""}'
+
+    # load a model if we have a trained model already and we aren't forcing a training session
+    if os.path.exists(model_name) and not force_training:
         logging.info('loading existing trained model')
-        model = joblib.load(TRAINED_MODEL_PATH)
+        model = joblib.load(model_name)
         return model
 
     logging.info(f'reading training data')
     train_data = pd.read_csv(train_data_path)
 
     logging.info('extracting features and targets')
-    train_ids = train_data.iloc[:, 0]           # get all rows and only first column
-    train_eras = train_data.iloc[:, 1]          # get all rows and only second column
     train_features = train_data.iloc[:, 3:-1]   # get all rows and all columns from 4th to last-1
     train_targets = train_data.iloc[:, -1]      # get all rows and only last column
 
@@ -46,7 +54,7 @@ def train(train_data_path, force_training=False):
     model.fit(X=train_features, y=train_targets)
 
     logging.info('saving features')
-    joblib.dump(model, TRAINED_MODEL_PATH)
+    joblib.dump(model, model_name)
 
     return model
 
@@ -57,9 +65,7 @@ def predict(model, predict_data_path):
 
     logging.info('extracting features')
     predict_ids = predict_data.iloc[:, 0]           # get all rows and only first column
-    predict_eras = predict_data.iloc[:, 1]            # get all rows and only second column
     predict_features = predict_data.iloc[:, 3:-1]   # get all rows and all columns from 4th to last-1
-    predict_targets = predict_data.iloc[:, -1]      # get all rows and only last column
 
     logging.info(f'generating predictions')
     predictions = model.predict(predict_features)
@@ -69,7 +75,7 @@ def predict(model, predict_data_path):
     return predictions
 
 
-def submit(predictions):
+def submit(predictions, model_id=None):
     logging.info('writing predictions to file')
     # numerai doesn't want the index, so don't write it to our file
     predictions.to_csv(predict_output_path, index=False)
@@ -77,14 +83,13 @@ def submit(predictions):
     # Numerai API uses Environment variables to find your keys: NUMERAI_PUBLIC_ID and NUMERAI_SECRET_KEY
     # these are set by docker via the numerai cli; see README for more info
     logging.info(f'submitting')
-    napi.upload_predictions(predict_output_path)
+    napi.upload_predictions(predict_output_path, model_id)
 
 
 if __name__ == '__main__':
     train_data_path, predict_data_path, predict_output_path = download_data()
 
-    model = train(train_data_path)
-
-    predictions = predict(model, predict_data_path)
-
-    submit(predictions)
+    for model_id, model_type in MODEL_CONFIGS:
+        trained_model = train(train_data_path, model_id, model_type)
+        predictions = predict(trained_model, predict_data_path)
+        submit(predictions, model_id)
