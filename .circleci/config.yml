@@ -45,7 +45,7 @@ workflows:
       - build-python36
       - build-python37
       - docker-build
-      - pypi-release
+      - pypi-release:
           requires:
             - build-python36
             - build-python37
