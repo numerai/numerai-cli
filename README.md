@@ -23,16 +23,35 @@ Questions or feedback? Join us at [RocketChat](https://community.numer.ai/channe
 
 All you need is:
 
-1.  AWS (Amazon Web Services) account setup with an API key
-2.  A Numerai API key
-3.  Docker setup on your machine
-4.  Python3 (your model code doesn't have to use Python3, but this CLI tool needs it)
+1.  AWS (Amazon Web Services) account setup 
+2.  AWS API keys (Access key ID and Secret Access Key)
+3.  Numerai API Key (Public ID and secret key)
 
-See the [Prerequisites Help](#prerequisites-help) section if you need help getting these setup.
-
-This project has been tested and found working on OSX, Windows 10, and Ubuntu 18.04, but should theoretically work anywhere that docker and Python are available.
 
 ## Setup
+
+For your convenience, we've included setup scripts in the `scripts` directory that will ensure the prerequisites are installed.
+You can download and run the setup script for your OS with one of the following commands:
+
+- Mac Terminal(cmd + space, type `terminal`, select `terminal.app`):
+    ```
+    curl https://raw.githubusercontent.com/numerai/numerai-cli/ndharasz/setup-scripts/scripts/setup-mac.sh | bash
+    ```
+
+- Ubuntu 18 Terminal (ctrl + alt + t):
+    ```
+    apt update && apt install -y libcurl4 curl && curl https://raw.githubusercontent.com/numerai/numerai-cli/ndharasz/setup-scripts/scripts/setup-ubu18.sh | bash
+    ```
+
+- Windows Command Prompt (windows key, type `cmd`, select Command Prompt):
+    ```
+    powershell -command "$Script = Invoke-WebRequest 'https://raw.githubusercontent.com/numerai/numerai-cli/ndharasz/setup-scripts/scripts/setup-win10.ps1'; $ScriptBlock = [ScriptBlock]::Create($Script.Content); Invoke-Command -ScriptBlock $ScriptBlock"
+    ```
+
+See the [Prerequisites Help](#prerequisites-help) section if you need further help getting these setup.
+
+The CLI has been tested and found working on MacOS/OSX, Windows 10, and Ubuntu 18.04, 
+but should theoretically work anywhere that docker and Python are available.
 
 Install this library with:
 
@@ -398,25 +417,17 @@ If you don't already have Python3, you can get it from https://www.python.org/do
 
 ### Docker
 
-#### MacOS
+#### MacOS and Windows
 
-If you have homebrew installed:
+Just install Docker Desktop to get it running:
 
-```
-brew cask install docker
-```
+https://www.docker.com/products/docker-desktop
 
-Otherwise you can install manually at https://hub.docker.com/editions/community/docker-ce-desktop-mac
-
-You should also increase the RAM allocated to the VM by changing "Memory" in the following: https://docs.docker.com/docker-for-mac/#advanced
-
-#### Windows
-
-Install docker desktop at https://hub.docker.com/editions/community/docker-ce-desktop-windows
-
-After you've installed docker, you _must_ enable drive sharing: https://docs.docker.com/docker-for-windows/#shared-drives
-
-You should also increase the RAM allocated to the VM by changing "Memory" in the following: https://docs.docker.com/docker-for-windows/#advanced
+You should also increase the RAM allocated to the VM by opening the Docker Desktop GUI then:
+    1. Click Gear in top right corner
+    2. Select Resources > Advanced in left sidebar
+    3. Use slider to allocate more memory (leave a few gigs for your OS and background applications,
+        otherwise your computer might crash)
 
 ##### Docker Toolbox
 
@@ -433,24 +444,9 @@ Also note, your code must live somewhere under your User directory (ie. C:\Users
 
 #### Linux
 
-Install docker through your distribution.
+Check here for instructions for your distro:
+https://docs.docker.com/engine/install/
 
-Ubuntu/Debian:
-
-```
-sudo apt install docker.io
-```
-
-Also make sure to add your user to the docker group:
-
-```
-sudo groupadd docker
-sudo usermod -aG docker $USER
-```
-
-Then reboot or logout/login for this to take effect.
-
-For other Linux distros, check out https://docs.docker.com/install/linux/docker-ce/centos/ and find your distro on the sidebar.
 
 ## Uninstall
 
