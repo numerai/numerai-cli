@@ -5,7 +5,6 @@ RUN pip install -r requirements.txt
 
 ADD . .
 
-ADD .numerai-api-keys /.numerai-api-keys
 ARG NUMERAI_PUBLIC_ID
 ENV NUMERAI_PUBLIC_ID=$NUMERAI_PUBLIC_ID
 
