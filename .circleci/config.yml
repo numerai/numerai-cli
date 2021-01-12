@@ -22,7 +22,7 @@ jobs:
       - run: numerai docker copy-example
       - run: test -e predict.py
 
-  docker-build:
+  build-docker:
     machine: true # this allows us to use `docker` commands directly
     working_directory: ~/numerai-cli
     steps:
@@ -36,10 +36,7 @@ jobs:
       - checkout
       - run: pip install twine
       - run: python setup.py sdist bdist_wheel
-      - run: twine upload --skip-existing \
-            --repository numerai-cli dist/* \
-            --repository-url https://pypi.org/project/numerai-cli/
-            -u @token -p $PYPI_API_KEY
+      - run: twine upload --skip-existing --repository numerai-cli dist/* --repository-url https://pypi.org/project/numerai-cli/ -u @token -p $PYPI_API_KEY
 
 workflows:
   version: 2
@@ -47,12 +44,12 @@ workflows:
     jobs:
       - build-python36
       - build-python37
-      - docker-build
+      - build-docker
       - pypi-release:
           requires:
             - build-python36
             - build-python37
-            - docker-build
+            - build-docker
           filters:
             branches:
               only: master
