@@ -1,20 +1,6 @@
-import numerox as nx
-import numerapi
-import os
-import model
+import predict
 
-tournaments = nx.tournament_names()
-print(tournaments)
+train_data_path, predict_data_path, predict_output_path = predict.download_data()
 
-# download dataset from numerai
-data = nx.download('numerai_dataset.zip')
-
-for tournament_name in tournaments:
-    # create your model
-    m = model.LinearModel(verbose=True)
-
-    print("fitting model for", tournament_name)
-    m.fit(data['train'], tournament_name)
-
-    print("saving model for", tournament_name)
-    m.save('model_trained_' + tournament_name)
+for model_id, model_type in predict.MODEL_CONFIGS:
+    predict.train(train_data_path, model_id, model_type, force_training=True)
