@@ -11,4 +11,4 @@ ENV NUMERAI_PUBLIC_ID=$NUMERAI_PUBLIC_ID
 ARG NUMERAI_SECRET_KEY
 ENV NUMERAI_SECRET_KEY=$NUMERAI_SECRET_KEY
 
-CMD [ "bash", "-c", "source /.numerai-api-keys && python ./predict.py" ]
+CMD [ "python", "./predict.py" ]
