@@ -3,11 +3,8 @@
 [![CircleCI](https://circleci.com/gh/numerai/numerai-cli.svg?style=svg)](https://circleci.com/gh/numerai/numerai-cli)
 [![PyPI](https://img.shields.io/pypi/v/numerai-cli.svg?color=brightgreen)](https://pypi.org/project/numerai-cli/)
 
-This is a CLI for setting up a Numerai compute node and deploying your models to it. This sets up a compute cluster in AWS (Amazon Web Services), and is architected to cost a minimal amount of money to run (on average, you will spend less than $1 per month).
-
-Questions or feedback? Join us at [RocketChat](https://community.numer.ai/channel/compute)
-
-![Architecture Diagram](https://github.com/numerai/numerai-cli/blob/master/docs/compute_architecture.png)
+CLI to set up a Numerai Compute node in AWS (Amazon Web Services) and deploy your models to it. 
+This is architected to cost a minimal amount of money to run (less than $5 per month on average).
 
 - [Prerequisites](#prerequisites)
 - [Setup](#setup)
@@ -18,14 +15,14 @@ Questions or feedback? Join us at [RocketChat](https://community.numer.ai/channe
 - [Troubleshooting](#troubleshooting)
 - [Prerequisites Help](#prerequisites-help)
 - [Uninstall](#uninstall)
+- Questions or feedback? Join us on [RocketChat](https://community.numer.ai/channel/compute)
 
 ## Prerequisites
 
 All you need is:
-
-1.  AWS (Amazon Web Services) account setup 
-2.  AWS API keys (Access key ID and Secret Access Key)
-3.  Numerai API Key (Public ID and secret key)
+1.  [An AWS (Amazon Web Services) Account w/ Billing](https://portal.aws.amazon.com/billing/signup)
+2.  [AWS Access Keys for API Access](https://console.aws.amazon.com/iam/home?#/security_credentials)
+3.  [Numerai API Keys](https://numer.ai/account)
 
 
 ## Setup
@@ -172,6 +169,8 @@ docker: Error response from daemon: Drive has not been shared
 Then you need to share your drive. See https://docs.docker.com/docker-for-windows/#shared-drives for details.
 
 ## Compute Node Architecture
+
+![Architecture Diagram](https://github.com/numerai/numerai-cli/blob/master/docs/compute_architecture.png)
 
 `numerai setup` under the hood uses [Terraform](https://www.terraform.io/) to setup an AWS environment with the following:
 
