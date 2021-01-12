@@ -36,7 +36,7 @@ jobs:
       - checkout
       - run: pip install twine
       - run: python setup.py sdist bdist_wheel
-      - run: twine upload --skip-existing --repository numerai-cli dist/* --usernam @token --passsword $PYPI_API_KEY
+      - run: twine upload --skip-existing --repository numerai-cli dist/* -u @token -p $PYPI_API_KEY
 
 workflows:
   version: 2
