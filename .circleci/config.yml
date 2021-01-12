@@ -31,7 +31,7 @@ jobs:
 
   pypi-release:
     docker:
-      - image: pyhton3.7
+      - image: python3.7
     steps:
       - checkout
       - run: pip install twine
