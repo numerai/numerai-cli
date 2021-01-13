@@ -10,6 +10,7 @@ jobs:
       # TODO: add better tests
       - run: numerai docker copy-example
       - run: test -e predict.py
+
   build-python37:
     docker:
       - image: python:3.7
@@ -21,12 +22,21 @@ jobs:
       - run: numerai docker copy-example
       - run: test -e predict.py
 
-  docker-build:
+  build-docker:
     machine: true # this allows us to use `docker` commands directly
     working_directory: ~/numerai-cli
     steps:
       - checkout
       - run: cd numerai_compute/examples/python3 && docker build -t example-python --build-arg NUMERAI_PUBLIC_ID=test --build-arg NUMERAI_SECRET_KEY=test .
+
+  pypi-release:
+    docker:
+      - image: python:3.7
+    steps:
+      - checkout
+      - run: pip install twine
+      - run: python setup.py sdist bdist_wheel
+      - run: python -m twine upload -u __token__ -p $PYPI_API_KEY --skip-existing dist/*
 
 workflows:
   version: 2
@@ -34,4 +44,12 @@ workflows:
     jobs:
       - build-python36
       - build-python37
-      - docker-build
+      - build-docker
+      - pypi-release:
+          requires:
+            - build-python36
+            - build-python37
+            - build-docker
+          filters:
+            branches:
+              only: master
