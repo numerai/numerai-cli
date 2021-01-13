@@ -32,9 +32,12 @@ run these commands and include information from each:
 ## Prerequisites
 1.  An [AWS (Amazon Web Services) Account](https://portal.aws.amazon.com/billing/signup)
 2.  AWS [Billing set up](https://console.aws.amazon.com/billing/home?#/paymentmethods)
-2.  AWS [Access Keys](https://console.aws.amazon.com/iam/home?#/security_credentials)
-3.  [Numerai API Keys](https://numer.ai/account)
-4.  Python and Docker (see [Environment Setup](#environment-setup))
+3.  AWS [Access Keys](https://console.aws.amazon.com/iam/home?#/security_credentials)
+4.  [Numerai API Keys](https://numer.ai/account)
+5.  Python and Docker (see [Environment Setup](#environment-setup))
+
+Our friend Arbitrage created [this tutorial](https://www.youtube.com/watch?v=YFgXMpQszpM&feature=youtu.be)
+to help you get set up with your AWS/Numerai API Keys
 
 
 ## Environment Setup
