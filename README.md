@@ -4,13 +4,13 @@
 [![PyPI](https://img.shields.io/pypi/v/numerai-cli.svg?color=brightgreen)](https://pypi.org/project/numerai-cli/)
 
 CLI to set up a Numerai Compute node in AWS (Amazon Web Services) and deploy your models to it. 
-This is architected to cost a minimal amount of money to run (less than $5 per month on average).
+This solution is architected to cost less than $5/mo on average (actual costs may vary).
 It has been tested and found working on MacOS/OSX, Windows 10, and Ubuntu 18.04, 
-but should theoretically work anywhere that docker and Python are available.
+but should theoretically work anywhere that Docker and Python 3 are available.
 
 ## IMPORTANT
 If you have other questions or feedback, please join us on the 
-[RocketChat Compute Channel](https://community.numer.ai/channel/compute).
+[RocketChat #compute Channel](https://community.numer.ai/channel/compute).
 Before posting a messaging the Rocketchat channel or creating a Github issue, please read through the following:
 - [Github Wiki](https://github.com/numerai/numerai-cli/wiki)
 - [Github Issues](https://github.com/numerai/numerai-cli/issues)
@@ -22,7 +22,7 @@ If you still cannot find a solution or answer, include the following information
 - System Information from running
     - Mac: `system_profiler SPSoftwareDataType && system_profiler SPHardwareDataType`
     - Linux: `lsb_release -a && uname -a`
-    - Windows: `powershell -command "Get-ComputerInfo`
+    - Windows: `powershell -command "Get-ComputerInfo"`
   
 If you do not include this information, we cannot help you.
 
@@ -66,15 +66,13 @@ You can download and run the setup script for your OS with one of the following 
     ```
     powershell -command "$Script = Invoke-WebRequest 'https://raw.githubusercontent.com/numerai/numerai-cli/master/scripts/setup-win10.ps1'; $ScriptBlock = [ScriptBlock]::Create($Script.Content); Invoke-Command -ScriptBlock $ScriptBlock"
     ```
-If you run into issues running one of these scripts, please report immediately to Rocketchat followig.
+If you run into issues running one of these scripts, please report immediately to [RocketChat Compute Channel](https://community.numer.ai/channel/compute).
 
 
-After runnning the setup script and it says it found Python and Docker, install this library with:
-
+After the setup script confirms Python and Docker, install `numerai-cli` via:
 ```
 pip3 install numerai-cli
 ```
-
 
 
 ## Quickstart
@@ -96,7 +94,7 @@ You can configure [your Numerai account](https://numer.ai/account) to use this w
 It will be called Saturday morning right after a new round opens, and if your job fails (one ore more models have not submitted successfully) 
 then it will be triggered again around 24 hours later.
 
-NOTE: The default example does _not_ stake, so you will still have to manually do that every week.
+NOTE: The default example does _not_ make stake changes; you will still have to do that manually.
 Please refer to the [numerapi docs](https://numerapi.readthedocs.io/en/latest/api/numerapi.html#module-numerapi.numerapi)
 for the methods you must call to do this.
 
