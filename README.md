@@ -39,7 +39,7 @@ If you do not include this information, we cannot help you.
 ## Prerequisites
 1.  An [AWS (Amazon Web Services) Account](https://portal.aws.amazon.com/billing/signup)
 2.  AWS [Billing set up](https://console.aws.amazon.com/billing/home?#/paymentmethods)
-3.  AWS [Access Keys](https://console.aws.amazon.com/iam/home?#/security_credentials)
+3.  AWS Access Keys (See [the wiki](https://github.com/numerai/numerai-cli/wiki/Prerequisites-Help) for detailed instructions)
 4.  [Numerai API Keys](https://numer.ai/account)
 5.  Python and Docker (see [Environment Setup](#environment-setup))
 

@@ -93,7 +93,7 @@ def check_aws_validity(key_id, secret):
             )
 
         raise exception_with_msg(
-            '''AWS keys seem to be invalid. Make sure you've entered them correctly and that your user has the "AdministratorAccess" policy.'''
+            '''AWS keys seem to be invalid. Make sure you've entered them correctly and that your user has the necessary permissions (see https://github.com/numerai/numerai-cli/wiki/Prerequisites-Help).'''
         )
 
 
