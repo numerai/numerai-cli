@@ -63,18 +63,16 @@ resource "aws_security_group" "ecs_tasks" {
 
 resource "aws_iam_role" "ecsTaskExecutionRole" {
   name               = "${var.app_name}-ecs"
-  assume_role_policy = data.aws_iam_policy_document.assume_role_policy.json
-}
-
-data "aws_iam_policy_document" "assume_role_policy" {
-  statement {
-    actions = ["sts:AssumeRole"]
-
-    principals {
-      type        = "Service"
-      identifiers = ["ecs-tasks.amazonaws.com"]
-    }
-  }
+  assume_role_policy = jsonencode({
+    Version: "2012-10-17",
+    Statement: [{
+      Effect: "Allow",
+      Action: "sts:AssumeRole",
+      Principal: {
+        Service: "ecs-tasks.amazonaws.com"
+      }
+    }]
+  })
 }
 
 resource "aws_iam_role_policy_attachment" "ecsTaskExecutionRole_policy" {
@@ -87,6 +85,13 @@ resource "aws_iam_role_policy_attachment" "ecsTaskExecutionRole_policy" {
 resource "aws_cloudwatch_log_group" "logs" {
   name              = "/fargate/service/${var.app_name}"
   retention_in_days = "14"
+}
+
+# This is to optionally manage the CloudWatch Log Group for the Lambda Function.
+# If skipping this resource configuration, also add "logs:CreateLogGroup" to the IAM policy below.
+resource "aws_cloudwatch_log_group" "lambda" {
+  name              = "/aws/lambda/${var.app_name}"
+  retention_in_days = 14
 }
 
 ### ECR
@@ -151,13 +156,6 @@ resource "aws_iam_role" "iam_for_lambda" {
       }
     ]
   })
-}
-
-# This is to optionally manage the CloudWatch Log Group for the Lambda Function.
-# If skipping this resource configuration, also add "logs:CreateLogGroup" to the IAM policy below.
-resource "aws_cloudwatch_log_group" "lambda" {
-  name              = "/aws/lambda/${var.app_name}"
-  retention_in_days = 14
 }
 
 # See also the following AWS managed policy: AWSLambdaBasicExecutionRole
