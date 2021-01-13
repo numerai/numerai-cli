@@ -9,16 +9,23 @@ It has been tested and found working on MacOS/OSX, Windows 10, and Ubuntu 18.04,
 but should theoretically work anywhere that docker and Python are available.
 
 ## IMPORTANT
-This tool continually improves with your help. As more users interact with it, more bugs will be found and fixed.
-If you have questions or feedback, please join us on the [RocketChat Compute Channel](https://community.numer.ai/channel/compute).
-If you run into an error, please read the [Wiki](https://github.com/numerai/numerai-cli/wiki) and search [Github issues](https://github.com/numerai/numerai-cli/issues)
-before posting on Github/Rocketchat, this way we can focus on unsolved errors first. If you must post an error for more help,
-run these commands and include information from each:
-- Version from `pip3 show numerai-cli`
-- System Information from
+If you have other questions or feedback, please join us on the 
+[RocketChat Compute Channel](https://community.numer.ai/channel/compute).
+Before posting a messaging the Rocketchat channel or creating a Github issue, please read through the following:
+- [Github Wiki](https://github.com/numerai/numerai-cli/wiki)
+- [Github Issues](https://github.com/numerai/numerai-cli/issues)
+
+If you still cannot find a solution or answer, include the following information with your issue/message:
+
+- The command you ran that caused the error
+- Version from running `pip3 show numerai-cli`
+- System Information from running
     - Mac: `system_profiler SPSoftwareDataType && system_profiler SPHardwareDataType`
     - Linux: `lsb_release -a && uname -a`
     - Windows: `powershell -command "Get-ComputerInfo`
+  
+If you do not include this information, we cannot help you.
+
 
 ## Contents
 - [Prerequisites](#prerequisites)
@@ -59,10 +66,7 @@ You can download and run the setup script for your OS with one of the following 
     ```
     powershell -command "$Script = Invoke-WebRequest 'https://raw.githubusercontent.com/numerai/numerai-cli/master/scripts/setup-win10.ps1'; $ScriptBlock = [ScriptBlock]::Create($Script.Content); Invoke-Command -ScriptBlock $ScriptBlock"
     ```
-  
-Then, make sure python and docker are installed by running the `python` and `docker` commands.
-
-See the [Prerequisites Help](#prerequisites-help) section if you need further help getting these setup.
+If you run into issues running one of these scripts, please report immediately to Rocketchat followig.
 
 
 After runnning the setup script and it says it found Python and Docker, install this library with:
