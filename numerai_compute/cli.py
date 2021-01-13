@@ -210,21 +210,6 @@ def copy_docker_python3(verbose, force):
     copy_file(code_dir, "requirements.txt", verbose, force)
 
 
-def copy_docker_python3_multimodel(verbose, force):
-    code_dir = path.join(get_code_dir(), "examples", "python3-multimodel")
-    copy_file(code_dir, "Dockerfile", verbose, force)
-    copy_file(code_dir, "model.py", verbose, force)
-    copy_file(code_dir, "train.py", verbose, force)
-    copy_file(code_dir, "predict.py", verbose, force)
-    copy_file(code_dir, "requirements.txt", verbose, force)
-    copy_file(code_dir, ".numerai-api-keys", verbose, force)
-    if verbose:
-        click.echo(
-            Fore.RED +
-            "You need to manually fill in all of your Numerai API keys in the .numerai-api-keys file that has been created for you in this directory."
-        )
-
-
 def copy_docker_rlang(verbose, force):
     code_dir = path.join(get_code_dir(), "examples", "rlang")
     copy_file(code_dir, "Dockerfile", verbose, force)
@@ -453,7 +438,7 @@ def docker():
 @click.option('--quiet', '-q', is_flag=True)
 @click.option('--force', '-f', is_flag=True)
 @click.option('--rlang', '-r', is_flag=True, help='Copy the RLang example.')
-def copy_example(quiet, force, rlang, python3_multimodel):
+def copy_example(quiet, force, rlang):
     """
     Copies all example files into the current directory.
 
@@ -463,8 +448,6 @@ def copy_example(quiet, force, rlang, python3_multimodel):
     """
     if rlang:
         copy_docker_rlang(not quiet, force)
-    elif python3_multimodel:
-        copy_docker_python3_multimodel(not quiet, force)
     else:
         copy_docker_python3(not quiet, force)
 
