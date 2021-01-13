@@ -210,21 +210,6 @@ def copy_docker_python3(verbose, force):
     copy_file(code_dir, "requirements.txt", verbose, force)
 
 
-def copy_docker_python3_multimodel(verbose, force):
-    code_dir = path.join(get_code_dir(), "examples", "python3-multimodel")
-    copy_file(code_dir, "Dockerfile", verbose, force)
-    copy_file(code_dir, "model.py", verbose, force)
-    copy_file(code_dir, "train.py", verbose, force)
-    copy_file(code_dir, "predict.py", verbose, force)
-    copy_file(code_dir, "requirements.txt", verbose, force)
-    copy_file(code_dir, ".numerai-api-keys", verbose, force)
-    if verbose:
-        click.echo(
-            Fore.RED +
-            "You need to manually fill in all of your Numerai API keys in the .numerai-api-keys file that has been created for you in this directory."
-        )
-
-
 def copy_docker_rlang(verbose, force):
     code_dir = path.join(get_code_dir(), "examples", "rlang")
     copy_file(code_dir, "Dockerfile", verbose, force)
@@ -404,52 +389,65 @@ def cli():
 @click.command()
 @click.option('--verbose', '-v', is_flag=True)
 @click.option(
-    '--cpu',
-    '-c',
-    help=
-    "the cpu to use in the compute container (defaults to 1024). See https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-cpu-memory-error.html for possible settings",
-    type=(int))
+    '--cpu', '-c', type=(int),
+    help="Amount of CPU credits (cores * 1024) to use in the compute container (defaults to 1024). \
+    See https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-cpu-memory-error.html for possible settings")
 @click.option(
-    '--memory',
-    '-m',
-    help=
-    "the memory to use in the compute container (defaults to 8192). See https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-cpu-memory-error.html for possible settings",
-    type=(int))
+    '--memory', '-m', type=(int),
+    help="Amount of Memory (in MiB) to use in the compute container (defaults to 8192). \
+    See https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-cpu-memory-error.html for possible settings")
 def setup(verbose, cpu, memory):
-    """Sets up a Numer.ai compute node in AWS"""
+    """
+    Uses Terraform to create a full Numerai Compute cluster in AWS.
+    Prompts for your AWS and Numerai API keys on first run, caches them in $HOME/.numerai.
+
+    Will output two important URLs at the end of running:
+        - submission_url:   The webhook url you will provide to Numerai. A copy is stored in .numerai/submission_url.txt.
+        - docker_repo:      Used for "numerai docker ..."
+    """
     terraform_setup(verbose, cpu, memory)
 
 
 @click.command()
 def configure():
-    """Setup configuration file with Numer.ai and AWS secrets"""
+    """Write AWS and Numerai API keys to configuration file."""
     setup_keys()
 
 
 @click.command()
 @click.option('--verbose', '-v', is_flag=True)
 def destroy(verbose):
-    """Destroys a previously setup Numer.ai compute node"""
+    """
+    Uses Terraform to destroy Numerai Compute cluster in AWS.
+    This will delete everything, including:
+        - lambda url
+        - docker container and associated task
+        - all logs
+    This command is idempotent and safe to run multiple times.
+    """
     terraform_destroy(verbose)
 
 
 @click.group()
 def docker():
-    """A collection of docker commands for building/deploying a docker image"""
+    """Docker commands for building/deploying an image."""
     pass
 
 
 @docker.command()
 @click.option('--quiet', '-q', is_flag=True)
 @click.option('--force', '-f', is_flag=True)
-@click.option('--rlang', '-r', is_flag=True)
-@click.option('--python3-multimodel', '-m', is_flag=True)
-def copy_example(quiet, force, rlang, python3_multimodel):
-    """Copies a few example files into the current directory"""
+@click.option('--rlang', '-r', is_flag=True, help='Copy the RLang example.')
+def copy_example(quiet, force, rlang):
+    """
+    Copies all example files into the current directory.
+
+    WARNING: this will overwrite the following files if they exist:
+        - Python: Dockerfile, model.py, train.py, predict.py, and requirements.txt
+        - RLang:  Dockerfile, install_packages.R, main.R
+    """
     if rlang:
         copy_docker_rlang(not quiet, force)
-    elif python3_multimodel:
-        copy_docker_python3_multimodel(not quiet, force)
     else:
         copy_docker_python3(not quiet, force)
 
@@ -474,11 +472,15 @@ def docker_build(verbose):
 
 
 @docker.command()
-@click.option('--command', '-c', default='python train.py', type=(str))
+@click.option('--command', '-c', default='python train.py', type=(str),
+              help="Defines the command to run inside the docker container.")
 @click.option('--verbose', '-v', is_flag=True)
 def train(command, verbose):
     """
-    Run the docker image locally and output trained models. This runs train.py (by default)
+    Run the docker image locally and output trained models.
+    Assumes a file called `train.py` exists and runs it by default.
+    Serializes your model to this directory.
+    See the example if you want inspiration for how to do this.
     """
     docker_build(verbose)
 
@@ -497,7 +499,8 @@ def train(command, verbose):
 @click.option('--verbose', '-v', is_flag=True)
 def run(verbose):
     """
-    Run the docker image locally and submit predictions. This runs the default CMD in your docker container (predict.py if you're using the example)
+    Run the docker image locally and submit predictions.
+    This runs the default CMD in your docker container (example uses predict.py / main.R)
     """
     docker_build(verbose)
 
@@ -556,7 +559,7 @@ def cleanup(verbose):
 @docker.command()
 @click.option('--verbose', '-v', is_flag=True)
 def deploy(verbose):
-    """Deploy the docker image to the Numer.ai compute node"""
+    """Builds and pushes your docker image to the AWS ECR repo"""
     docker_build(verbose)
 
     docker_repo = read_docker_repo_file()
@@ -594,7 +597,7 @@ def deploy(verbose):
 
 @click.group()
 def compute():
-    """A collection of compute commands for inspecting your running compute node"""
+    """Commands for inspecting your running compute node."""
     pass
 
 
