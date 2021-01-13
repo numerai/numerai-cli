@@ -33,4 +33,5 @@
 } || {
   echo "Setup script failed, please include the following along with the error if you report this:"
   lsb_release -a
+  uname -a
 }
