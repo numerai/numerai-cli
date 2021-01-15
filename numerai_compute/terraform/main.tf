@@ -194,25 +194,13 @@ resource "aws_iam_role_policy_attachment" "lambda_ecsTaskExecutionRole" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
-resource "archive_file" "exports_js" {
-  source_file = "lambda/exports.js"
-  output_path = "exports.zip"
-  type = "zip"
-}
-
-resource "archive_file" "node_modules" {
-  source_dir = ""
-  output_path = "nodejs.zip"
-  type = "zip"
-}
-
 resource "aws_lambda_layer_version" "node_modules" {
   layer_name = "node_modules"
   filename = "lambda/layer.zip"
 }
 
 resource "aws_lambda_function" "submission" {
-  filename      = archive_file.exports_js.output_path
+  filename      = "lambda.zip"
   function_name = var.app_name
   role          = aws_iam_role.iam_for_lambda.arn
   handler       = "exports.handler"

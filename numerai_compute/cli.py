@@ -317,10 +317,10 @@ If you're sure docker is already installed, then for some reason it isn't in you
     res.check_returncode()
     click.echo('succesfully setup .numerai with terraform')
 
-    cmd = f'docker run --rm -it -v {numerai_dir}:/opt/plan -w /opt/plan hashicorp/terraform:light \
-    -e "AWS_ACCESS_KEY_ID={keys.aws_public}" -e "AWS_SECRET_ACCESS_KEY={keys.aws_secret}" apply -auto-approve'
-    cmd += f' -c {cpu}' if cpu else ''
-    cmd += f' -m {memory}' if memory else ''
+    cmd = f'docker run -e "AWS_ACCESS_KEY_ID={keys.aws_public}" -e "AWS_SECRET_ACCESS_KEY={keys.aws_secret}" \
+    --rm -it -v {numerai_dir}:/opt/plan -w /opt/plan hashicorp/terraform:light apply -auto-approve'
+    cmd += f' -var="fargate_cpu={cpu}"' if cpu else ''
+    cmd += f' -var="fargate_memory={memory}"' if memory else ''
 
     if verbose:
         click.echo('running: ' + keys.sanitize_message(c))
@@ -338,10 +338,13 @@ If you're sure docker is already installed, then for some reason it isn't in you
                     r'''It appears that you're running from a directory that isn't shared to your docker Daemon. Try running from a directory under your HOME, e.g. C:\Users\$YOUR_NAME\$ANY_FOLDER'''
                 )
 
-        print(res.stdout.decode('utf8'))
-        print(res.stderr.decode('utf8'), file=sys.stderr)
     else:
-        res = subprocess.run(c, shell=True)
+        res = subprocess.run(cmd, shell=True)
+
+    if res.stdout:
+        print(res.stdout.decode('utf8'))
+    if res.stderr:
+        print(res.stderr.decode('utf8'), file=sys.stderr)
 
     res.check_returncode()
 
@@ -351,9 +354,10 @@ If you're sure docker is already installed, then for some reason it isn't in you
         click.echo('running: ' + keys.sanitize_message(c))
     res = subprocess.run(c, shell=True, stdout=subprocess.PIPE)
 
-    with open(get_docker_repo_file(), 'w') as f:
-        f.write(res.stdout.decode('utf-8').strip().replace('"', ''))
-    click.echo(Fore.YELLOW + 'wrote docker repo to: ' + get_docker_repo_file())
+    print(res.stdout.decode('utf-8').strip().replace('"', ''))
+    # with open(get_docker_repo_file(), 'w') as f:
+    #     f.write(res.stdout.decode('utf-8').strip().replace('"', ''))
+    # click.echo(Fore.YELLOW + 'wrote docker repo to: ' + get_docker_repo_file())
 
     c = '''docker run --rm -it -v {numerai_dir}:/opt/plan -w /opt/plan hashicorp/terraform:light output submission_url'''.format(
         **locals())
@@ -361,10 +365,11 @@ If you're sure docker is already installed, then for some reason it isn't in you
         click.echo('running: ' + keys.sanitize_message(c))
     res = subprocess.run(c, shell=True, stdout=subprocess.PIPE)
 
-    with open(get_submission_url_file(), 'w') as f:
-        f.write(res.stdout.decode('utf-8').strip().replace('"', ''))
-    click.echo(Fore.YELLOW + 'wrote submission url to: ' +
-               get_submission_url_file())
+    print(res.stdout.decode('utf-8').strip().replace('"', ''))
+    # with open(get_submission_url_file(), 'w') as f:
+    #     f.write(res.stdout.decode('utf-8').strip().replace('"', ''))
+    # click.echo(Fore.YELLOW + 'wrote submission url to: ' +
+    #            get_submission_url_file())
 
 
 def terraform_destroy(verbose):
