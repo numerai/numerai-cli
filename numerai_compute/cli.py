@@ -361,10 +361,10 @@ If you're sure docker is already installed, then for some reason it isn't in you
         click.echo('running: ' + keys.sanitize_message(c))
     res = subprocess.run(c, shell=True, stdout=subprocess.PIPE)
 
-    print(res.stdout.decode('utf-8').strip().replace('"', ''))
-    # with open(get_docker_repo_file(), 'w') as f:
-    #     f.write(res.stdout.decode('utf-8').strip().replace('"', ''))
-    # click.echo(Fore.YELLOW + 'wrote docker repo to: ' + get_docker_repo_file())
+
+    with open(get_docker_repo_file(), 'w') as f:
+        f.write(res.stdout.decode('utf-8').strip().replace('"', ''))
+    click.echo(Fore.YELLOW + 'wrote docker repo to: ' + get_docker_repo_file())
 
     c = '''docker run --rm -it -v {numerai_dir}:/opt/plan -w /opt/plan hashicorp/terraform:light output submission_url'''.format(
         **locals())
@@ -372,11 +372,10 @@ If you're sure docker is already installed, then for some reason it isn't in you
         click.echo('running: ' + keys.sanitize_message(c))
     res = subprocess.run(c, shell=True, stdout=subprocess.PIPE)
 
-    print(res.stdout.decode('utf-8').strip().replace('"', ''))
-    # with open(get_submission_url_file(), 'w') as f:
-    #     f.write(res.stdout.decode('utf-8').strip().replace('"', ''))
-    # click.echo(Fore.YELLOW + 'wrote submission url to: ' +
-    #            get_submission_url_file())
+
+    with open(get_submission_url_file(), 'w') as f:
+        f.write(res.stdout.decode('utf-8').strip().replace('"', ''))
+    click.echo(Fore.YELLOW + 'wrote submission url to: ' + get_submission_url_file())
 
 
 def terraform_destroy(verbose):
