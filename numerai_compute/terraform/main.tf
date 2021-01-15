@@ -2,15 +2,10 @@ terraform {
   required_version = "~> 0.14.0"
 }
 
-provider "archive" {
-  version = "~> 2.0.0"
-}
-
 # Specify the provider and access details
 provider "aws" {
   profile = "default"
   region  = var.aws_region
-  version = "~> 3.22.0"
 }
 
 ### Network
@@ -278,7 +273,7 @@ resource "aws_api_gateway_integration" "submit" {
 
 resource "aws_api_gateway_deployment" "app" {
   depends_on = [
-    "aws_api_gateway_integration.submit",
+    aws_api_gateway_integration.submit,
   ]
 
   rest_api_id = aws_api_gateway_rest_api.app.id
@@ -293,5 +288,5 @@ resource "aws_lambda_permission" "apigw" {
 
   # The /*/* portion grants access from any method on any resource
   # within the API Gateway "REST API".
-  source_arn = "${replace(aws_api_gateway_deployment.app.execution_arn, "${var.gateway_stage_path}", "")}*/*"
+  source_arn = "${replace(aws_api_gateway_deployment.app.execution_arn, var.gateway_stage_path, "")}*/*"
 }

@@ -317,15 +317,18 @@ If you're sure docker is already installed, then for some reason it isn't in you
     res.check_returncode()
     click.echo('succesfully setup .numerai with terraform')
 
-    c = '''docker run -e "AWS_ACCESS_KEY_ID={keys.aws_public}" -e "AWS_SECRET_ACCESS_KEY={keys.aws_secret}" --rm -it -v {numerai_dir}:/opt/plan -w /opt/plan hashicorp/terraform:light apply -var="fargate_cpu={cpu}" -var="fargate_memory={memory}" -auto-approve'''.format(
-        **locals())
+    cmd = f'docker run --rm -it -v {numerai_dir}:/opt/plan -w /opt/plan hashicorp/terraform:light \
+    -e "AWS_ACCESS_KEY_ID={keys.aws_public}" -e "AWS_SECRET_ACCESS_KEY={keys.aws_secret}" apply -auto-approve'
+    cmd += f' -c {cpu}' if cpu else ''
+    cmd += f' -m {memory}' if memory else ''
+
     if verbose:
         click.echo('running: ' + keys.sanitize_message(c))
 
     if sys.platform == 'win32' and 'DOCKER_TOOLBOX_INSTALL_PATH' in os.environ:
         click.echo(
             'running aws setup through terraform. this can take a few minutes')
-        res = subprocess.run(c,
+        res = subprocess.run(cmd,
                              shell=True,
                              stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE)

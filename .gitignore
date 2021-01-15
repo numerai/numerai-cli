@@ -117,7 +117,5 @@ predict.py
 requirements.txt
 train.py
 
-*.zip
-
 .idea/
 .DS_STORE
