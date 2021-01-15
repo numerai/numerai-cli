@@ -7,7 +7,7 @@ with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
 setup(name='numerai-cli',
-      version='0.2.2',
+      version='0.2.3',
       description='A library for helping to deploy a Numer.ai compute node',
       url='https://github.com/numerai/numerai-cli',
       author='Numer.ai',
