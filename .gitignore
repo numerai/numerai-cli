@@ -109,13 +109,5 @@ venv.bak/
 .terraform*
 terraform.tfstate
 
-# created by copy_example
-.dockerignore
-Dockerfile
-model.py
-predict.py
-requirements.txt
-train.py
-
 .idea/
 .DS_STORE
