@@ -1,11 +1,8 @@
-terraform {
-  required_version = "~> 0.14.0"
-}
-
-# Specify the provider and access details
-provider "aws" {
-  profile = "default"
-  region  = var.aws_region
+locals {
+  app_prefix = "numerai-submission"
+  app_names = flatten([for app in var.applications: [
+    "${local.app_prefix}-${app.name}"
+  ]])
 }
 
 ### Network
@@ -42,7 +39,7 @@ resource "aws_route" "internet_access" {
 
 # Traffic to the ECS Cluster security group
 resource "aws_security_group" "ecs_tasks" {
-  name        = "${var.app_name}-tasks"
+  name        = "${local.app_prefix}-tasks"
   description = "allow inbound access from evertone"
   vpc_id      = aws_vpc.main.id
 
@@ -57,7 +54,7 @@ resource "aws_security_group" "ecs_tasks" {
 ### IAM
 
 resource "aws_iam_role" "ecsTaskExecutionRole" {
-  name               = "${var.app_name}-ecs"
+  name               = "${local.app_prefix}-ecs"
   assume_role_policy = jsonencode({
     Version: "2012-10-17",
     Statement: [{
@@ -78,42 +75,46 @@ resource "aws_iam_role_policy_attachment" "ecsTaskExecutionRole_policy" {
 ### Cloudwatch
 
 resource "aws_cloudwatch_log_group" "logs" {
-  name              = "/fargate/service/${var.app_name}"
+  count = length(var.applications)
+  name              = "/fargate/service/${local.app_names[count.index]}"
   retention_in_days = "14"
 }
 
 # This is to optionally manage the CloudWatch Log Group for the Lambda Function.
 # If skipping this resource configuration, also add "logs:CreateLogGroup" to the IAM policy below.
 resource "aws_cloudwatch_log_group" "lambda" {
-  name              = "/aws/lambda/${var.app_name}"
+  count = length(var.applications)
+  name              = "/aws/lambda/${local.app_names[count.index]}"
   retention_in_days = 14
 }
 
 ### ECR
 
 resource "aws_ecr_repository" "app" {
-  name = var.app_name
+  count = length(var.applications)
+  name = local.app_names[count.index]
 }
 
 ### ECS
 
 resource "aws_ecs_cluster" "main" {
-  name = "${var.app_name}-ecs-cluster"
+  name = local.app_prefix
 }
 
 resource "aws_ecs_task_definition" "app" {
-  family                   = var.app_name
+  count = length(var.applications)
+  family                   = local.app_names[count.index]
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
-  cpu                      = var.fargate_cpu
-  memory                   = var.fargate_memory
+  cpu                      = var.applications[count.index].cpu
+  memory                   = var.applications[count.index].memory
   execution_role_arn       = aws_iam_role.ecsTaskExecutionRole.arn
 
   container_definitions = jsonencode([
     {
-      cpu: var.fargate_cpu,
-      image: aws_ecr_repository.app.repository_url,
-      memory: var.fargate_memory,
+      cpu: var.applications[count.index].cpu,
+      image: aws_ecr_repository.app[count.index].repository_url,
+      memory: var.applications[count.index].memory,
       name: "app",
       networkMode: "awsvpc",
       portMappings: [
@@ -125,7 +126,7 @@ resource "aws_ecs_task_definition" "app" {
       logConfiguration: {
           "logDriver": "awslogs",
           "options": {
-              "awslogs-group": "/fargate/service/${var.app_name}",
+              "awslogs-group": "/fargate/service/${local.app_names[count.index]}",
               "awslogs-region": var.aws_region,
               "awslogs-stream-prefix": "ecs"
           }
@@ -136,7 +137,7 @@ resource "aws_ecs_task_definition" "app" {
 
 ### Lambda
 resource "aws_iam_role" "iam_for_lambda" {
-  name = "${var.app_name}-lambda"
+  name = "${local.app_prefix}-lambda"
 
   assume_role_policy = jsonencode({
     "Version": "2012-10-17",
@@ -155,7 +156,7 @@ resource "aws_iam_role" "iam_for_lambda" {
 
 # See also the following AWS managed policy: AWSLambdaBasicExecutionRole
 resource "aws_iam_policy" "lambda_logging" {
-  name        = "${var.app_name}_lambda_logging"
+  name        = "${local.app_prefix}-lambda-logging"
   path        = "/"
   description = "IAM policy for logging from a lambda"
 
@@ -201,7 +202,7 @@ resource "aws_lambda_layer_version" "node_modules" {
 
 resource "aws_lambda_function" "submission" {
   filename      = "lambda.zip"
-  function_name = var.app_name
+  function_name = local.app_prefix
   role          = aws_iam_role.iam_for_lambda.arn
   handler       = "exports.handler"
 
@@ -223,17 +224,17 @@ resource "aws_lambda_function" "submission" {
 
   environment {
     variables = {
-      ecs_arn            = aws_ecs_task_definition.app.arn
-      ecs_cluster        = aws_ecs_cluster.main.id
-      ecs_security_group = aws_security_group.ecs_tasks.id
-      ecs_subnet         = aws_subnet.public.*.id[0]
+      security_group = aws_security_group.ecs_tasks.id
+      subnet         = aws_subnet.public.*.id[0]
+      ecs_cluster    = aws_ecs_cluster.main.id
+      ecs_task_arns  = jsonencode([for task_def in aws_ecs_task_definition.app: task_def.arn])
     }
   }
 }
 
 resource "aws_api_gateway_rest_api" "app" {
-  name        = "${var.app_name}-gateway"
-  description = "Terraform Serverless Application for ${var.app_name}"
+  name        = "${local.app_prefix}-gateway"
+  description = "API Gateway for Numerai webhook"
 }
 
 resource "aws_api_gateway_resource" "submit" {

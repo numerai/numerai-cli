@@ -10,7 +10,7 @@ TRAINED_MODEL_PREFIX = './trained_model'
 # Define models here as (ID, model instance),
 # a model ID of None is submitted as your default model
 MODEL_CONFIGS = [
-    (None, LinearRegression()),
+    ('example', LinearRegression()),
     # (YOUR MODEL ID, LinearRegression(n_jobs=10))
     #  etc...
 ]
@@ -34,7 +34,9 @@ def download_data():
 
 
 def train(train_data_path, model_id, model, force_training=False):
-    model_name = f'{TRAINED_MODEL_PREFIX}_{model_id or ""}'
+    model_name = TRAINED_MODEL_PREFIX
+    if model_id:
+        model_name += f"_{model_id}"
 
     # load a model if we have a trained model already and we aren't forcing a training session
     if os.path.exists(model_name) and not force_training:
