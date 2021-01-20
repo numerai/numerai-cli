@@ -196,7 +196,7 @@ resource "aws_iam_role_policy_attachment" "lambda_ecsTaskExecutionRole" {
 
 resource "aws_lambda_layer_version" "node_modules" {
   layer_name = "node_modules"
-  filename = "lambda/layer.zip"
+  filename = "layer.zip"
 }
 
 resource "aws_lambda_function" "submission" {

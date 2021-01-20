@@ -71,6 +71,7 @@ def load_keys():
 
 
 def load_or_setup_keys():
+    key_file = get_key_file()
     # Check permission and prompt to fix
     if path.exists(key_file) and os.stat(key_file).st_mode & (S_IRGRP | S_IROTH):
         click.secho("WARNING: %s is readable by others" % key_file, fg='red')
@@ -242,7 +243,7 @@ def is_win10_professional():
     return False
 
 
-def terraform_setup(verbose, cpu, memory):
+def terraform_setup(verbose, cpu, memory, update):
     if path.abspath(os.getcwd()) == path.abspath(str(Path.home())):
         raise exception_with_msg(
             "`numerai setup` cannot be run from your $HOME directory. Please create another directory and run this again."
@@ -251,7 +252,16 @@ def terraform_setup(verbose, cpu, memory):
     numerai_dir = get_project_numerai_dir()
     if not path.exists(numerai_dir):
         copy_terraform()
-
+    elif update:
+        src = path.join(get_code_dir(), "terraform")
+        dst = get_project_numerai_dir()
+        print(src, dst)
+        for filename in os.listdir(src):
+            src_file = os.path.join(src, filename)
+            dst_file = os.path.join(dst, filename)
+            if verbose:
+                click.echo(Fore.YELLOW + "copying " + filename)
+            shutil.copy(src_file, dst_file)
     # Format path for mingw after checking that it exists
     numerai_dir = format_path_if_mingw(numerai_dir)
 
@@ -410,7 +420,8 @@ def cli():
     '--memory', '-m', type=(int),
     help="Amount of Memory (in MiB) to use in the compute container (defaults to 8192). \
     See https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-cpu-memory-error.html for possible settings")
-def setup(verbose, cpu, memory):
+@click.option('--update', '-u', is_flag=True)
+def setup(verbose, cpu, memory, update):
     """
     Uses Terraform to create a full Numerai Compute cluster in AWS.
     Prompts for your AWS and Numerai API keys on first run, caches them in $HOME/.numerai.
@@ -419,7 +430,7 @@ def setup(verbose, cpu, memory):
         - submission_url:   The webhook url you will provide to Numerai. A copy is stored in .numerai/submission_url.txt.
         - docker_repo:      Used for "numerai docker ..."
     """
-    terraform_setup(verbose, cpu, memory)
+    terraform_setup(verbose, cpu, memory, update)
 
 
 @click.command()
