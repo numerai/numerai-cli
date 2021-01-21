@@ -10,7 +10,7 @@ TRAINED_MODEL_PREFIX = './trained_model'
 # Define models here as (ID, model instance),
 # a model ID of None is submitted as your default model
 MODEL_CONFIGS = [
-    ('example', LinearRegression()),
+    (None, LinearRegression()),
     # (YOUR MODEL ID, LinearRegression(n_jobs=10))
     #  etc...
 ]
