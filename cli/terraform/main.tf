@@ -10,7 +10,9 @@ provider "aws" {
 
 locals {
   apps = jsondecode(file(var.app_config_file))
-  aws_apps = [for app, config in local.apps: merge({name: app}, config) if config.provider == "aws"]
+  aws_apps = [for app, config in local.apps:
+    merge({name: app}, config) if config.provider == "aws"
+  ]
 }
 
 module "aws" {

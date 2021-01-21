@@ -14,7 +14,7 @@ init(autoreset=True)
 
 cli.add_command(create.create)
 cli.add_command(destroy.destroy)
-cli.add_command(configure.configure)
+cli.add_command(configure.configure_keys)
 
 cli.add_command(docker.docker)
 cli.add_command(compute.compute)

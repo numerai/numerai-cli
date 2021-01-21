@@ -3,7 +3,6 @@ import json
 from stat import S_IRGRP, S_IROTH
 from pathlib import Path
 from configparser import ConfigParser
-from colorama import Fore
 
 import click
 
@@ -12,7 +11,9 @@ from cli.doctor import \
     check_aws_validity, \
     check_numerai_validity
 
-DEFAULT_PROVIDER = "aws"
+PROVIDER_AWS = "aws"
+
+DEFAULT_PROVIDER = PROVIDER_AWS
 DEFAULT_CPU = 1024
 DEFAULT_MEMORY = 8192
 
@@ -25,8 +26,9 @@ def get_key_file_path():
 
     # this is necessary for legacy code to be converted to new config format
     if os.path.exists(old_path):
-        click.secho(f"Old version of keyfile found at '{keyfile_path}', moving to new location {keyfile_path} ", fg='red')
+        click.secho(f"Old version of keyfile found at '{old_path}', moving to new location {keyfile_path} ", fg='red')
         os.rename(old_path, keyfile_path)
+
     config = ConfigParser()
     config.read(keyfile_path)
     if 'default' in config:
@@ -50,12 +52,14 @@ def get_key_file_path():
 
 def get_app_config_path():
     config_path = os.path.join(get_project_numerai_dir(), 'apps.json')
+    created = False
 
     if not os.path.exists(config_path):
+        created = True
         with open(config_path, 'w+') as f:
             json.dump({}, f)
 
-    return config_path
+    return config_path, created
 
 
 class Config:
@@ -63,7 +67,7 @@ class Config:
     def __init__(self):
         super().__init__()
 
-        self._appconfig_path = get_app_config_path()
+        self._appconfig_path, _ = get_app_config_path()
         self.apps_config = json.load(open(self._appconfig_path))
 
         self._keyfile_path = get_key_file_path()
@@ -81,11 +85,14 @@ class Config:
         with open(os.open(self._keyfile_path, os.O_CREAT | os.O_WRONLY, 0o600), 'w') as configfile:
             self.keys_config.write(configfile)
 
-    def configure_keys(self, aws_public, aws_private, numerai_public, numerai_private):
-        self.keys_config['aws']['AWS_ACCESS_KEY_ID'] = aws_public
-        self.keys_config['aws']['AWS_SECRET_ACCESS_KEY'] = aws_private
+    def configure_keys_numerai(self, numerai_public, numerai_private):
         self.keys_config['numerai']['NUMERAI_PUBLIC_ID'] = numerai_public
         self.keys_config['numerai']['NUMERAI_SECRET_KEY'] = numerai_private
+        self.write_keys()
+
+    def configure_keys_aws(self, aws_public, aws_private):
+        self.keys_config['aws']['AWS_ACCESS_KEY_ID'] = aws_public
+        self.keys_config['aws']['AWS_SECRET_ACCESS_KEY'] = aws_private
         self.write_keys()
 
     def write_apps(self):
@@ -111,12 +118,18 @@ class Config:
 
         self.write_apps()
 
-    def configure_urls(self, webhook_url, docker_repos):
-        for app, docker_repo in docker_repos.items():
-            self.apps_config[app]['webhook_url'] = webhook_url
-            self.apps_config[app]['docker_repo'] = docker_repo
+    def delete_app(self, app):
+        del self.apps_config[app]
         self.write_apps()
-        click.echo(f'{Fore.YELLOW}wrote webhook url and docker repo to: {self._keyfile_path}')
+
+    def configure_outputs(self, outputs):
+        for app, data in outputs.items():
+            self.apps_config[app].update(data)
+        self.write_apps()
+        click.secho(f'wrote application urls (submission_url, docker_repo, etc.) to: {self._keyfile_path}', fg='yellow')
+
+    def provider(self, app):
+        return self.apps_config[app]['provider']
 
     @property
     def aws_public(self):
@@ -127,7 +140,7 @@ class Config:
         return self.keys_config['aws']['AWS_SECRET_ACCESS_KEY']
 
     def provider_keys(self, app):
-        return self.keys_config[self.apps_config[app]['provider']]
+        return self.keys_config[self.provider(app)]
 
     @property
     def numerai_public(self):
@@ -137,21 +150,21 @@ class Config:
     def numerai_secret(self):
         return self.keys_config['numerai']['NUMERAI_SECRET_KEY']
 
+    @property
+    def numerai_keys(self):
+        return self.keys_config['numerai']
+
     def docker_repo(self, app):
         return self.apps_config[app]['docker_repo']
 
-    @property
-    def webhook_url(self):
-        return self.apps_config['webhook_url']
+    def webhook_url(self, app):
+        return self.apps_config[app]['webhook_url']
 
+    def cluster_log_group(self, app):
+        return self.apps_config[app]['cluster_log_group']
 
-    # def terraform_var(self):
-    #     return json.dumps({
-    #         "provider": self.provider,
-    #         "name": self._app_name,
-    #         "cpu": self.cpu,
-    #         "memory": self.memory,
-    #     })
+    def webhook_log_group(self, app):
+        return self.apps_config[app]['webhook_log_group']
 
     def sanitize_message(self, message):
         return message.replace(
@@ -165,30 +178,37 @@ class Config:
         )
 
 
-def configure_app():
-    keyfile_path = get_key_file_path()
-    click.echo(f"{Fore.YELLOW}Setting up key file at {keyfile_path}\n")
-    click.echo(f"{Fore.RED}Please type in the following keys:")
 
-    aws_public = click.prompt('AWS_ACCESS_KEY_ID').strip()
-    aws_private = click.prompt('AWS_SECRET_ACCESS_KEY').strip()
-    check_aws_validity(aws_public, aws_private)
+@click.command()
+@click.option(
+    '--provider', '-p', type=str, default=PROVIDER_AWS,
+    help="Select a cloud provider. One of ['aws']. Defaults to 'aws'.")
+def configure_keys(provider):
+    """Write API keys to configuration file."""
+    config = Config()
+    click.secho(f"Setting up key file at {config._keyfile_path}\n", fg='yellow')
+    click.secho(f"Please type in the following keys:", fg='yellow')
 
     numerai_public = click.prompt('NUMERAI_PUBLIC_ID').strip()
     numerai_private = click.prompt('NUMERAI_SECRET_KEY').strip()
     check_numerai_validity(numerai_public, numerai_private)
+    config.configure_keys_numerai(numerai_public, numerai_private)
 
-    config = Config()
-    config.configure_keys(aws_public, aws_private, numerai_public, numerai_private)
+    if provider == PROVIDER_AWS:
+        aws_public = click.prompt('AWS_ACCESS_KEY_ID').strip()
+        aws_private = click.prompt('AWS_SECRET_ACCESS_KEY').strip()
+        check_aws_validity(aws_public, aws_private)
+        config.configure_keys_aws(aws_public, aws_private)
+
     return config
 
 
-def load_or_configure_app():
+def load_or_configure_app(provider):
     key_file = get_key_file_path()
 
     if not os.path.exists(key_file):
         click.echo("Key file not found at: " + get_key_file_path())
-        return configure_app()
+        return configure_keys(provider)
 
     # Check permission and prompt to fix
     elif os.stat(key_file).st_mode & (S_IRGRP | S_IROTH):
@@ -197,9 +217,3 @@ def load_or_configure_app():
             os.chmod(key_file, 0o600)
 
     return Config()
-
-
-@click.command()
-def configure(app_name='default'):
-    """Write AWS and Numerai API keys to configuration file."""
-    configure_app()

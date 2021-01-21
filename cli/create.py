@@ -9,7 +9,7 @@ from cli.util import \
     get_code_dir, \
     format_path_if_mingw, \
     run_terraform_cmd
-from cli.configure import load_or_configure_app, get_app_config_path
+from cli.configure import load_or_configure_app, PROVIDER_AWS
 
 
 @click.command()
@@ -17,21 +17,17 @@ from cli.configure import load_or_configure_app, get_app_config_path
 @click.option(
     '--cpu', '-c', type=int,
     help="Amount of CPU credits (cores * 1024) to use in the compute container (defaults to 1024). \
-    \n See https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-cpu-memory-error.html for possible settings"
-)
+    \n See https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-cpu-memory-error.html for possible settings")
 @click.option(
     '--memory', '-m', type=int,
     help="Amount of Memory (in MiB) to use in the compute container (defaults to 8192). \
-    \n See https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-cpu-memory-error.html for possible settings"
-)
+    \n See https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-cpu-memory-error.html for possible settings")
 @click.option(
-    '--provider', '-p', type=str,
-    help="Select a cloud provider, defaults to 'aws'. One of ['aws']"
-)
+    '--provider', '-p', type=str, default=PROVIDER_AWS,
+    help="Select a cloud provider. One of ['aws']. Defaults to 'aws'.")
 @click.option(
     '--app', '-a', type=str, default='default',
-    help="Target a different app other than 'default'"
-)
+    help="Target a different app other than 'default'")
 @click.option('--update', '-u', is_flag=True)
 def create(verbose, cpu, memory, provider, app, update):
     """
@@ -54,7 +50,7 @@ def create(verbose, cpu, memory, provider, app, update):
         )
     numerai_dir = format_path_if_mingw(numerai_dir)
 
-    config = load_or_configure_app()
+    config = load_or_configure_app(provider)
     config.configure_app(app, provider, cpu, memory)
 
     # terraform init
@@ -62,14 +58,14 @@ def create(verbose, cpu, memory, provider, app, update):
     click.echo('succesfully setup .numerai with terraform')
 
     # terraform apply
-    cmd = f'apply -auto-approve -var="app_config_file=apps.json"'
-    run_terraform_cmd(cmd, config, numerai_dir, verbose, env_vars=config.provider_keys(app))
+    run_terraform_cmd(
+        f'apply -auto-approve -var="app_config_file=apps.json"',
+        config, numerai_dir, verbose, env_vars=config.provider_keys(app))
+    click.echo('successfully created cloud resources')
 
-    # terraform output
-    webhook_url_res = run_terraform_cmd(f"output submission_url", config, numerai_dir, verbose).stdout.decode('utf-8')
-    docker_repos_obj = run_terraform_cmd(f"output docker_repos", config, numerai_dir, verbose).stdout.decode('utf-8')
-
-    config.configure_urls(
-        webhook_url_res.strip().replace('"', ''),
-        json.loads(docker_repos_obj.replace("=", ":"))
-    )
+    # terraform output for AWS apps
+    click.echo('retrieving application configs')
+    aws_applications = json.loads(run_terraform_cmd(
+        f"output -json aws_applications", config, numerai_dir, verbose, pipe_output=False
+    ).stdout.decode('utf-8'))
+    config.configure_outputs(aws_applications)
