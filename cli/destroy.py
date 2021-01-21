@@ -1,21 +1,19 @@
 import os
 
 import click
-from colorama import Fore
 
 from cli.util import \
     get_project_numerai_dir, \
     format_path_if_mingw, \
     run_terraform_cmd
-from cli.configure import load_or_configure_app
+from cli.configure import Config
 
 
 @click.command()
 @click.option('--verbose', '-v', is_flag=True)
 @click.option(
     '--app', '-a', type=str, default='default',
-    help="Target a different app other than 'default'"
-)
+    help="Target a different app other than 'default'")
 def destroy(verbose, app):
     """
     Uses Terraform to destroy Numerai Compute cluster in AWS.
@@ -27,10 +25,20 @@ def destroy(verbose, app):
     """
     numerai_dir = get_project_numerai_dir()
     if not os.path.exists(numerai_dir):
-        click.echo(f"{Fore.RED} .numerai directory not setup, run 'numerai create' first...")
+        click.secho(f".numerai directory not setup, run 'numerai create' first...", fg='red')
+        return
     numerai_dir = format_path_if_mingw(numerai_dir)
 
-    config = load_or_configure_app()
+    try:
+        config = Config()
+        provider_keys = config.provider_keys(app)
 
-    cmd = f'destroy -auto-approve'
-    run_terraform_cmd(cmd, config, numerai_dir, verbose, env_vars=config.provider_keys(app))
+        click.secho(f"deleting application configuration...")
+        config.delete_app(app)
+        cmd = f'destroy -auto-approve'
+        click.secho(f"deleting cloud resources...")
+        run_terraform_cmd(cmd, config, numerai_dir, verbose, env_vars=provider_keys)
+
+    except (KeyError, FileNotFoundError):
+        click.secho(f"run `numerai create` first...", fg='red')
+        return

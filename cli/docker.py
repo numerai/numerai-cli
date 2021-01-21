@@ -3,12 +3,10 @@ import base64
 import subprocess
 
 import boto3
-
 import click
-from colorama import Fore
 
 from cli.util import copy_files, get_code_dir, format_path_if_mingw
-from cli.configure import Config
+from cli.configure import Config, PROVIDER_AWS
 
 
 @click.group()
@@ -41,23 +39,25 @@ def copy_example(quiet, force, rlang):
         f.write(".git\n")
 
 
-def docker_build(config, verbose):
-
-    c = f'docker build -t {config.docker_repo} --build-arg NUMERAI_PUBLIC_ID={config.numerai_public} --build-arg NUMERAI_SECRET_KEY={config.numerai_secret} .'
+def docker_build(config, verbose, app, build_args=None):
+    build_arg_str = ''
+    for arg in build_args:
+        build_arg_str += f' --build-arg {arg}={build_args[arg]}'
+    cmd = f'docker build -t {config.docker_repo(app)} {build_arg_str} .'
     if verbose:
-        click.echo("running: " + config.sanitize_message(c))
-
-    res = subprocess.run(c, shell=True)
+        click.echo("running: " + config.sanitize_message(cmd))
+    res = subprocess.run(cmd, shell=True)
     res.check_returncode()
 
 
 @docker.command()
-@click.option('--command', '-c', default='python train.py', type=(str),
-              help="Defines the command to run inside the docker container.")
+@click.option(
+    '--command', '-c', type=str, default='python train.py',
+    help="Defines the command to run inside the docker container.")
 @click.option('--verbose', '-v', is_flag=True)
-# @click.option(
-#     '--app', '-a', type=str, default='default',
-#     help="Target a different app other than 'default'")
+@click.option(
+    '--app', '-a', type=str, default='default',
+    help="Target a different app other than 'default'")
 def train(command, verbose, app):
     """
     Run the docker image locally and output trained models.
@@ -66,10 +66,10 @@ def train(command, verbose, app):
     See the example if you want inspiration for how to do this.
     """
     config = Config()
-    docker_build(config, verbose)
+    docker_build(config, verbose, app, build_args=config.numerai_keys)
     cur_dir = format_path_if_mingw(os.getcwd())
 
-    c = f'docker run --rm -it -v {cur_dir}:/opt/app -w /opt/app {config.docker_repo} {command}'
+    c = f'docker run --rm -it -v {cur_dir}:/opt/app -w /opt/app {config.docker_repo(app)} {command}'
     if verbose:
         click.echo('running: ' + c)
     res = subprocess.run(c, shell=True)
@@ -78,20 +78,20 @@ def train(command, verbose, app):
 
 @docker.command()
 @click.option('--verbose', '-v', is_flag=True)
-# @click.option(
-#     '--app', '-a', type=str, default='default',
-#     help="Target a different app other than 'default'")
+@click.option(
+    '--app', '-a', type=str, default='default',
+    help="Target a different app other than 'default'")
 def run(verbose, app):
     """
     Run the docker image locally and submit predictions.
     This runs the default CMD in your docker container (example uses predict.py / main.R)
     """
     config = Config()
-    docker_build(config, verbose)
+    docker_build(config, verbose, app, build_args=config.numerai_keys)
 
     cur_dir = format_path_if_mingw(os.getcwd())
 
-    c = f'docker run --rm -it -v {cur_dir}:/opt/app -w /opt/app {config.docker_repo} '
+    c = f'docker run --rm -it -v {cur_dir}:/opt/app -w /opt/app {config.docker_repo(app)} '
     if verbose:
         click.echo('running: ' + c)
     res = subprocess.run(c, shell=True)
@@ -100,84 +100,106 @@ def run(verbose, app):
 
 @docker.command()
 @click.option('--verbose', '-v', is_flag=True)
-# @click.option(
-#     '--app', '-a', type=str, default='default',
-#     help="Target a different app other than 'default'")
-def build(verbose):
+@click.option(
+    '--app', '-a', type=str, default='default',
+    help="Target a different app other than 'default'")
+def build(verbose, app):
     """Builds the docker image"""
     config = Config()
-    docker_build(config, verbose)
+    docker_build(config, verbose, app, build_args=config.numerai_keys)
 
 
-def docker_cleanup(config, verbose):
-
+def docker_cleanup_aws(config, app):
     ecr_client = boto3.client(
         'ecr', region_name='us-east-1',
         aws_access_key_id=config.aws_public,
         aws_secret_access_key=config.aws_secret)
 
-    resp = ecr_client.list_images(repositoryName='numerai-submission',
-                                  filter={
-                                      'tagStatus': 'UNTAGGED',
-                                  })
+    docker_repo_name = config.docker_repo(app).split("/")[-1]
+
+    resp = ecr_client.list_images(
+        repositoryName=docker_repo_name,
+        filter={'tagStatus': 'UNTAGGED'})
 
     imageIds = resp['imageIds']
     if len(imageIds) == 0:
-        return
+        return []
 
     resp = ecr_client.batch_delete_image(
-        repositoryName='numerai-submission',
+        repositoryName=docker_repo_name,
         imageIds=imageIds)
 
-    imageIds = resp['imageIds']
+    return resp['imageIds']
+
+
+def docker_cleanup(config, verbose, app):
+    provider = config.provider(app)
+    if provider == PROVIDER_AWS:
+        imageIds = docker_cleanup_aws(config, app)
+
+    else:
+        click.secho(f"Unsupported provider: '{provider}'", fg='red')
+        return
+
     if len(imageIds) > 0:
-        click.echo(Fore.YELLOW + "deleted " + str(len(imageIds)) +
-                   " old image(s) from remote docker repo")
+        click.secho(f"Deleted {str(len(imageIds))} old image(s) from remote docker repo", fg='yellow')
 
 
 @docker.command()
 @click.option('--verbose', '-v', is_flag=True)
-# @click.option(
-#     '--app', '-a', type=str, default='default',
-#     help="Target a different app other than 'default'")
-def cleanup(verbose):
+@click.option(
+    '--app', '-a', type=str, default='default',
+    help="Target a different app other than 'default'")
+def cleanup(verbose, app):
     config = Config()
-    docker_cleanup(config, verbose)
+    docker_cleanup(config, verbose, app)
 
 
-@docker.command()
-@click.option('--verbose', '-v', is_flag=True)
-# @click.option(
-#     '--app', '-a', type=str, default='default',
-#     help="Target a different app other than 'default'")
-def deploy(verbose):
-    """Builds and pushes your docker image to the AWS ECR repo"""
-    config = Config()
-    docker_build(config, verbose)
-
-    ecr_client = boto3.client('ecr',
-                              region_name='us-east-1',
-                              aws_access_key_id=config.aws_public,
-                              aws_secret_access_key=config.aws_secret)
+def docker_login_aws(config):
+    ecr_client = boto3.client(
+        'ecr', region_name='us-east-1',
+        aws_access_key_id=config.aws_public,
+        aws_secret_access_key=config.aws_secret)
 
     token = ecr_client.get_authorization_token()  # TODO: use registryIds
     username, password = base64.b64decode(
         token['authorizationData'][0]['authorizationToken']
     ).decode().split(':')
 
+    return username, password
+
+
+@docker.command()
+@click.option('--verbose', '-v', is_flag=True)
+@click.option(
+    '--app', '-a', type=str, default='default',
+    help="Target a different app other than 'default'")
+def deploy(verbose, app):
+    """Builds and pushes your docker image to the AWS ECR repo"""
+    config = Config()
+    docker_build(config, verbose, app, build_args=config.numerai_keys)
+
+    provider = config.provider(app)
+    if provider == PROVIDER_AWS:
+        username, password = docker_login_aws(config)
+    else:
+        click.secho(f"Unsupported provider: '{provider}'", fg='red')
+        return
+
     if verbose:
         click.echo('running: docker login')
+    docker_repo = config.docker_repo(app)
     res = subprocess.run(
-        f'docker login -u {username} -p {password} {config.docker_repo}',
+        f'docker login -u {username} -p {password} {docker_repo}',
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         shell=True)
     res.check_returncode()
 
-    c = f'docker push {config.docker_repo}'
+    c = f'docker push {docker_repo}'
     if verbose:
         click.echo('running: ' + c)
     res = subprocess.run(c, shell=True)
     res.check_returncode()
 
-    docker_cleanup(config, verbose)
+    docker_cleanup(config, verbose, app)

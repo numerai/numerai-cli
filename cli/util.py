@@ -4,12 +4,11 @@ import subprocess
 import shutil
 
 import click
-from colorama import Fore
 
 from cli.doctor import root_cause
 
 
-def run_terraform_cmd(tf_cmd, config, numerai_dir, verbose, env_vars=None):
+def run_terraform_cmd(tf_cmd, config, numerai_dir, verbose, pipe_output=True, env_vars=None):
     cmd = f"docker run"
     if env_vars:
         for key, val in env_vars.items():
@@ -24,11 +23,9 @@ def run_terraform_cmd(tf_cmd, config, numerai_dir, verbose, env_vars=None):
         stderr=subprocess.PIPE
     )
     if res.stdout:
-        print('stdout:')
-        print(res.stdout.decode('utf8'))
+        click.echo(res.stdout.decode('utf8'))
     if res.stderr:
-        print('stderr:')
-        print(res.stderr.decode('utf8'), file=sys.stderr)
+        click.secho(res.stderr.decode('utf8'), fg='red', file=sys.stderr)
     if res.returncode != 0:
         root_cause(res.stderr)
     res.check_returncode()
@@ -46,12 +43,12 @@ def copy_files(src, dst, force, verbose):
                 return
         if os.path.isdir(src_file):
             if verbose:
-                click.echo(Fore.YELLOW + "copying directory " + dst_file)
+                click.secho(f"copying directory {dst_file}", fg='yellow')
             os.makedirs(dst_file, exist_ok=True)
             copy_files(src_file, dst_file, force, verbose)
         else:
             if verbose:
-                click.echo(Fore.YELLOW + "copying file " + dst_file)
+                click.secho(f"copying file {dst_file}", fg='yellow')
             shutil.copy(src_file, dst_file)
 
 
