@@ -52,7 +52,7 @@ setup(
         "requests",
     ],
     entry_points={
-        'console_scripts': ['numerai=cli.__main__'],
+        'console_scripts': ['numerai=cli:main'],
     }
 )
 >>>>>>> restructure cli for multi-app setup and more descriptive commands/modules, rename setup to create (avoid clash with python setup.py), tested and fixed app setup/config/creation
