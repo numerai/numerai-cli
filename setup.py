@@ -29,6 +29,6 @@ setup(
         "requests",
     ],
     entry_points={
-        'console_scripts': ['numerai=cli.__main__'],
+        'console_scripts': ['numerai=cli:main'],
     }
 )
