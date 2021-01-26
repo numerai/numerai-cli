@@ -84,7 +84,7 @@ def submit(predictions, model_id=None):
     # Numerai API uses Environment variables to find your keys: NUMERAI_PUBLIC_ID and NUMERAI_SECRET_KEY
     # these are set by docker via the numerai cli; see README for more info
     logging.info(f'submitting')
-    napi.upload_predictions(predict_output_path, model_id)
+    napi.upload_predictions(predict_output_path, model_id=model_id)
 
 
 if __name__ == '__main__':

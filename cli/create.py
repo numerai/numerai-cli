@@ -27,8 +27,10 @@ from cli.configure import load_or_configure_app, PROVIDER_AWS
     help="Select a cloud provider. One of ['aws']. Defaults to 'aws'.")
 @click.option(
     '--app', '-a', type=str, default='default',
-    help="Target a different app other than 'default'")
-@click.option('--update', '-u', is_flag=True)
+    help="Create/configure an app, defaults to 'default'.")
+@click.option(
+    '--update', '-u', is_flag=True,
+    help="Update files in .numerai (terraform, lambda zips, and other copied files)")
 def create(verbose, cpu, memory, provider, app, update):
     """
     Uses Terraform to create a full Numerai Compute cluster in AWS.
