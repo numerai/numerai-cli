@@ -62,7 +62,7 @@ def get_task_status_aws(ecs_client, task_arn, verbose):
     return task["taskArn"], task["lastStatus"], str(task["createdAt"]), task['desiredStatus']
 
 
-# TODO: harden source of cluster arn string
+# TODO: harden source of cluster arn string and make multi-app support?
 def get_latest_task_status_aws(config, app, verbose):
     ecs_client = boto3.client(
         'ecs', region_name='us-east-1',
@@ -71,8 +71,7 @@ def get_latest_task_status_aws(config, app, verbose):
 
     tasks = ecs_client.list_tasks(
         cluster='numerai-submission',
-        desiredStatus="RUNNING",
-        family=config.cluster_log_group(app))
+        desiredStatus="RUNNING")
 
     if verbose:
         click.echo(f"Found {len(tasks['taskArns'])} RUNNING tasks...")
@@ -80,8 +79,7 @@ def get_latest_task_status_aws(config, app, verbose):
     if len(tasks["taskArns"]) == 0:
         tasks = ecs_client.list_tasks(
             cluster='numerai-submission',
-            desiredStatus="STOPPED",
-            family=config.cluster_log_group(app))
+            desiredStatus="STOPPED")
         if verbose:
             click.echo(f"Found {len(tasks['taskArns'])} STOPPED tasks...")
 
@@ -203,7 +201,8 @@ def logs_aws(config, app, num_lines, log_type, follow_tail, verbose):
                     name = stream['logStreamName']
                     break
 
-            click.secho(f"Log file has not been created yet. Waiting{'.'*i}", fg='yellow', nl=False)
+            click.secho(f"Log file has not been created yet. "
+                        f"Waiting{'.'*i}\r", fg='yellow', nl=False)
             time.sleep(2)
 
         task_arn, task_status, task_date, _ = get_latest_task_status_aws(config, app, verbose)

@@ -9,18 +9,17 @@ from cli.util import \
     get_code_dir, \
     format_path_if_mingw, \
     run_terraform_cmd
-from cli.configure import load_or_configure_app, PROVIDER_AWS
-
+from cli.configure import load_or_configure_app, PROVIDER_AWS, DEFAULT_CPU, DEFAULT_MEMORY
 
 @click.command()
 @click.option('--verbose', '-v', is_flag=True)
 @click.option(
     '--cpu', '-c', type=int,
-    help="Amount of CPU credits (cores * 1024) to use in the compute container (defaults to 1024). \
+    help=f"Amount of CPU credits (cores * 1024) to use in the compute container (defaults to {DEFAULT_CPU}). \
     \n See https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-cpu-memory-error.html for possible settings")
 @click.option(
     '--memory', '-m', type=int,
-    help="Amount of Memory (in MiB) to use in the compute container (defaults to 8192). \
+    help=f"Amount of Memory (in MiB) to use in the compute container (defaults to {DEFAULT_MEMORY}). \
     \n See https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-cpu-memory-error.html for possible settings")
 @click.option(
     '--provider', '-p', type=str, default=PROVIDER_AWS,

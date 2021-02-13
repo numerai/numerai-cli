@@ -14,8 +14,8 @@ from cli.doctor import \
 PROVIDER_AWS = "aws"
 
 DEFAULT_PROVIDER = PROVIDER_AWS
-DEFAULT_CPU = 1024
-DEFAULT_MEMORY = 8192
+DEFAULT_CPU = 2048
+DEFAULT_MEMORY = 16384
 
 
 def get_key_file_path():
