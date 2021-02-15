@@ -6,7 +6,12 @@ from configparser import ConfigParser
 
 import click
 
-from cli.util import get_project_numerai_dir
+from cli.util import \
+    copy_files, \
+    get_project_numerai_dir, \
+    get_code_dir, \
+    format_path_if_mingw, \
+    run_terraform_cmd
 from cli.doctor import \
     check_aws_validity, \
     check_numerai_validity
@@ -16,6 +21,23 @@ PROVIDER_AWS = "aws"
 DEFAULT_PROVIDER = PROVIDER_AWS
 DEFAULT_CPU = 2048
 DEFAULT_MEMORY = 16384
+
+SIZE_PRESETS = {
+    "gen-sm": (1024, 4096),
+    "gen-md": (2, 8192),
+    "gen-lg": (4, 16384),
+    "gen-xl": (8, 32768),
+
+    "cpu-sm": (1, 2048),
+    "cpu-md": (2, 4096),
+    "cpu-lg": (4, 8192),
+    "cpu-xl": (8, 16384),
+
+    "mem-sm": (1, 8192),
+    "mem-md": (2, 16384),
+    "mem-lg": (4, 32768),
+    "mem-xl": (8, 65536),
+}
 
 
 def get_key_file_path():
@@ -217,3 +239,64 @@ def load_or_configure_app(provider):
             os.chmod(key_file, 0o600)
 
     return Config()
+
+
+@click.command()
+@click.option('--verbose', '-v', is_flag=True)
+@click.option(
+    '--cpu', '-c', type=int,
+    help=f"Amount of CPU credits (cores * 1024) to use in the compute container (defaults to {DEFAULT_CPU}). \
+    \n See https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-cpu-memory-error.html for possible settings")
+@click.option(
+    '--memory', '-m', type=int,
+    help=f"Amount of Memory (in MiB) to use in the compute container (defaults to {DEFAULT_MEMORY}). \
+    \n See https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-cpu-memory-error.html for possible settings")
+@click.option(
+    '--provider', '-p', type=str, default=PROVIDER_AWS,
+    help="Select a cloud provider. One of ['aws']. Defaults to 'aws'.")
+@click.option(
+    '--node', '-n', type=str, default='default',
+    help="Create/configure an app, defaults to 'default'.")
+@click.option(
+    '--update', '-u', is_flag=True,
+    help="Update files in .numerai (terraform, lambda zips, and other copied files)")
+def configure(verbose, cpu, memory, provider, app, update):
+    """
+    Uses Terraform to create a full Numerai Compute cluster in AWS.
+    Prompts for your AWS and Numerai API keys on first run, caches them in $HOME/.numerai.
+
+    Will output two important URLs at the end of running:
+        - submission_url:   The webhook url you will provide to Numerai.
+                            A copy is stored in .numerai/submission_url.txt.
+
+        - docker_repo:      Used for "numerai docker ..."
+    """
+    numerai_dir = get_project_numerai_dir()
+    if not os.path.exists(numerai_dir) or update:
+        copy_files(
+            os.path.join(get_code_dir(), "terraform"),
+            get_project_numerai_dir(),
+            force=True,
+            verbose=verbose
+        )
+    numerai_dir = format_path_if_mingw(numerai_dir)
+
+    config = load_or_configure_app(provider)
+    config.configure_app(app, provider, cpu, memory)
+
+    # terraform init
+    run_terraform_cmd("init -upgrade", config, numerai_dir, verbose)
+    click.echo('succesfully setup .numerai with terraform')
+
+    # terraform apply
+    run_terraform_cmd(
+        f'apply -auto-approve -var="app_config_file=apps.json"',
+        config, numerai_dir, verbose, env_vars=config.provider_keys(app))
+    click.echo('successfully created cloud resources')
+
+    # terraform output for AWS apps
+    click.echo('retrieving application configs')
+    aws_applications = json.loads(run_terraform_cmd(
+        f"output -json aws_applications", config, numerai_dir, verbose, pipe_output=False
+    ).stdout.decode('utf-8'))
+    config.configure_outputs(aws_applications)
