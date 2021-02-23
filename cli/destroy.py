@@ -6,15 +6,15 @@ from cli.util import \
     get_project_numerai_dir, \
     format_path_if_mingw, \
     run_terraform_cmd
-from cli.configure import Config
+from cli.config import Config
 
 
 @click.command()
 @click.option('--verbose', '-v', is_flag=True)
 @click.option(
-    '--app', '-a', type=str, default='default',
-    help="Target a different app other than 'default'")
-def destroy(verbose, app):
+    '--node', '-n', type=str, default='default',
+    help="Target a node. Defaults to 'default'.")
+def destroy(verbose, node):
     """
     Uses Terraform to destroy Numerai Compute cluster in AWS.
     This will delete everything, including:
@@ -31,10 +31,10 @@ def destroy(verbose, app):
 
     try:
         config = Config()
-        provider_keys = config.provider_keys(app)
+        provider_keys = config.provider_keys(node)
 
-        click.secho(f"deleting application configuration...")
-        config.delete_app(app)
+        click.secho(f"deleting node configuration...")
+        config.delete_app(node)
         cmd = f'destroy -auto-approve'
         click.secho(f"deleting cloud resources...")
         run_terraform_cmd(cmd, config, numerai_dir, verbose, env_vars=provider_keys)

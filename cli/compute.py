@@ -6,7 +6,7 @@ import boto3
 import requests
 
 from cli.doctor import exception_with_msg
-from cli.configure import Config, PROVIDER_AWS
+from cli.config import Config, PROVIDER_AWS
 
 
 @click.group()
@@ -18,9 +18,9 @@ def compute():
 @compute.command()
 @click.option('--quiet', '-q', is_flag=True)
 @click.option(
-    '--app', '-a', type=str, default='default',
-    help="Target a different app other than 'default'")
-def test_webhook(quiet, app):
+    '--node', '-n', type=str, default='default',
+    help="Target a node. Defaults to 'default'.")
+def test_webhook(quiet, node):
     """
     This will POST to your webhook, and trigger compute to run in the cloud
 
@@ -33,7 +33,7 @@ def test_webhook(quiet, app):
         "dataVersion": 1
     }
 
-    req = requests.post(config.webhook_url(app), json=round_json)
+    req = requests.post(config.webhook_url(node), json=round_json)
 
     req.raise_for_status()
 
@@ -62,8 +62,8 @@ def get_task_status_aws(ecs_client, task_arn, verbose):
     return task["taskArn"], task["lastStatus"], str(task["createdAt"]), task['desiredStatus']
 
 
-# TODO: harden source of cluster arn string and make multi-app support?
-def get_latest_task_status_aws(config, app, verbose):
+# TODO: harden source of cluster arn string and make multi-node support?
+def get_latest_task_status_aws(config, node, verbose):
     ecs_client = boto3.client(
         'ecs', region_name='us-east-1',
         aws_access_key_id=config.aws_public,
@@ -93,17 +93,17 @@ def get_latest_task_status_aws(config, app, verbose):
 @compute.command()
 @click.option('--verbose', '-v', is_flag=True)
 @click.option(
-    '--app', '-a', type=str, default='default',
-    help="Target a different app other than 'default'")
-def status(verbose, app):
+    '--node', '-n', type=str, default='default',
+    help="Target a node. Defaults to 'default'.")
+def status(verbose, node):
     """
     Get the status of the latest task in compute
     """
     config = Config()
 
-    provider = config.provider(app)
+    provider = config.provider(node)
     if provider == PROVIDER_AWS:
-        task_info = get_latest_task_status_aws(config, app, verbose)
+        task_info = get_latest_task_status_aws(config, node, verbose)
 
     else:
         click.secho(f"Unsupported provider: '{provider}'", fg='red')
@@ -163,20 +163,20 @@ def get_name_and_print_logs(logs_client, family, limit, next_token=None, raise_o
     return True
 
 
-def logs_aws(config, app, num_lines, log_type, follow_tail, verbose):
+def logs_aws(config, node, num_lines, log_type, follow_tail, verbose):
     logs_client = boto3.client(
         'logs', region_name='us-east-1',
         aws_access_key_id=config.aws_public,
         aws_secret_access_key=config.aws_secret)
 
     if log_type == "webhook":
-        family = config.webhook_log_group(app)
+        family = config.webhook_log_group(node)
         get_name_and_print_logs(logs_client, family, num_lines)
 
     elif log_type == "cluster":
-        family = config.cluster_log_group(app)
+        family = config.cluster_log_group(node)
 
-        task_info = get_latest_task_status_aws(config, app, verbose)
+        task_info = get_latest_task_status_aws(config, node, verbose)
         if task_info is None or task_info[1] == 'STOPPED':
             get_name_and_print_logs(logs_client, family, num_lines)
             if task_info is not None and task_info[3] == 'RUNNING':
@@ -205,7 +205,7 @@ def logs_aws(config, app, num_lines, log_type, follow_tail, verbose):
                         f"Waiting{'.'*i}\r", fg='yellow', nl=False)
             time.sleep(2)
 
-        task_arn, task_status, task_date, _ = get_latest_task_status_aws(config, app, verbose)
+        task_arn, task_status, task_date, _ = get_latest_task_status_aws(config, node, verbose)
 
         next_token = print_logs(logs_client, family, name, limit=num_lines)
         ecs_client = boto3.client(
@@ -240,9 +240,9 @@ log_type_options = ['cluster', 'webhook']
     "--follow-tail", "-f", is_flag=True,
     help="tail the logs constantly")
 @click.option(
-    '--app', '-a', default='default',
-    help="Target a different app other than 'default'")
-def logs(verbose, num_lines, log_type, follow_tail, app):
+    '--node', '-n', default='default',
+    help="Target a node. Defaults to 'default'.")
+def logs(verbose, num_lines, log_type, follow_tail, node):
     """
     Get the logs from the last run task
 
@@ -253,9 +253,9 @@ def logs(verbose, num_lines, log_type, follow_tail, app):
         raise exception_with_msg(f"Unknown log type '{log_type}', must be one of {log_type_options}")
 
     config = Config()
-    provider = config.provider(app)
+    provider = config.provider(node)
     if provider == PROVIDER_AWS:
-        logs_aws(config, app, num_lines, log_type, follow_tail, verbose)
+        logs_aws(config, node, num_lines, log_type, follow_tail, verbose)
 
     else:
         click.secho(f"Unsupported provider: '{provider}'", fg='red')

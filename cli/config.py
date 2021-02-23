@@ -120,38 +120,38 @@ class Config:
     def write_apps(self):
         json.dump(self.apps_config, open(self._appconfig_path, 'w+'), indent=2)
 
-    def configure_app(self, app, provider, cpu, memory):
-        self.apps_config.setdefault(app, {})
+    def configure_app(self, node, provider, cpu, memory):
+        self.apps_config.setdefault(node, {})
 
-        if 'PROVIDER' not in self.apps_config[app]:
-            self.apps_config[app]['provider'] = DEFAULT_PROVIDER
+        if 'PROVIDER' not in self.apps_config[node]:
+            self.apps_config[node]['provider'] = DEFAULT_PROVIDER
         if provider:
-            self.apps_config[app]['provider'] = provider
+            self.apps_config[node]['provider'] = provider
 
-        if 'CPU' not in self.apps_config[app]:
-            self.apps_config[app]['cpu'] = DEFAULT_CPU
+        if 'CPU' not in self.apps_config[node]:
+            self.apps_config[node]['cpu'] = DEFAULT_CPU
         if cpu:
-            self.apps_config[app]['cpu'] = cpu
+            self.apps_config[node]['cpu'] = cpu
 
-        if 'MEMORY' not in self.apps_config[app]:
-            self.apps_config[app]['memory'] = DEFAULT_MEMORY
+        if 'MEMORY' not in self.apps_config[node]:
+            self.apps_config[node]['memory'] = DEFAULT_MEMORY
         if memory:
-            self.apps_config[app]['memory'] = memory
+            self.apps_config[node]['memory'] = memory
 
         self.write_apps()
 
-    def delete_app(self, app):
-        del self.apps_config[app]
+    def delete_app(self, node):
+        del self.apps_config[node]
         self.write_apps()
 
     def configure_outputs(self, outputs):
-        for app, data in outputs.items():
-            self.apps_config[app].update(data)
+        for node, data in outputs.items():
+            self.apps_config[node].update(data)
         self.write_apps()
         click.secho(f'wrote application urls (submission_url, docker_repo, etc.) to: {self._keyfile_path}', fg='yellow')
 
-    def provider(self, app):
-        return self.apps_config[app]['provider']
+    def provider(self, node):
+        return self.apps_config[node]['provider']
 
     @property
     def aws_public(self):
@@ -161,8 +161,8 @@ class Config:
     def aws_secret(self):
         return self.keys_config['aws']['AWS_SECRET_ACCESS_KEY']
 
-    def provider_keys(self, app):
-        return self.keys_config[self.provider(app)]
+    def provider_keys(self, node):
+        return self.keys_config[self.provider(node)]
 
     @property
     def numerai_public(self):
@@ -176,17 +176,17 @@ class Config:
     def numerai_keys(self):
         return self.keys_config['numerai']
 
-    def docker_repo(self, app):
-        return self.apps_config[app]['docker_repo']
+    def docker_repo(self, node):
+        return self.apps_config[node]['docker_repo']
 
-    def webhook_url(self, app):
-        return self.apps_config[app]['webhook_url']
+    def webhook_url(self, node):
+        return self.apps_config[node]['webhook_url']
 
-    def cluster_log_group(self, app):
-        return self.apps_config[app]['cluster_log_group']
+    def cluster_log_group(self, node):
+        return self.apps_config[node]['cluster_log_group']
 
-    def webhook_log_group(self, app):
-        return self.apps_config[app]['webhook_log_group']
+    def webhook_log_group(self, node):
+        return self.apps_config[node]['webhook_log_group']
 
     def sanitize_message(self, message):
         return message.replace(
@@ -200,12 +200,17 @@ class Config:
         )
 
 
+@click.group()
+def config():
+    """Docker commands for building/deploying an image."""
+    pass
 
-@click.command()
+
+@config.command()
 @click.option(
     '--provider', '-p', type=str, default=PROVIDER_AWS,
     help="Select a cloud provider. One of ['aws']. Defaults to 'aws'.")
-def configure_keys(provider):
+def keys(provider):
     """Write API keys to configuration file."""
     config = Config()
     click.secho(f"Setting up key file at {config._keyfile_path}\n", fg='yellow')
@@ -256,11 +261,11 @@ def load_or_configure_app(provider):
     help="Select a cloud provider. One of ['aws']. Defaults to 'aws'.")
 @click.option(
     '--node', '-n', type=str, default='default',
-    help="Create/configure an app, defaults to 'default'.")
+    help="Target a node. Defaults to 'default'.")
 @click.option(
     '--update', '-u', is_flag=True,
     help="Update files in .numerai (terraform, lambda zips, and other copied files)")
-def configure(verbose, cpu, memory, provider, app, update):
+def node(verbose, cpu, memory, provider, node, update):
     """
     Uses Terraform to create a full Numerai Compute cluster in AWS.
     Prompts for your AWS and Numerai API keys on first run, caches them in $HOME/.numerai.
@@ -282,7 +287,7 @@ def configure(verbose, cpu, memory, provider, app, update):
     numerai_dir = format_path_if_mingw(numerai_dir)
 
     config = load_or_configure_app(provider)
-    config.configure_app(app, provider, cpu, memory)
+    config.configure_app(node, provider, cpu, memory)
 
     # terraform init
     run_terraform_cmd("init -upgrade", config, numerai_dir, verbose)
@@ -291,7 +296,7 @@ def configure(verbose, cpu, memory, provider, app, update):
     # terraform apply
     run_terraform_cmd(
         f'apply -auto-approve -var="app_config_file=apps.json"',
-        config, numerai_dir, verbose, env_vars=config.provider_keys(app))
+        config, numerai_dir, verbose, env_vars=config.provider_keys(node))
     click.echo('successfully created cloud resources')
 
     # terraform output for AWS apps

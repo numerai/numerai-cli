@@ -1,7 +1,7 @@
 import click
 from colorama import init
 
-from cli import configure, create, destroy, compute, docker
+from cli import config, destroy, compute, docker
 
 
 @click.group()
@@ -13,10 +13,8 @@ def cli():
 def main():
     init(autoreset=True)
 
-    cli.add_command(create.create)
-    cli.add_command(destroy.destroy)
-    cli.add_command(configure.configure_keys)
-
-    cli.add_command(docker.docker)
     cli.add_command(compute.compute)
+    cli.add_command(config.config)
+    cli.add_command(destroy.destroy)
+    cli.add_command(docker.docker)
     cli()

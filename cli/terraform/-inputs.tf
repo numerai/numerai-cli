@@ -10,12 +10,12 @@ variable "az_count" {
   default     = "1"
 }
 
-variable "app_config_file" {
+variable "node_config_file" {
   description = "Path to the json file used to configure applications"
   type        = string
 }
 
-variable "app_port" {
+variable "node_container_port" {
   description = "Port exposed by the docker image to redirect traffic to"
   type        = number
   default     = 3000

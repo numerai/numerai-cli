@@ -34,10 +34,12 @@ def run_terraform_cmd(tf_cmd, config, numerai_dir, verbose, pipe_output=True, en
 
 
 def copy_files(src, dst, force, verbose):
+    if not os.path.exists(dst):
+        os.mkdir(dst)
     for filename in os.listdir(src):
         src_file = os.path.join(src, filename)
         dst_file = os.path.join(dst, filename)
-        if os.path.exists(filename) and not force:
+        if os.path.exists(dst_file) and not force:
             overwrite = click.prompt(f'{filename} already exists. Overwrite? [y]/n').strip()
             if overwrite != "" and overwrite != "y" and overwrite != "yes":
                 return

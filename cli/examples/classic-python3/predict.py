@@ -5,7 +5,6 @@ import numerapi
 import pandas as pd
 from sklearn.linear_model import LinearRegression
 
-
 TRAINED_MODEL_PREFIX = './trained_model'
 # Define models here as (ID, model instance),
 # a model ID of None is submitted as your default model
@@ -54,7 +53,7 @@ def train(train_data_path, model_id, model, force_training=False):
     logging.info(f'training model')
     model.fit(X=train_features, y=train_targets)
 
-    logging.info('saving features')
+    logging.info('saving model')
     joblib.dump(model, model_name)
 
     return model
@@ -76,7 +75,7 @@ def predict(model, predict_data_path):
     return predictions
 
 
-def submit(predictions, model_id=None):
+def submit(predictions, predict_output_path, model_id=None):
     logging.info('writing predictions to file')
     # numerai doesn't want the index, so don't write it to our file
     predictions.to_csv(predict_output_path, index=False)
@@ -87,10 +86,14 @@ def submit(predictions, model_id=None):
     napi.upload_predictions(predict_output_path, model_id=model_id)
 
 
-if __name__ == '__main__':
+def main():
     train_data_path, predict_data_path, predict_output_path = download_data()
 
     for model_id, model_type in MODEL_CONFIGS:
         trained_model = train(train_data_path, model_id, model_type)
         predictions = predict(trained_model, predict_data_path)
-        submit(predictions, model_id)
+        submit(predictions, predict_output_path, model_id)
+
+
+if __name__ == '__main__':
+    main()

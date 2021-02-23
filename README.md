@@ -84,7 +84,7 @@ you can run these commands to get the example application running in minutes:
 mkdir example-numerai
 cd example-numerai
 
-numerai setup
+numerai config node
 numerai docker copy-example
 numerai docker deploy
 ```
@@ -151,3 +151,4 @@ pip3 uninstall numerai-cli
 ## Contributions
 
 - Thanks to [uuazed](https://github.com/uuazed) for their work on [numerapi](https://github.com/uuazed/numerapi)
+- Thanks to [hellno](https://github.com/hellno) for starting the [ticker map](https://github.com/hellno/numerai-signals-tickermap)

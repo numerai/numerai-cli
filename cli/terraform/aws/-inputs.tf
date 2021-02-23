@@ -10,8 +10,8 @@ variable "az_count" {
   default     = "1"
 }
 
-variable "applications" {
-  description = "Names of apps to deploy"
+variable "nodes" {
+  description = "Names of nodes to deploy"
   type        = list(object({
     provider: string,
     name: string,
@@ -20,7 +20,7 @@ variable "applications" {
   }))
 }
 
-variable "app_port" {
+variable "node_container_port" {
   description = "Port exposed by the docker image to redirect traffic to"
   type        = number
   default     = 3000

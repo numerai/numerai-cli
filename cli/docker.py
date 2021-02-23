@@ -6,8 +6,11 @@ import boto3
 import click
 
 from cli.util import copy_files, get_code_dir, format_path_if_mingw
-from cli.configure import Config, PROVIDER_AWS
+from cli.config import Config, PROVIDER_AWS
 
+EXAMPLE_DIR = os.path.join(get_code_dir(), "examples")
+DEFAULT_EXAMPLE = 'classic-python3'
+EXAMPLES = os.listdir(EXAMPLE_DIR)
 
 @click.group()
 def docker():
@@ -18,8 +21,17 @@ def docker():
 @docker.command()
 @click.option('--quiet', '-q', is_flag=True)
 @click.option('--force', '-f', is_flag=True)
-@click.option('--rlang', '-r', is_flag=True, help='Copy the RLang example.')
-def copy_example(quiet, force, rlang):
+@click.option(
+    '--example', '-e', type=str, default=DEFAULT_EXAMPLE,
+    help=f'Specify the example to copy, defaults to {DEFAULT_EXAMPLE}. '
+         f'Options are {EXAMPLES}.'
+)
+@click.option(
+    '--dest', '-d', type=str,
+    help=f'Destination folder to which example code is written. '
+         f'Defaults to the name of the example.'
+)
+def copy_example(quiet, force, example, dest):
     """
     Copies all example files into the current directory.
 
@@ -27,23 +39,29 @@ def copy_example(quiet, force, rlang):
         - Python: Dockerfile, model.py, train.py, predict.py, and requirements.txt
         - RLang:  Dockerfile, install_packages.R, main.R
     """
-    if rlang:
-        example_dir = os.path.join(get_code_dir(), "examples", "rlang")
+    if example in EXAMPLES:
+        example_dir = os.path.join(get_code_dir(), "examples", example)
     else:
-        example_dir = os.path.join(get_code_dir(), "examples", "python3")
-    copy_files(example_dir, '.', force, not quiet)
+        raise ValueError(f'Invalid example, options are {EXAMPLES}')
 
-    with open('.dockerignore', 'a+') as f:
-        f.write(".numerai\n")
-        f.write("numerai_dataset.zip\n")
-        f.write(".git\n")
+    dst_dir = os.path.join(".", dest if dest is not None else example)
+    click.echo(f'Copying {example} example to {dst_dir}')
+    copy_files(example_dir, dst_dir, force, not quiet)
+
+    dockerignore_path = os.path.join(dst_dir, '.dockerignore')
+    if not os.path.exists(dockerignore_path):
+        with open('.dockerignore', 'a+') as f:
+            f.write(".numerai\n")
+            f.write("numerai_dataset*\n")
+            f.write(".git\n")
+            f.write("venv\n")
 
 
-def docker_build(config, verbose, app, build_args=None):
+def docker_build(config, verbose, node, build_args=None):
     build_arg_str = ''
     for arg in build_args:
         build_arg_str += f' --build-arg {arg}={build_args[arg]}'
-    cmd = f'docker build -t {config.docker_repo(app)} {build_arg_str} .'
+    cmd = f'docker build -t {config.docker_repo(node)} {build_arg_str} .'
     if verbose:
         click.echo("running: " + config.sanitize_message(cmd))
     res = subprocess.run(cmd, shell=True)
@@ -56,9 +74,9 @@ def docker_build(config, verbose, app, build_args=None):
     help="Defines the command to run inside the docker container.")
 @click.option('--verbose', '-v', is_flag=True)
 @click.option(
-    '--app', '-a', type=str, default='default',
-    help="Target a different app other than 'default'")
-def train(command, verbose, app):
+    '--node', '-n', type=str, default='default',
+    help="Target a node. Defaults to 'default'.")
+def train(command, verbose, node):
     """
     Run the docker image locally and output trained models.
     Assumes a file called `train.py` exists and runs it by default.
@@ -66,10 +84,10 @@ def train(command, verbose, app):
     See the example if you want inspiration for how to do this.
     """
     config = Config()
-    docker_build(config, verbose, app, build_args=config.numerai_keys)
+    docker_build(config, verbose, node, build_args=config.numerai_keys)
     cur_dir = format_path_if_mingw(os.getcwd())
 
-    c = f'docker run --rm -it -v {cur_dir}:/opt/app -w /opt/app {config.docker_repo(app)} {command}'
+    c = f'docker run --rm -it -v {cur_dir}:/opt/app -w /opt/app {config.docker_repo(node)} {command}'
     if verbose:
         click.echo('running: ' + c)
     res = subprocess.run(c, shell=True)
@@ -79,19 +97,19 @@ def train(command, verbose, app):
 @docker.command()
 @click.option('--verbose', '-v', is_flag=True)
 @click.option(
-    '--app', '-a', type=str, default='default',
-    help="Target a different app other than 'default'")
-def run(verbose, app):
+    '--node', '-n', type=str, default='default',
+    help="Target a node. Defaults to 'default'.")
+def run(verbose, node):
     """
     Run the docker image locally and submit predictions.
     This runs the default CMD in your docker container (example uses predict.py / main.R)
     """
     config = Config()
-    docker_build(config, verbose, app, build_args=config.numerai_keys)
+    docker_build(config, verbose, node, build_args=config.numerai_keys)
 
     cur_dir = format_path_if_mingw(os.getcwd())
 
-    c = f'docker run --rm -it -v {cur_dir}:/opt/app -w /opt/app {config.docker_repo(app)} '
+    c = f'docker run --rm -it -v {cur_dir}:/opt/app -w /opt/app {config.docker_repo(node)} '
     if verbose:
         click.echo('running: ' + c)
     res = subprocess.run(c, shell=True)
@@ -101,21 +119,21 @@ def run(verbose, app):
 @docker.command()
 @click.option('--verbose', '-v', is_flag=True)
 @click.option(
-    '--app', '-a', type=str, default='default',
-    help="Target a different app other than 'default'")
-def build(verbose, app):
+    '--node', '-n', type=str, default='default',
+    help="Target a node. Defaults to 'default'.")
+def build(verbose, node):
     """Builds the docker image"""
     config = Config()
-    docker_build(config, verbose, app, build_args=config.numerai_keys)
+    docker_build(config, verbose, node, build_args=config.numerai_keys)
 
 
-def docker_cleanup_aws(config, app):
+def docker_cleanup_aws(config, node):
     ecr_client = boto3.client(
         'ecr', region_name='us-east-1',
         aws_access_key_id=config.aws_public,
         aws_secret_access_key=config.aws_secret)
 
-    docker_repo_name = config.docker_repo(app).split("/")[-1]
+    docker_repo_name = config.docker_repo(node).split("/")[-1]
 
     resp = ecr_client.list_images(
         repositoryName=docker_repo_name,
@@ -132,10 +150,10 @@ def docker_cleanup_aws(config, app):
     return resp['imageIds']
 
 
-def docker_cleanup(config, verbose, app):
-    provider = config.provider(app)
+def docker_cleanup(config, verbose, node):
+    provider = config.provider(node)
     if provider == PROVIDER_AWS:
-        imageIds = docker_cleanup_aws(config, app)
+        imageIds = docker_cleanup_aws(config, node)
 
     else:
         click.secho(f"Unsupported provider: '{provider}'", fg='red')
@@ -148,11 +166,11 @@ def docker_cleanup(config, verbose, app):
 @docker.command()
 @click.option('--verbose', '-v', is_flag=True)
 @click.option(
-    '--app', '-a', type=str, default='default',
-    help="Target a different app other than 'default'")
-def cleanup(verbose, app):
+    '--node', '-n', type=str, default='default',
+    help="Target a node. Defaults to 'default'.")
+def cleanup(verbose, node):
     config = Config()
-    docker_cleanup(config, verbose, app)
+    docker_cleanup(config, verbose, node)
 
 
 def docker_login_aws(config):
@@ -172,14 +190,14 @@ def docker_login_aws(config):
 @docker.command()
 @click.option('--verbose', '-v', is_flag=True)
 @click.option(
-    '--app', '-a', type=str, default='default',
-    help="Target a different app other than 'default'")
-def deploy(verbose, app):
+    '--node', '-n', type=str, default='default',
+    help="Target a node. Defaults to 'default'.")
+def deploy(verbose, node):
     """Builds and pushes your docker image to the AWS ECR repo"""
     config = Config()
-    docker_build(config, verbose, app, build_args=config.numerai_keys)
+    docker_build(config, verbose, node, build_args=config.numerai_keys)
 
-    provider = config.provider(app)
+    provider = config.provider(node)
     if provider == PROVIDER_AWS:
         username, password = docker_login_aws(config)
     else:
@@ -188,7 +206,7 @@ def deploy(verbose, app):
 
     if verbose:
         click.echo('running: docker login')
-    docker_repo = config.docker_repo(app)
+    docker_repo = config.docker_repo(node)
     res = subprocess.run(
         f'docker login -u {username} -p {password} {docker_repo}',
         stdout=subprocess.PIPE,
@@ -202,4 +220,4 @@ def deploy(verbose, app):
     res = subprocess.run(c, shell=True)
     res.check_returncode()
 
-    docker_cleanup(config, verbose, app)
+    docker_cleanup(config, verbose, node)
