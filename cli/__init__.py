@@ -18,3 +18,7 @@ def main():
     cli.add_command(destroy.destroy)
     cli.add_command(docker.docker)
     cli()
+
+
+if __name__ == '__main__':
+    main()

@@ -73,7 +73,7 @@ def get_key_file_path():
 
 
 def get_app_config_path():
-    config_path = os.path.join(get_project_numerai_dir(), 'apps.json')
+    config_path = os.path.join(get_project_numerai_dir(), 'nodes.json')
     created = False
 
     if not os.path.exists(config_path):
@@ -108,11 +108,13 @@ class Config:
             self.keys_config.write(configfile)
 
     def configure_keys_numerai(self, numerai_public, numerai_private):
+        check_numerai_validity(numerai_public, numerai_private)
         self.keys_config['numerai']['NUMERAI_PUBLIC_ID'] = numerai_public
         self.keys_config['numerai']['NUMERAI_SECRET_KEY'] = numerai_private
         self.write_keys()
 
     def configure_keys_aws(self, aws_public, aws_private):
+        check_aws_validity(aws_public, aws_private)
         self.keys_config['aws']['AWS_ACCESS_KEY_ID'] = aws_public
         self.keys_config['aws']['AWS_SECRET_ACCESS_KEY'] = aws_private
         self.write_keys()
@@ -148,7 +150,7 @@ class Config:
         for node, data in outputs.items():
             self.apps_config[node].update(data)
         self.write_apps()
-        click.secho(f'wrote application urls (submission_url, docker_repo, etc.) to: {self._keyfile_path}', fg='yellow')
+        click.secho(f'wrote node configuration to: {self._keyfile_path}', fg='yellow')
 
     def provider(self, node):
         return self.apps_config[node]['provider']
@@ -214,18 +216,31 @@ def keys(provider):
     """Write API keys to configuration file."""
     config = Config()
     click.secho(f"Setting up key file at {config._keyfile_path}\n", fg='yellow')
-    click.secho(f"Please type in the following keys:", fg='yellow')
-
-    numerai_public = click.prompt('NUMERAI_PUBLIC_ID').strip()
-    numerai_private = click.prompt('NUMERAI_SECRET_KEY').strip()
-    check_numerai_validity(numerai_public, numerai_private)
-    config.configure_keys_numerai(numerai_public, numerai_private)
+    click.secho(f"Please type in the following keys "
+                f"(press enter to keep the value in the brackets):", fg='yellow')
 
     if provider == PROVIDER_AWS:
-        aws_public = click.prompt('AWS_ACCESS_KEY_ID').strip()
-        aws_private = click.prompt('AWS_SECRET_ACCESS_KEY').strip()
-        check_aws_validity(aws_public, aws_private)
-        config.configure_keys_aws(aws_public, aws_private)
+        try:
+            aws_public = config.aws_public
+            aws_secret = config.aws_secret
+        except KeyError:
+            aws_public = None
+            aws_secret = None
+        config.configure_keys_aws(
+            click.prompt(f'AWS_ACCESS_KEY_ID', default=aws_public).strip(),
+            click.prompt(f'AWS_SECRET_ACCESS_KEY', default=aws_secret).strip()
+        )
+
+    try:
+        numerai_public = config.numerai_public
+        numerai_secret = config.numerai_secret
+    except KeyError:
+        numerai_public = None
+        numerai_secret = None
+    config.configure_keys_numerai(
+        click.prompt(f'NUMERAI_PUBLIC_ID', default=numerai_public).strip(),
+        click.prompt(f'NUMERAI_SECRET_KEY', default=numerai_secret).strip()
+    )
 
     return config
 
@@ -235,7 +250,7 @@ def load_or_configure_app(provider):
 
     if not os.path.exists(key_file):
         click.echo("Key file not found at: " + get_key_file_path())
-        return configure_keys(provider)
+        return keys(provider)
 
     # Check permission and prompt to fix
     elif os.stat(key_file).st_mode & (S_IRGRP | S_IROTH):
@@ -246,7 +261,7 @@ def load_or_configure_app(provider):
     return Config()
 
 
-@click.command()
+@config.command()
 @click.option('--verbose', '-v', is_flag=True)
 @click.option(
     '--cpu', '-c', type=int,
