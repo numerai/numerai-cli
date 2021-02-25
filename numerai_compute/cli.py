@@ -225,6 +225,15 @@ def copy_docker_rlang(verbose, force):
     copy_file(code_dir, "main.R", verbose, force)
 
 
+def copy_docker_signals(verbose, force):
+    code_dir = path.join(get_code_dir(), "examples", "signals")
+    copy_file(code_dir, "Dockerfile", verbose, force)
+    copy_file(code_dir, "data.py", verbose, force)
+    copy_file(code_dir, "train.py", verbose, force)
+    copy_file(code_dir, "predict.py", verbose, force)
+    copy_file(code_dir, "requirements.txt", verbose, force)
+
+
 def is_win10_professional():
     name = sys.platform
     if name != 'win32':
@@ -463,7 +472,8 @@ def docker():
 @click.option('--quiet', '-q', is_flag=True)
 @click.option('--force', '-f', is_flag=True)
 @click.option('--rlang', '-r', is_flag=True, help='Copy the RLang example.')
-def copy_example(quiet, force, rlang):
+@click.option('--signals', '-s', is_flag=True, help='Copy the Signals example.')
+def copy_example(quiet, force, rlang, signals):
     """
     Copies all example files into the current directory.
 
@@ -473,6 +483,8 @@ def copy_example(quiet, force, rlang):
     """
     if rlang:
         copy_docker_rlang(not quiet, force)
+    elif signals:
+        copy_docker_signals(not quiet, force)
     else:
         copy_docker_python3(not quiet, force)
 
