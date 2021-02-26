@@ -59,7 +59,7 @@ You can download and run the setup script for your OS with one of the following 
 
 - Ubuntu 18 Terminal (ctrl + alt + t):
     ```
-    apt update && apt install -y libcurl4 curl && curl https://raw.githubusercontent.com/numerai/numerai-cli/master/scripts/setup-ubu18.sh | bash
+    sudo apt update && sudo apt install -y libcurl4 curl && sudo curl https://raw.githubusercontent.com/numerai/numerai-cli/master/scripts/setup-ubu18.sh | sudo bash
     ```
 
 - Windows Command Prompt (windows key, type `cmd`, select Command Prompt):
