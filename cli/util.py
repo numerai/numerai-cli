@@ -54,11 +54,11 @@ def copy_files(src, dst, force, verbose):
             shutil.copy(src_file, dst_file)
 
 
-def get_project_numerai_dir():
-    return os.path.join(os.getcwd(), ".numerai")
+def get_config_dir():
+    return os.path.join(os.path.expanduser("~"), ".numerai")
 
 
-def get_code_dir():
+def get_package_dir():
     return os.path.dirname(__file__)
 
 

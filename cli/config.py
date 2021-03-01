@@ -8,8 +8,8 @@ import click
 
 from cli.util import \
     copy_files, \
-    get_project_numerai_dir, \
-    get_code_dir, \
+    get_config_dir, \
+    get_package_dir, \
     format_path_if_mingw, \
     run_terraform_cmd
 from cli.doctor import \
@@ -17,10 +17,15 @@ from cli.doctor import \
     check_numerai_validity
 
 PROVIDER_AWS = "aws"
+PROVIDERS = [PROVIDER_AWS]
 
-DEFAULT_PROVIDER = PROVIDER_AWS
-DEFAULT_CPU = 2048
-DEFAULT_MEMORY = 16384
+DEFAULT_NODE = "default"
+DEFAULT_SETTINGS = {
+    'provider': PROVIDER_AWS,
+    'cpu': 2048,
+    'memory': 16384,
+    'path': "."
+}
 
 SIZE_PRESETS = {
     "gen-sm": (1024, 4096),
@@ -40,21 +45,41 @@ SIZE_PRESETS = {
 }
 
 
+def get_or_create(path):
+    created = False
+    if not os.path.exists(path):
+        created = True
+        with open(path, 'w+') as f:
+            f.write('')
+    return created
+
+
 def get_key_file_path():
+    path = os.path.join(str(Path.home()), '.numerai/.keys')
+    get_or_create(path)
+    return path
+
+
+def get_app_config_path():
+    path = os.path.join(str(Path.home()), '.numerai/nodes.json')
+    get_or_create(path)
+    return path
+
+
+# this is necessary for legacy code to be converted to newer formats
+def upgrade():
     home = str(Path.home())
+    old_key_path = os.path.join(home, '.numerai')
+    new_key_path = get_key_file_path()
 
-    old_path = os.path.join(home, '.numerai')
-    keyfile_path = os.path.join(get_project_numerai_dir(), '.keys')
-
-    # this is necessary for legacy code to be converted to new config format
-    if os.path.exists(old_path):
-        click.secho(f"Old version of keyfile found at '{old_path}', moving to new location {keyfile_path} ", fg='red')
-        os.rename(old_path, keyfile_path)
+    if os.path.exists(old_key_path):
+        click.secho(f"Old version of keyfile found at '{old_key_path}', moving to new location {new_key_path} ", fg='red')
+        os.rename(old_key_path, new_key_path)
 
     config = ConfigParser()
-    config.read(keyfile_path)
+    config.read(new_key_path)
     if 'default' in config:
-        click.secho(f"reformatting...", fg='red')
+        click.secho(f"reformatting old keys...", fg='red')
         aws_access_key = config['default']['AWS_ACCESS_KEY_ID']
         aws_secret_key = config['default']['AWS_SECRET_ACCESS_KEY']
         numerai_public = config['default']['NUMERAI_PUBLIC_ID']
@@ -67,21 +92,7 @@ def get_key_file_path():
         config['numerai']['NUMERAI_PUBLIC_ID'] = numerai_public
         config['numerai']['NUMERAI_SECRET_KEY'] = numerai_secret
         del config['default']
-        config.write(open(os.open(keyfile_path, os.O_CREAT | os.O_WRONLY, 0o600), 'w'))
-
-    return keyfile_path
-
-
-def get_app_config_path():
-    config_path = os.path.join(get_project_numerai_dir(), 'nodes.json')
-    created = False
-
-    if not os.path.exists(config_path):
-        created = True
-        with open(config_path, 'w+') as f:
-            json.dump({}, f)
-
-    return config_path, created
+        config.write(open(os.open(new_key_path, os.O_CREAT | os.O_WRONLY, 0o600), 'w'))
 
 
 class Config:
@@ -89,7 +100,7 @@ class Config:
     def __init__(self):
         super().__init__()
 
-        self._appconfig_path, _ = get_app_config_path()
+        self._appconfig_path = get_app_config_path()
         self.apps_config = json.load(open(self._appconfig_path))
 
         self._keyfile_path = get_key_file_path()
@@ -119,37 +130,36 @@ class Config:
         self.keys_config['aws']['AWS_SECRET_ACCESS_KEY'] = aws_private
         self.write_keys()
 
-    def write_apps(self):
+    def write_nodes(self):
         json.dump(self.apps_config, open(self._appconfig_path, 'w+'), indent=2)
 
-    def configure_app(self, node, provider, cpu, memory):
+    def configure_node(self, node, provider, cpu, memory, path):
         self.apps_config.setdefault(node, {})
+        self.apps_config[node].merge({
+            key: default
+            for key, default in DEFAULT_SETTINGS.items()
+            if key not in self.apps_config[node]
+        })
 
-        if 'PROVIDER' not in self.apps_config[node]:
-            self.apps_config[node]['provider'] = DEFAULT_PROVIDER
         if provider:
             self.apps_config[node]['provider'] = provider
-
-        if 'CPU' not in self.apps_config[node]:
-            self.apps_config[node]['cpu'] = DEFAULT_CPU
         if cpu:
             self.apps_config[node]['cpu'] = cpu
-
-        if 'MEMORY' not in self.apps_config[node]:
-            self.apps_config[node]['memory'] = DEFAULT_MEMORY
         if memory:
             self.apps_config[node]['memory'] = memory
+        if path:
+            self.apps_config[node]['path'] = path
 
-        self.write_apps()
+        self.write_nodes()
 
-    def delete_app(self, node):
+    def delete_node(self, node):
         del self.apps_config[node]
-        self.write_apps()
+        self.write_nodes()
 
     def configure_outputs(self, outputs):
         for node, data in outputs.items():
             self.apps_config[node].update(data)
-        self.write_apps()
+        self.write_nodes()
         click.secho(f'wrote node configuration to: {self._keyfile_path}', fg='yellow')
 
     def provider(self, node):
@@ -237,6 +247,7 @@ def keys(provider):
     except KeyError:
         numerai_public = None
         numerai_secret = None
+
     config.configure_keys_numerai(
         click.prompt(f'NUMERAI_PUBLIC_ID', default=numerai_public).strip(),
         click.prompt(f'NUMERAI_SECRET_KEY', default=numerai_secret).strip()
@@ -249,7 +260,7 @@ def load_or_configure_app(provider):
     key_file = get_key_file_path()
 
     if not os.path.exists(key_file):
-        click.echo("Key file not found at: " + get_key_file_path())
+        click.echo("Key file not found at: " + key_file)
         return keys(provider)
 
     # Check permission and prompt to fix
@@ -264,23 +275,26 @@ def load_or_configure_app(provider):
 @config.command()
 @click.option('--verbose', '-v', is_flag=True)
 @click.option(
+    '--node', '-n', type=str, default=DEFAULT_NODE,
+    help=f"Target a node. Defaults to '{DEFAULT_NODE}'.")
+@click.option(
+    '--provider', '-P', type=str,
+    help=f"Select a cloud provider. One of {PROVIDERS}. Defaults to {DEFAULT_SETTINGS['provider']}.")
+@click.option(
     '--cpu', '-c', type=int,
-    help=f"Amount of CPU credits (cores * 1024) to use in the compute container (defaults to {DEFAULT_CPU}). \
+    help=f"Amount of CPU credits (cores * 1024) to use in the compute container (defaults to {DEFAULT_SETTINGS['cpu']}). \
     \n See https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-cpu-memory-error.html for possible settings")
 @click.option(
     '--memory', '-m', type=int,
-    help=f"Amount of Memory (in MiB) to use in the compute container (defaults to {DEFAULT_MEMORY}). \
+    help=f"Amount of Memory (in MiB) to use in the compute container (defaults to {DEFAULT_SETTINGS['memory']}). \
     \n See https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-cpu-memory-error.html for possible settings")
 @click.option(
-    '--provider', '-p', type=str, default=PROVIDER_AWS,
-    help="Select a cloud provider. One of ['aws']. Defaults to 'aws'.")
+    '--path', '-p', type=str,
+    help=f"Target a file path. Defaults to '{DEFAULT_SETTINGS['path']}' (current directory).")
 @click.option(
-    '--node', '-n', type=str, default='default',
-    help="Target a node. Defaults to 'default'.")
-@click.option(
-    '--update', '-u', is_flag=True,
-    help="Update files in .numerai (terraform, lambda zips, and other copied files)")
-def node(verbose, cpu, memory, provider, node, update):
+    '--upgrade', '-u', is_flag=True,
+    help="upgrade files in .numerai (terraform, lambda zips, and other copied files)")
+def node(verbose, node, provider, cpu, memory, path, upgrade):
     """
     Uses Terraform to create a full Numerai Compute cluster in AWS.
     Prompts for your AWS and Numerai API keys on first run, caches them in $HOME/.numerai.
@@ -291,18 +305,21 @@ def node(verbose, cpu, memory, provider, node, update):
 
         - docker_repo:      Used for "numerai docker ..."
     """
-    numerai_dir = get_project_numerai_dir()
+    if upgrade:
+        upgrade()
+
+    numerai_dir = get_config_dir()
     if not os.path.exists(numerai_dir) or update:
         copy_files(
-            os.path.join(get_code_dir(), "terraform"),
-            get_project_numerai_dir(),
+            os.path.join(get_package_dir(), "terraform"),
+            get_config_dir(),
             force=True,
             verbose=verbose
         )
     numerai_dir = format_path_if_mingw(numerai_dir)
 
     config = load_or_configure_app(provider)
-    config.configure_app(node, provider, cpu, memory)
+    config.configure_node(node, provider, cpu, memory, path)
 
     # terraform init
     run_terraform_cmd("init -upgrade", config, numerai_dir, verbose)

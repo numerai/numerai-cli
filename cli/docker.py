@@ -5,10 +5,10 @@ import subprocess
 import boto3
 import click
 
-from cli.util import copy_files, get_code_dir, format_path_if_mingw
+from cli.util import copy_files, get_package_dir, format_path_if_mingw
 from cli.config import Config, PROVIDER_AWS
 
-EXAMPLE_DIR = os.path.join(get_code_dir(), "examples")
+EXAMPLE_DIR = os.path.join(get_package_dir(), "examples")
 DEFAULT_EXAMPLE = 'classic-python3'
 EXAMPLES = os.listdir(EXAMPLE_DIR)
 
@@ -40,7 +40,7 @@ def copy_example(quiet, force, example, dest):
         - RLang:  Dockerfile, install_packages.R, main.R
     """
     if example in EXAMPLES:
-        example_dir = os.path.join(get_code_dir(), "examples", example)
+        example_dir = os.path.join(get_package_dir(), "examples", example)
     else:
         raise ValueError(f'Invalid example, options are {EXAMPLES}')
 

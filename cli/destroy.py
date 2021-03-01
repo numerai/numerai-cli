@@ -3,7 +3,7 @@ import os
 import click
 
 from cli.util import \
-    get_project_numerai_dir, \
+    get_config_dir, \
     format_path_if_mingw, \
     run_terraform_cmd
 from cli.config import Config
@@ -23,7 +23,7 @@ def destroy(verbose, node):
         - all logs
     This command is idempotent and safe to run multiple times.
     """
-    numerai_dir = get_project_numerai_dir()
+    numerai_dir = get_config_dir()
     if not os.path.exists(numerai_dir):
         click.secho(f".numerai directory not setup, run 'numerai create' first...", fg='red')
         return
@@ -34,7 +34,7 @@ def destroy(verbose, node):
         provider_keys = config.provider_keys(node)
 
         click.secho(f"deleting node configuration...")
-        config.delete_app(node)
+        config.delete_node(node)
         cmd = f'destroy -auto-approve'
         click.secho(f"deleting cloud resources...")
         run_terraform_cmd(cmd, config, numerai_dir, verbose, env_vars=provider_keys)
