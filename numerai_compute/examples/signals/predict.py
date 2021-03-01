@@ -24,7 +24,7 @@ TRAINED_MODEL_PREFIX = './trained_model'
 # Define models here as (ID, model instance),
 # a model ID of None is submitted as your default model
 MODEL_CONFIGS = [
-    ('9e7b24e1-b84f-4608-ba67-b530bd2909ad', GradientBoostingRegressor(subsample=0.1)),
+    (None, GradientBoostingRegressor(subsample=0.1)),
     # (YOUR MODEL ID, LinearRegression(n_jobs=10))
     #  etc...
 ]
