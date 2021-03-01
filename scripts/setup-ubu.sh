@@ -21,7 +21,9 @@
       gnupg-agent \
       software-properties-common
     curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
-    add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable"
+
+    add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+
     apt update
     apt-cache policy docker-ce
     apt install -y docker-ce
@@ -29,7 +31,12 @@
     echo "Docker installed!"
   fi
 
-  echo "Setup done, ready for you to install numerai-cli :)"
+  echo "Setup done, ready for you to install numerai-cli."
+  echo "If you encounter issues, include this in your support request:"
+  lsb_release -a
+  uname -a
+  systemctl status docker
+  which docker
 } || {
   echo "Setup script failed, please include the following along with the error if you report this:"
   lsb_release -a
