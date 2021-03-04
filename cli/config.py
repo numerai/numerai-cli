@@ -45,54 +45,39 @@ SIZE_PRESETS = {
 }
 
 
-def get_or_create(path):
+def maybe_create(path):
     created = False
+
+    directory = os.path.dirname(path)
+    print(directory)
+    if not os.path.exists(directory):
+        print('creating...')
+        os.makedirs(directory)
+
     if not os.path.exists(path):
         created = True
         with open(path, 'w+') as f:
             f.write('')
+
     return created
 
 
-def get_key_file_path():
-    path = os.path.join(str(Path.home()), '.numerai/.keys')
-    get_or_create(path)
+def get_config_path():
+    return os.path.join(str(Path.home()), '.numerai/')
+
+
+def get_key_file_path(create=True):
+    path = os.path.join(get_config_path(), '.keys')
+    if create:
+        maybe_create(path)
     return path
 
 
-def get_app_config_path():
-    path = os.path.join(str(Path.home()), '.numerai/nodes.json')
-    get_or_create(path)
+def get_config_file_path(create=True):
+    path = os.path.join(get_config_path(), 'nodes.json')
+    if create:
+        maybe_create(path)
     return path
-
-
-# this is necessary for legacy code to be converted to newer formats
-def upgrade():
-    home = str(Path.home())
-    old_key_path = os.path.join(home, '.numerai')
-    new_key_path = get_key_file_path()
-
-    if os.path.exists(old_key_path):
-        click.secho(f"Old version of keyfile found at '{old_key_path}', moving to new location {new_key_path} ", fg='red')
-        os.rename(old_key_path, new_key_path)
-
-    config = ConfigParser()
-    config.read(new_key_path)
-    if 'default' in config:
-        click.secho(f"reformatting old keys...", fg='red')
-        aws_access_key = config['default']['AWS_ACCESS_KEY_ID']
-        aws_secret_key = config['default']['AWS_SECRET_ACCESS_KEY']
-        numerai_public = config['default']['NUMERAI_PUBLIC_ID']
-        numerai_secret = config['default']['NUMERAI_SECRET_KEY']
-        config.optionxform = str
-        config['aws'] = {}
-        config['aws']['AWS_ACCESS_KEY_ID'] = aws_access_key
-        config['aws']['AWS_SECRET_ACCESS_KEY'] = aws_secret_key
-        config['numerai'] = {}
-        config['numerai']['NUMERAI_PUBLIC_ID'] = numerai_public
-        config['numerai']['NUMERAI_SECRET_KEY'] = numerai_secret
-        del config['default']
-        config.write(open(os.open(new_key_path, os.O_CREAT | os.O_WRONLY, 0o600), 'w'))
 
 
 class Config:
@@ -100,8 +85,11 @@ class Config:
     def __init__(self):
         super().__init__()
 
-        self._appconfig_path = get_app_config_path()
-        self.apps_config = json.load(open(self._appconfig_path))
+        self._config_file_path = get_config_file_path()
+        if os.stat(self._config_file_path).st_size == 0:
+            self.nodes_config = {}
+        else:
+            self.nodes_config = json.load(open(self._config_file_path))
 
         self._keyfile_path = get_key_file_path()
         self.keys_config = ConfigParser()
@@ -131,39 +119,42 @@ class Config:
         self.write_keys()
 
     def write_nodes(self):
-        json.dump(self.apps_config, open(self._appconfig_path, 'w+'), indent=2)
+        json.dump(self.nodes_config, open(self._config_file_path, 'w+'), indent=2)
 
     def configure_node(self, node, provider, cpu, memory, path):
-        self.apps_config.setdefault(node, {})
-        self.apps_config[node].merge({
+        self.nodes_config.setdefault(node, {})
+        self.nodes_config[node].update({
             key: default
             for key, default in DEFAULT_SETTINGS.items()
-            if key not in self.apps_config[node]
+            if key not in self.nodes_config[node]
         })
 
         if provider:
-            self.apps_config[node]['provider'] = provider
+            self.nodes_config[node]['provider'] = provider
         if cpu:
-            self.apps_config[node]['cpu'] = cpu
+            self.nodes_config[node]['cpu'] = cpu
         if memory:
-            self.apps_config[node]['memory'] = memory
+            self.nodes_config[node]['memory'] = memory
         if path:
-            self.apps_config[node]['path'] = path
+            self.nodes_config[node]['path'] = path
 
         self.write_nodes()
 
     def delete_node(self, node):
-        del self.apps_config[node]
+        del self.nodes_config[node]
         self.write_nodes()
 
     def configure_outputs(self, outputs):
         for node, data in outputs.items():
-            self.apps_config[node].update(data)
+            self.nodes_config[node].update(data)
         self.write_nodes()
-        click.secho(f'wrote node configuration to: {self._keyfile_path}', fg='yellow')
+        click.secho(f'wrote node configuration to: {self._config_file_path}', fg='yellow')
 
     def provider(self, node):
-        return self.apps_config[node]['provider']
+        return self.nodes_config[node]['provider']
+
+    def path(self, node):
+        return self.nodes_config[node]['path']
 
     @property
     def aws_public(self):
@@ -189,16 +180,16 @@ class Config:
         return self.keys_config['numerai']
 
     def docker_repo(self, node):
-        return self.apps_config[node]['docker_repo']
+        return self.nodes_config[node]['docker_repo']
 
     def webhook_url(self, node):
-        return self.apps_config[node]['webhook_url']
+        return self.nodes_config[node]['webhook_url']
 
     def cluster_log_group(self, node):
-        return self.apps_config[node]['cluster_log_group']
+        return self.nodes_config[node]['cluster_log_group']
 
     def webhook_log_group(self, node):
-        return self.apps_config[node]['webhook_log_group']
+        return self.nodes_config[node]['webhook_log_group']
 
     def sanitize_message(self, message):
         return message.replace(
@@ -256,7 +247,7 @@ def keys(provider):
     return config
 
 
-def load_or_configure_app(provider):
+def load_or_configure_node(provider):
     key_file = get_key_file_path()
 
     if not os.path.exists(key_file):
@@ -291,34 +282,17 @@ def load_or_configure_app(provider):
 @click.option(
     '--path', '-p', type=str,
     help=f"Target a file path. Defaults to '{DEFAULT_SETTINGS['path']}' (current directory).")
-@click.option(
-    '--upgrade', '-u', is_flag=True,
-    help="upgrade files in .numerai (terraform, lambda zips, and other copied files)")
-def node(verbose, node, provider, cpu, memory, path, upgrade):
+def node(verbose, node, provider, cpu, memory, path):
     """
     Uses Terraform to create a full Numerai Compute cluster in AWS.
     Prompts for your AWS and Numerai API keys on first run, caches them in $HOME/.numerai.
 
-    Will output two important URLs at the end of running:
-        - submission_url:   The webhook url you will provide to Numerai.
-                            A copy is stored in .numerai/submission_url.txt.
-
-        - docker_repo:      Used for "numerai docker ..."
+    At the end of running, this will output a config file 'nodes.json'.
     """
-    if upgrade:
-        upgrade()
 
-    numerai_dir = get_config_dir()
-    if not os.path.exists(numerai_dir) or update:
-        copy_files(
-            os.path.join(get_package_dir(), "terraform"),
-            get_config_dir(),
-            force=True,
-            verbose=verbose
-        )
-    numerai_dir = format_path_if_mingw(numerai_dir)
+    numerai_dir = format_path_if_mingw(get_config_dir())
 
-    config = load_or_configure_app(provider)
+    config = load_or_configure_node(provider)
     config.configure_node(node, provider, cpu, memory, path)
 
     # terraform init
@@ -327,13 +301,90 @@ def node(verbose, node, provider, cpu, memory, path, upgrade):
 
     # terraform apply
     run_terraform_cmd(
-        f'apply -auto-approve -var="app_config_file=apps.json"',
+        f'apply -auto-approve -var="node_config_file=nodes.json"',
         config, numerai_dir, verbose, env_vars=config.provider_keys(node))
     click.echo('successfully created cloud resources')
 
-    # terraform output for AWS apps
-    click.echo('retrieving application configs')
-    aws_applications = json.loads(run_terraform_cmd(
-        f"output -json aws_applications", config, numerai_dir, verbose, pipe_output=False
+    # terraform output for AWS nodes
+    click.echo('saving node configuration')
+    aws_nodes = json.loads(run_terraform_cmd(
+        f"output -json aws_nodes", config, numerai_dir, verbose, pipe_output=False
     ).stdout.decode('utf-8'))
-    config.configure_outputs(aws_applications)
+    config.configure_outputs(aws_nodes)
+
+
+@config.command()
+# this is necessary for legacy code to be converted to newer formats
+def upgrade():
+    click.secho(f"Upgrading, do not interrupt or else "
+                f"your environment may be corrupted.", fg='yellow')
+    home = str(Path.home())
+    old_key_path = os.path.join(home, '.numerai')
+    old_config_path = os.path.join(os.getcwd(), '.numerai/')
+
+    # MOVE KEYS FILE
+    if os.path.isfile(old_key_path):
+        temp_key_path = os.path.join(old_config_path, '.keys')
+        maybe_create(temp_key_path)
+        click.secho(f"Moving '{old_key_path}' to '{temp_key_path}'", fg='yellow')
+        os.rename(old_key_path, temp_key_path)
+
+    # MOVE CONFIG FILE
+    new_config_path = get_config_path()
+    if os.path.exists(old_config_path):
+        click.secho(f"moving {old_config_path} to {new_config_path}", fg='yellow')
+        os.rename(old_config_path, new_config_path)
+
+    # REFORMAT OLD KEYS
+    new_key_path = get_key_file_path()
+    config = ConfigParser()
+    config.read(new_key_path)
+    if 'default' in config:
+        click.secho(f"Old keyfile format found, reformatting...", fg='yellow')
+        aws_access_key = config['default']['AWS_ACCESS_KEY_ID']
+        aws_secret_key = config['default']['AWS_SECRET_ACCESS_KEY']
+        numerai_public = config['default']['NUMERAI_PUBLIC_ID']
+        numerai_secret = config['default']['NUMERAI_SECRET_KEY']
+        config.optionxform = str
+        config['aws'] = {}
+        config['aws']['AWS_ACCESS_KEY_ID'] = aws_access_key
+        config['aws']['AWS_SECRET_ACCESS_KEY'] = aws_secret_key
+        config['numerai'] = {}
+        config['numerai']['NUMERAI_PUBLIC_ID'] = numerai_public
+        config['numerai']['NUMERAI_SECRET_KEY'] = numerai_secret
+        del config['default']
+        config.write(open(os.open(new_key_path, os.O_CREAT | os.O_WRONLY, 0o600), 'w'))
+
+    # DELETE OLD CONFIG FILES
+    old_suburl_path = os.path.join(new_config_path, 'submission_url.txt')
+    if os.path.exists(old_suburl_path):
+        click.secho(f"deleting {old_suburl_path}, you can create the "
+                    f"new config file with 'numerai config node'", fg='yellow')
+        os.remove(old_suburl_path)
+    old_docker_path = os.path.join(new_config_path, 'docker_repo.txt')
+    if os.path.exists(old_docker_path):
+        click.secho(f"deleting {old_docker_path}, you can create the "
+                    f"new config file with 'numerai config node'", fg='yellow')
+        os.remove(old_docker_path)
+
+    # RENAME AND UPDATE TERRAFORM FILES
+    tf_files_map = {
+        'main.tf': '-main.tf',
+        'variables.tf': '-inputs.tf',
+        'outputs.tf': '-outputs.tf'
+    }
+    for old_file, new_file in tf_files_map.items():
+        old_file = os.path.join(new_config_path, old_file)
+        new_file = os.path.join(new_config_path, new_file)
+        if not os.path.exists(old_file):
+            continue
+        click.secho(f'renaming {old_file} to {new_file} to prep for upgrade...')
+        os.rename(old_file, new_file)
+
+    click.secho('upgrading terraform files...')
+    copy_files(
+        os.path.join(get_package_dir(), "terraform"),
+        new_config_path,
+        force=True,
+        verbose=True
+    )

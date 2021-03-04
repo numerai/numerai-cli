@@ -46,7 +46,7 @@ def copy_example(quiet, force, example, dest):
 
     dst_dir = os.path.join(".", dest if dest is not None else example)
     click.echo(f'Copying {example} example to {dst_dir}')
-    copy_files(example_dir, dst_dir, force, not quiet)
+    copy_files(example_dir, dst_dir, force=force, verbose=(not quiet))
 
     dockerignore_path = os.path.join(dst_dir, '.dockerignore')
     if not os.path.exists(dockerignore_path):
@@ -61,7 +61,7 @@ def docker_build(config, verbose, node, build_args=None):
     build_arg_str = ''
     for arg in build_args:
         build_arg_str += f' --build-arg {arg}={build_args[arg]}'
-    cmd = f'docker build -t {config.docker_repo(node)} {build_arg_str} .'
+    cmd = f'docker build -t {config.docker_repo(node)} {build_arg_str} {config.path(node)}'
     if verbose:
         click.echo("running: " + config.sanitize_message(cmd))
     res = subprocess.run(cmd, shell=True)

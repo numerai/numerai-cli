@@ -6,8 +6,9 @@ resource "aws_lambda_layer_version" "node_modules" {
 }
 
 resource "aws_lambda_function" "submission" {
+  count = length(var.nodes)
   filename      = "lambda.zip"
-  function_name = local.node_prefix
+  function_name = "${local.node_prefix}-${local.node_names[count.index]}"
   role          = aws_iam_role.iam_for_lambda.arn
   handler       = "exports.handler"
 
@@ -32,7 +33,7 @@ resource "aws_lambda_function" "submission" {
       security_group = aws_security_group.ecs_tasks.id
       subnet         = aws_subnet.public.*.id[0]
       ecs_cluster    = aws_ecs_cluster.main.id
-      ecs_task_arns  = jsonencode([for task_def in aws_ecs_task_definition.node: task_def.arn])
+      ecs_task_arn  = aws_ecs_task_definition.node[count.index].arn
     }
   }
 }
@@ -48,53 +49,51 @@ resource "aws_cloudwatch_log_group" "lambda" {
 
 
 ### API Gateway
-resource "aws_api_gateway_rest_api" "node" {
+resource "aws_apigatewayv2_api" "node" {
   name        = "${local.node_prefix}-gateway"
   description = "API Gateway for Numerai webhook"
+  protocol_type = "HTTP"
 }
 
-resource "aws_api_gateway_resource" "submit" {
-  rest_api_id = aws_api_gateway_rest_api.node.id
-  parent_id   = aws_api_gateway_rest_api.node.root_resource_id
-  path_part   = "submit"
+resource "aws_apigatewayv2_integration" "submit" {
+  count = length(var.nodes)
+  api_id = aws_apigatewayv2_api.node.id
+  integration_type = "AWS_PROXY"
+
+  connection_type           = "INTERNET"
+  description               = "Serverless Prediction Node Trigger for ${local.node_names[count.index]}"
+  integration_method        = "POST"
+  integration_uri           = aws_lambda_function.submission[count.index].invoke_arn
+
 }
 
-resource "aws_api_gateway_method" "submit" {
-  rest_api_id   = aws_api_gateway_rest_api.node.id
-  resource_id   = aws_api_gateway_resource.submit.id
-  http_method   = "ANY"
-  authorization = "NONE"
+resource "aws_apigatewayv2_route" "submit" {
+  count = length(var.nodes)
+  api_id = aws_apigatewayv2_api.node.id
+  route_key = "POST /${local.node_names[count.index]}"
+
+  target = "integrations/${aws_apigatewayv2_integration.submit[count.index].id}"
 }
 
-resource "aws_api_gateway_integration" "submit" {
-  rest_api_id = aws_api_gateway_rest_api.node.id
-  resource_id = aws_api_gateway_method.submit.resource_id
-  http_method = aws_api_gateway_method.submit.http_method
+resource "aws_apigatewayv2_deployment" "node" {
+  api_id = aws_apigatewayv2_api.node.id
 
-  integration_http_method = "POST"
-  type                    = "AWS_PROXY"
-  uri                     = aws_lambda_function.submission.invoke_arn
-}
-
-resource "aws_api_gateway_deployment" "node" {
   depends_on = [
-    aws_api_gateway_integration.submit,
+    aws_apigatewayv2_route.submit
   ]
-
-  rest_api_id = aws_api_gateway_rest_api.node.id
-  stage_name  = var.gateway_stage_path
 }
 
-resource "aws_lambda_permission" "apigw" {
-  statement_id  = "AllowAPIGatewayInvoke"
-  action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.submission.arn
-  principal     = "apigateway.amazonaws.com"
-
-  # The /*/* portion grants access from any method on any resource
-  # within the API Gateway "REST API".
-  source_arn = "${replace(aws_api_gateway_deployment.node.execution_arn, var.gateway_stage_path, "")}*/*"
-}
+//resource "aws_lambda_permission" "apigw" {
+//  count = length(var.nodes)
+//  statement_id  = "AllowAPIGatewayInvoke"
+//  action        = "lambda:InvokeFunction"
+//  function_name = aws_lambda_function.submission[count.index].arn
+//  principal     = "apigateway.amazonaws.com"
+//
+//  # The /*/* portion grants access from any method on any resource
+//  # within the API Gateway "REST API".
+//  source_arn = "${replace(aws_api_gateway_deployment.node.execution_arn, var.gateway_stage_path, "")}*/*"
+//}
 
 
 ### IAM

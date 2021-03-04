@@ -9,19 +9,19 @@ provider "aws" {
 }
 
 locals {
-  apps = jsondecode(file(var.node_config_file))
-  aws_apps = [for app, config in local.apps:
-    merge({name: app}, config) if config.provider == "aws"
+  nodes = jsondecode(file(var.node_config_file))
+  aws_nodes = [for node, config in local.nodes:
+    merge({name: node}, config) if config.provider == "aws"
   ]
 }
 
 
 module "aws" {
-  count = length(local.aws_apps) > 0 ? 1 : 0
+  count = length(local.aws_nodes) > 0 ? 1 : 0
   source = "./aws"
   aws_region = var.region
   az_count = var.az_count
-  nodes = local.aws_apps
+  nodes = local.aws_nodes
   node_container_port = var.node_container_port
   gateway_stage_path = var.gateway_stage_path
 }

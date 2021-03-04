@@ -11,7 +11,7 @@ variable "az_count" {
 }
 
 variable "node_config_file" {
-  description = "Path to the json file used to configure applications"
+  description = "Path to the json file used to configure nodes"
   type        = string
 }
 

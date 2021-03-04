@@ -156,7 +156,7 @@ def get_name_and_print_logs(logs_client, family, limit, next_token=None, raise_o
             "No logs found. Make sure the webhook has triggered (check 'numerai compute logs -l lambda'). \n"
             "If it has, then check `numerai compute status` and make sure it's in the RUNNING state "
             "(this can take a few minutes). \n Also, make sure your webhook has triggered at least once by running "
-            "'curl `cat .numerai/submission_url.txt`'")
+            "'numerai compute test-webhook'")
 
     name = streams['logStreams'][0]['logStreamName']
     print_logs(logs_client, family, name, limit, next_token)

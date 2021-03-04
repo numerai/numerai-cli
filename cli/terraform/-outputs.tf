@@ -1,3 +1,3 @@
-output "aws_applications" {
+output "aws_nodes" {
   value = jsondecode(jsonencode(module.aws[0].outputs))
 }

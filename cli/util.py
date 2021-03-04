@@ -33,7 +33,7 @@ def run_terraform_cmd(tf_cmd, config, numerai_dir, verbose, pipe_output=True, en
     return res
 
 
-def copy_files(src, dst, force, verbose):
+def copy_files(src, dst, force=False, verbose=True):
     if not os.path.exists(dst):
         os.mkdir(dst)
     for filename in os.listdir(src):
@@ -47,7 +47,7 @@ def copy_files(src, dst, force, verbose):
             if verbose:
                 click.secho(f"copying directory {dst_file}", fg='yellow')
             os.makedirs(dst_file, exist_ok=True)
-            copy_files(src_file, dst_file, force, verbose)
+            copy_files(src_file, dst_file, force=force, verbose=verbose)
         else:
             if verbose:
                 click.secho(f"copying file {dst_file}", fg='yellow')

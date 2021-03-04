@@ -78,7 +78,7 @@ pip3 install numerai-cli
 ## Quickstart
 
 If you know you have all the prerequisites and have your [AWS](#aws) and [Numerai](#numerai-api-key) API Keys at hand,
-you can run these commands to get the example application running in minutes:
+you can run these commands to get the example node running in minutes:
 
 ```
 mkdir example-numerai
@@ -89,9 +89,9 @@ numerai docker copy-example
 numerai docker deploy
 ```
 
-Your compute node is now setup and ready to run. It saves the webhook URL in `.numerai/submission_url.txt` that triggers your docker container. 
+Your compute node is now setup and ready to run. It saves your configuration in `$USER_HOME/.numerai/nodes.json` that triggers your docker container. 
 You can configure [your Numerai account](https://numer.ai/account) to use this webhook by entering it in the "Compute" section.
-It will be called Saturday morning right after a new round opens, and if your job fails (one ore more models have not submitted successfully) 
+It will be called Saturday morning right after a new round opens, and if your job fails (one or more models have not submitted successfully) 
 then it will be triggered again around 24 hours later.
 
 NOTE: The default example does _not_ make stake changes; you will still have to do that manually.
