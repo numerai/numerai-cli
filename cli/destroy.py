@@ -3,10 +3,9 @@ import os
 import click
 
 from cli.util import \
-    get_config_dir, \
     format_path_if_mingw, \
     run_terraform_cmd
-from cli.config import Config
+from cli.config import Config, get_config_path
 
 
 @click.command()
@@ -23,7 +22,7 @@ def destroy(verbose, node):
         - all logs
     This command is idempotent and safe to run multiple times.
     """
-    numerai_dir = get_config_dir()
+    numerai_dir = get_config_path()
     if not os.path.exists(numerai_dir):
         click.secho(f".numerai directory not setup, run 'numerai create' first...", fg='red')
         return

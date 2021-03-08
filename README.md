@@ -146,8 +146,6 @@ pip3 uninstall numerai-cli
 ```
 
 
-
-
 ## Contributions
 
 - Thanks to [uuazed](https://github.com/uuazed) for their work on [numerapi](https://github.com/uuazed/numerapi)

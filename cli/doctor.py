@@ -133,5 +133,5 @@ def root_cause(err_msg):
             Try running from a directory under your HOME, e.g. C:\\Users\\$YOUR_NAME\\$ANY_FOLDER"
         )
 
-    print(f'Numerai CLI was unable to identify the following error:')
-    print(err_msg.decode('utf8'), file=sys.stderr)
+    click.secho(f'Numerai CLI was unable to identify the following error:', color='red')
+    click.secho(err_msg.decode('utf8'), color='red')

@@ -54,10 +54,6 @@ def copy_files(src, dst, force=False, verbose=True):
             shutil.copy(src_file, dst_file)
 
 
-def get_config_dir():
-    return os.path.join(os.path.expanduser("~"), ".numerai")
-
-
 def get_package_dir():
     return os.path.dirname(__file__)
 

@@ -84,7 +84,7 @@ def train(command, verbose, node):
     See the example if you want inspiration for how to do this.
     """
     config = Config()
-    docker_build(config, verbose, node, build_args=config.numerai_keys)
+    docker_build(config, verbose, node, build_args=config.numerai_keys_dict)
     cur_dir = format_path_if_mingw(os.getcwd())
 
     c = f'docker run --rm -it -v {cur_dir}:/opt/app -w /opt/app {config.docker_repo(node)} {command}'
@@ -105,7 +105,7 @@ def run(verbose, node):
     This runs the default CMD in your docker container (example uses predict.py / main.R)
     """
     config = Config()
-    docker_build(config, verbose, node, build_args=config.numerai_keys)
+    docker_build(config, verbose, node, build_args=config.numerai_keys_dict)
 
     cur_dir = format_path_if_mingw(os.getcwd())
 
@@ -124,7 +124,7 @@ def run(verbose, node):
 def build(verbose, node):
     """Builds the docker image"""
     config = Config()
-    docker_build(config, verbose, node, build_args=config.numerai_keys)
+    docker_build(config, verbose, node, build_args=config.numerai_keys_dict)
 
 
 def docker_cleanup_aws(config, node):
@@ -173,11 +173,11 @@ def cleanup(verbose, node):
     docker_cleanup(config, verbose, node)
 
 
-def docker_login_aws(config):
+def docker_login_aws(aws_public, aws_secret):
     ecr_client = boto3.client(
         'ecr', region_name='us-east-1',
-        aws_access_key_id=config.aws_public,
-        aws_secret_access_key=config.aws_secret)
+        aws_access_key_id=aws_public,
+        aws_secret_access_key=aws_secret)
 
     token = ecr_client.get_authorization_token()  # TODO: use registryIds
     username, password = base64.b64decode(
@@ -195,11 +195,11 @@ def docker_login_aws(config):
 def deploy(verbose, node):
     """Builds and pushes your docker image to the AWS ECR repo"""
     config = Config()
-    docker_build(config, verbose, node, build_args=config.numerai_keys)
+    docker_build(config, verbose, node, build_args=config.numerai_keys_dict)
 
     provider = config.provider(node)
     if provider == PROVIDER_AWS:
-        username, password = docker_login_aws(config)
+        username, password = docker_login_aws(**config.aws_keys)
     else:
         click.secho(f"Unsupported provider: '{provider}'", fg='red')
         return

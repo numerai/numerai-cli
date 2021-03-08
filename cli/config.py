@@ -5,10 +5,10 @@ from pathlib import Path
 from configparser import ConfigParser
 
 import click
+import numerapi
 
 from cli.util import \
     copy_files, \
-    get_config_dir, \
     get_package_dir, \
     format_path_if_mingw, \
     run_terraform_cmd
@@ -17,7 +17,11 @@ from cli.doctor import \
     check_numerai_validity
 
 PROVIDER_AWS = "aws"
-PROVIDERS = [PROVIDER_AWS]
+PROVIDER_GCP = "gcp"
+PROVIDERS = [
+    PROVIDER_AWS,
+    # PROVIDER_GCP
+]
 
 DEFAULT_NODE = "default"
 DEFAULT_SETTINGS = {
@@ -29,35 +33,37 @@ DEFAULT_SETTINGS = {
 
 SIZE_PRESETS = {
     "gen-sm": (1024, 4096),
-    "gen-md": (2, 8192),
-    "gen-lg": (4, 16384),
-    "gen-xl": (8, 32768),
+    "gen-md": (2048, 8192),
+    "gen-lg": (4096, 16384),
+    "gen-xl": (8192, 32768),
 
-    "cpu-sm": (1, 2048),
-    "cpu-md": (2, 4096),
-    "cpu-lg": (4, 8192),
-    "cpu-xl": (8, 16384),
+    "cpu-sm": (1024, 2048),
+    "cpu-md": (2048, 4096),
+    "cpu-lg": (4096, 8192),
+    "cpu-xl": (8192, 16384),
 
-    "mem-sm": (1, 8192),
-    "mem-md": (2, 16384),
-    "mem-lg": (4, 32768),
-    "mem-xl": (8, 65536),
+    "mem-sm": (1024, 8192),
+    "mem-md": (2048, 16384),
+    "mem-lg": (4096, 32768),
+    "mem-xl": (8192, 65536),
 }
 
 
-def maybe_create(path):
+def maybe_create(path, protected=False):
     created = False
 
     directory = os.path.dirname(path)
-    print(directory)
     if not os.path.exists(directory):
-        print('creating...')
         os.makedirs(directory)
 
     if not os.path.exists(path):
         created = True
-        with open(path, 'w+') as f:
-            f.write('')
+        if protected:
+            with open(os.open(path, os.O_CREAT | os.O_WRONLY, 0o600), 'w') as f:
+                f.write('')
+        else:
+            with open(path, 'w+') as f:
+                f.write('')
 
     return created
 
@@ -66,18 +72,28 @@ def get_config_path():
     return os.path.join(str(Path.home()), '.numerai/')
 
 
-def get_key_file_path(create=True):
+def get_key_file_path():
     path = os.path.join(get_config_path(), '.keys')
-    if create:
-        maybe_create(path)
-    return path
+    created = maybe_create(path, protected=True)
+    # Check permission and prompt to fix
+    if os.stat(path).st_mode & (S_IRGRP | S_IROTH):
+        click.secho(f"WARNING: {path} is readable by others", fg='red')
+        if click.confirm('Fix permissions?', default=True, show_default=True):
+            os.chmod(path, 0o600)
+    return path, created
 
 
-def get_config_file_path(create=True):
+def get_node_file_path():
     path = os.path.join(get_config_path(), 'nodes.json')
-    if create:
-        maybe_create(path)
+    maybe_create(path)
     return path
+
+
+def load_config_file(file_path):
+    if os.stat(file_path).st_size == 0:
+        return {}
+    with open(file_path) as f:
+        return json.load(f)
 
 
 class Config:
@@ -85,37 +101,60 @@ class Config:
     def __init__(self):
         super().__init__()
 
-        self._config_file_path = get_config_file_path()
-        if os.stat(self._config_file_path).st_size == 0:
-            self.nodes_config = {}
-        else:
-            self.nodes_config = json.load(open(self._config_file_path))
+        self._config_file_path = get_node_file_path()
+        self.nodes_config = load_config_file(self._config_file_path)
 
-        self._keyfile_path = get_key_file_path()
-        self.keys_config = ConfigParser()
-        self.keys_config.optionxform = str
-
-        # load or create the file
-        try:
-            self.keys_config.read(self._keyfile_path)
-        except FileNotFoundError:
-            self.keys_config.write_keys()
+        self._keyfile_path, self.keyfile_is_new = get_key_file_path()
+        self.keys_config = load_config_file(self._keyfile_path)
 
     def write_keys(self):
-        self.keys_config.optionxform = str
-        with open(os.open(self._keyfile_path, os.O_CREAT | os.O_WRONLY, 0o600), 'w') as configfile:
-            self.keys_config.write(configfile)
+        with open(self._keyfile_path, 'w') as configfile:
+            json.dump(self.keys_config, configfile, indent=2)
 
-    def configure_keys_numerai(self, numerai_public, numerai_private):
-        check_numerai_validity(numerai_public, numerai_private)
-        self.keys_config['numerai']['NUMERAI_PUBLIC_ID'] = numerai_public
-        self.keys_config['numerai']['NUMERAI_SECRET_KEY'] = numerai_private
+    def configure_aws(self):
+        aws_public, aws_secret = self.aws_keys
+        aws_public = click.prompt(f'AWS_ACCESS_KEY_ID', default=aws_public).strip()
+        aws_secret = click.prompt(f'AWS_SECRET_ACCESS_KEY', default=aws_secret).strip()
+        check_aws_validity(aws_public, aws_secret)
+        self.keys_config.setdefault('aws', {})
+        self.keys_config['aws']['AWS_ACCESS_KEY_ID'] = aws_public
+        self.keys_config['aws']['AWS_SECRET_ACCESS_KEY'] = aws_secret
         self.write_keys()
 
-    def configure_keys_aws(self, aws_public, aws_private):
-        check_aws_validity(aws_public, aws_private)
-        self.keys_config['aws']['AWS_ACCESS_KEY_ID'] = aws_public
-        self.keys_config['aws']['AWS_SECRET_ACCESS_KEY'] = aws_private
+    # TODO: GCP support
+    # def configure_gcp(self):
+    #     gcp_keys = {
+    #         'test': 'test'
+    #     }
+    #     gcp_path = click.prompt(f'GCP Key File Path', default=gcp_keys).strip()
+    #     print(gcp_path)
+    #     try:
+    #         with open(gcp_path, 'r') as f:
+    #             gcp_keys = json.load(f)
+    #     except FileNotFoundError:
+    #         click.secho(f'file {gcp_path} does not exist', color='red')
+    #         exit()
+    #     print(gcp_keys)
+    #     self.keys_config['gcp'] = gcp_keys
+    #     self.write_keys()
+
+    def configure_provider_keys(self, cloud_provider):
+        click.secho(f"Setting up key file at {self._keyfile_path}\n", fg='yellow')
+        click.secho(f"Please type in the following keys "
+                    f"(press enter to keep the value in the brackets):",
+                    fg='yellow')
+
+        if cloud_provider == PROVIDER_AWS:
+            self.configure_aws()
+
+    def configure_numerai_keys(self):
+        numerai_public, numerai_secret = self.numerai_keys
+        numerai_public = click.prompt(f'NUMERAI_PUBLIC_ID', default=numerai_public).strip()
+        numerai_secret = click.prompt(f'NUMERAI_SECRET_KEY', default=numerai_secret).strip()
+        check_numerai_validity(numerai_public, numerai_secret)
+        self.keys_config.setdefault('numerai', {})
+        self.keys_config['numerai']['NUMERAI_PUBLIC_ID'] = numerai_public
+        self.keys_config['numerai']['NUMERAI_SECRET_KEY'] = numerai_secret
         self.write_keys()
 
     def write_nodes(self):
@@ -156,27 +195,34 @@ class Config:
     def path(self, node):
         return self.nodes_config[node]['path']
 
-    @property
-    def aws_public(self):
-        return self.keys_config['aws']['AWS_ACCESS_KEY_ID']
-
-    @property
-    def aws_secret(self):
-        return self.keys_config['aws']['AWS_SECRET_ACCESS_KEY']
-
     def provider_keys(self, node):
         return self.keys_config[self.provider(node)]
 
     @property
-    def numerai_public(self):
-        return self.keys_config['numerai']['NUMERAI_PUBLIC_ID']
+    def aws_keys(self):
+        try:
+            return self.keys_config['aws']['AWS_ACCESS_KEY_ID'],\
+                   self.keys_config['aws']['AWS_SECRET_ACCESS_KEY']
+        except KeyError:
+            return None, None
 
     @property
-    def numerai_secret(self):
-        return self.keys_config['numerai']['NUMERAI_SECRET_KEY']
+    def gcp_keys(self):
+        try:
+            return self.keys_config['gcp']
+        except KeyError:
+            return None, None
 
     @property
     def numerai_keys(self):
+        try:
+            return self.numerai_keys_dict['NUMERAI_PUBLIC_ID'],\
+                   self.numerai_keys_dict['NUMERAI_SECRET_KEY']
+        except KeyError:
+            return None, None
+
+    @property
+    def numerai_keys_dict(self):
         return self.keys_config['numerai']
 
     def docker_repo(self, node):
@@ -192,15 +238,12 @@ class Config:
         return self.nodes_config[node]['webhook_log_group']
 
     def sanitize_message(self, message):
-        return message.replace(
-            self.aws_public, '...'
-        ).replace(
-            self.aws_secret, '...'
-        ).replace(
-            self.numerai_public, '...'
-        ).replace(
-            self.numerai_secret, '...'
-        )
+        aws_public, aws_secret = self.aws_keys
+        numerai_public, numerai_secret = self.numerai_keys
+        return message.replace(aws_public, '...')\
+                      .replace(aws_secret, '...')\
+                      .replace(numerai_public, '...')\
+                      .replace(numerai_secret, '...')
 
 
 @click.group()
@@ -212,55 +255,13 @@ def config():
 @config.command()
 @click.option(
     '--provider', '-p', type=str, default=PROVIDER_AWS,
-    help="Select a cloud provider. One of ['aws']. Defaults to 'aws'.")
+    help=f"Select a cloud provider. One of {PROVIDERS}. "
+         f"Defaults to {DEFAULT_SETTINGS['provider']}.")
 def keys(provider):
     """Write API keys to configuration file."""
     config = Config()
-    click.secho(f"Setting up key file at {config._keyfile_path}\n", fg='yellow')
-    click.secho(f"Please type in the following keys "
-                f"(press enter to keep the value in the brackets):", fg='yellow')
-
-    if provider == PROVIDER_AWS:
-        try:
-            aws_public = config.aws_public
-            aws_secret = config.aws_secret
-        except KeyError:
-            aws_public = None
-            aws_secret = None
-        config.configure_keys_aws(
-            click.prompt(f'AWS_ACCESS_KEY_ID', default=aws_public).strip(),
-            click.prompt(f'AWS_SECRET_ACCESS_KEY', default=aws_secret).strip()
-        )
-
-    try:
-        numerai_public = config.numerai_public
-        numerai_secret = config.numerai_secret
-    except KeyError:
-        numerai_public = None
-        numerai_secret = None
-
-    config.configure_keys_numerai(
-        click.prompt(f'NUMERAI_PUBLIC_ID', default=numerai_public).strip(),
-        click.prompt(f'NUMERAI_SECRET_KEY', default=numerai_secret).strip()
-    )
-
-    return config
-
-
-def load_or_configure_node(provider):
-    key_file = get_key_file_path()
-
-    if not os.path.exists(key_file):
-        click.echo("Key file not found at: " + key_file)
-        return keys(provider)
-
-    # Check permission and prompt to fix
-    elif os.stat(key_file).st_mode & (S_IRGRP | S_IROTH):
-        click.secho(f"WARNING: {key_file} is readable by others", fg='red')
-        if click.confirm('Fix permissions?', default=True, show_default=True):
-            os.chmod(key_file, 0o600)
-
-    return Config()
+    config.configure_provider_keys(provider)
+    config.configure_numerai_keys()
 
 
 @config.command()
@@ -270,30 +271,45 @@ def load_or_configure_node(provider):
     help=f"Target a node. Defaults to '{DEFAULT_NODE}'.")
 @click.option(
     '--provider', '-P', type=str,
-    help=f"Select a cloud provider. One of {PROVIDERS}. Defaults to {DEFAULT_SETTINGS['provider']}.")
+    help=f"Select a cloud provider. One of {PROVIDERS}. "
+         f"Defaults to {DEFAULT_SETTINGS['provider']}.")
 @click.option(
     '--cpu', '-c', type=int,
-    help=f"Amount of CPU credits (cores * 1024) to use in the compute container (defaults to {DEFAULT_SETTINGS['cpu']}). \
-    \n See https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-cpu-memory-error.html for possible settings")
+    help=f"Amount of CPU credits (cores * 1024) to use in the compute container "
+         f"(defaults to {DEFAULT_SETTINGS['cpu']})."
+         f"\nSee https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-cpu-memory-error.html for possible settings")
 @click.option(
     '--memory', '-m', type=int,
-    help=f"Amount of Memory (in MiB) to use in the compute container (defaults to {DEFAULT_SETTINGS['memory']}). \
-    \n See https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-cpu-memory-error.html for possible settings")
+    help=f"Amount of Memory (in MiB) to use in the compute container "
+         f"(defaults to {DEFAULT_SETTINGS['memory']}). "
+         f"\nSee https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-cpu-memory-error.html for possible settings")
 @click.option(
     '--path', '-p', type=str,
     help=f"Target a file path. Defaults to '{DEFAULT_SETTINGS['path']}' (current directory).")
-def node(verbose, node, provider, cpu, memory, path):
+@click.option(
+    '--model-id', '-i', type=str, required=True,
+    help=f"Target a model to configure this node for.")
+def node(verbose, node, provider, cpu, memory, path, model_id):
     """
     Uses Terraform to create a full Numerai Compute cluster in AWS.
     Prompts for your AWS and Numerai API keys on first run, caches them in $HOME/.numerai.
 
     At the end of running, this will output a config file 'nodes.json'.
     """
+    click.secho(f'Configuring node {node}')
 
-    numerai_dir = format_path_if_mingw(get_config_dir())
+    # check if they have keys configured, configure them if not
+    config = Config()
 
-    config = load_or_configure_node(provider)
+    if config.keyfile_is_new:
+        config.configure_numerai_keys()
+
+    if provider not in config.keys_config:
+        config.configure_provider_keys(provider)
+
     config.configure_node(node, provider, cpu, memory, path)
+
+    numerai_dir = format_path_if_mingw(get_config_path())
 
     # terraform init
     run_terraform_cmd("init -upgrade", config, numerai_dir, verbose)
@@ -311,6 +327,27 @@ def node(verbose, node, provider, cpu, memory, path):
         f"output -json aws_nodes", config, numerai_dir, verbose, pipe_output=False
     ).stdout.decode('utf-8'))
     config.configure_outputs(aws_nodes)
+
+    napi = numerapi.NumerAPI(*config.numerai_keys)
+    napi.raw_query(
+        '''
+        mutation (
+            $modelId: String!
+            $newSubmissionWebhook: String!
+        ) {
+            setSubmissionWebhook(
+                modelId: $modelId
+                newSubmissionWebhook: $newSubmissionWebhook
+            )
+        }
+        ''',
+        variables={
+            'modelId': model_id,
+            'newSubmissionWebhook': config.webhook_url(node)
+        },
+        authorization=True
+    )
+
 
 
 @config.command()
@@ -336,7 +373,7 @@ def upgrade():
         os.rename(old_config_path, new_config_path)
 
     # REFORMAT OLD KEYS
-    new_key_path = get_key_file_path()
+    new_key_path, _ = get_key_file_path()
     config = ConfigParser()
     config.read(new_key_path)
     if 'default' in config:
