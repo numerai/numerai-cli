@@ -11,8 +11,7 @@ from cli.util import \
     copy_files, \
     get_package_dir, \
     format_path_if_mingw, \
-    run_terraform_cmd
-from cli.doctor import \
+    run_terraform_cmd, \
     check_aws_validity, \
     check_numerai_validity
 
@@ -23,19 +22,11 @@ PROVIDERS = [
     # PROVIDER_GCP
 ]
 
-DEFAULT_NODE = "default"
-DEFAULT_SETTINGS = {
-    'provider': PROVIDER_AWS,
-    'cpu': 2048,
-    'memory': 16384,
-    'path': "."
-}
-
 SIZE_PRESETS = {
     "gen-sm": (1024, 4096),
     "gen-md": (2048, 8192),
     "gen-lg": (4096, 16384),
-    "gen-xl": (8192, 32768),
+    "gen-xl": (8192, 30720),
 
     "cpu-sm": (1024, 2048),
     "cpu-md": (2048, 4096),
@@ -44,8 +35,16 @@ SIZE_PRESETS = {
 
     "mem-sm": (1024, 8192),
     "mem-md": (2048, 16384),
-    "mem-lg": (4096, 32768),
-    "mem-xl": (8192, 65536),
+    "mem-lg": (4096, 30720),
+}
+
+DEFAULT_NODE = "default"
+DEFAULT_SIZE = "gen-md"
+DEFAULT_SETTINGS = {
+    'provider': PROVIDER_AWS,
+    'cpu': SIZE_PRESETS[DEFAULT_SIZE],
+    'mem': SIZE_PRESETS[DEFAULT_SIZE],
+    'path': "."
 }
 
 
@@ -160,7 +159,7 @@ class Config:
     def write_nodes(self):
         json.dump(self.nodes_config, open(self._config_file_path, 'w+'), indent=2)
 
-    def configure_node(self, node, provider, cpu, memory, path):
+    def configure_node(self, node, provider, size, path):
         self.nodes_config.setdefault(node, {})
         self.nodes_config[node].update({
             key: default
@@ -170,10 +169,9 @@ class Config:
 
         if provider:
             self.nodes_config[node]['provider'] = provider
-        if cpu:
-            self.nodes_config[node]['cpu'] = cpu
-        if memory:
-            self.nodes_config[node]['memory'] = memory
+        if size:
+            self.nodes_config[node]['cpu'] = SIZE_PRESETS[size][0]
+            self.nodes_config[node]['memory'] = SIZE_PRESETS[size][1]
         if path:
             self.nodes_config[node]['path'] = path
 
@@ -274,22 +272,17 @@ def keys(provider):
     help=f"Select a cloud provider. One of {PROVIDERS}. "
          f"Defaults to {DEFAULT_SETTINGS['provider']}.")
 @click.option(
-    '--cpu', '-c', type=int,
-    help=f"Amount of CPU credits (cores * 1024) to use in the compute container "
-         f"(defaults to {DEFAULT_SETTINGS['cpu']})."
-         f"\nSee https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-cpu-memory-error.html for possible settings")
-@click.option(
-    '--memory', '-m', type=int,
-    help=f"Amount of Memory (in MiB) to use in the compute container "
-         f"(defaults to {DEFAULT_SETTINGS['memory']}). "
-         f"\nSee https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-cpu-memory-error.html for possible settings")
+    '--size', '-s', type=str,
+    help=f"Combination of CPU credits (cores * 1024) and Memory (in MiB) to use in the compute container "
+         f"One of {json.dumps(SIZE_PRESETS, indent=2)}.\n(defaults to {DEFAULT_SIZE})."
+         f"\nSee https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-cpu-memory-error.html for more info")
 @click.option(
     '--path', '-p', type=str,
     help=f"Target a file path. Defaults to '{DEFAULT_SETTINGS['path']}' (current directory).")
 @click.option(
-    '--model-id', '-i', type=str, required=True,
+    '--model-id', '-i', type=str,
     help=f"Target a model to configure this node for.")
-def node(verbose, node, provider, cpu, memory, path, model_id):
+def node(verbose, node, provider, size, path, model_id):
     """
     Uses Terraform to create a full Numerai Compute cluster in AWS.
     Prompts for your AWS and Numerai API keys on first run, caches them in $HOME/.numerai.
@@ -304,10 +297,10 @@ def node(verbose, node, provider, cpu, memory, path, model_id):
     if config.keyfile_is_new:
         config.configure_numerai_keys()
 
-    if provider not in config.keys_config:
+    if provider and provider not in config.keys_config:
         config.configure_provider_keys(provider)
 
-    config.configure_node(node, provider, cpu, memory, path)
+    config.configure_node(node, provider, size, path)
 
     numerai_dir = format_path_if_mingw(get_config_path())
 
@@ -328,26 +321,26 @@ def node(verbose, node, provider, cpu, memory, path, model_id):
     ).stdout.decode('utf-8'))
     config.configure_outputs(aws_nodes)
 
-    napi = numerapi.NumerAPI(*config.numerai_keys)
-    napi.raw_query(
-        '''
-        mutation (
-            $modelId: String!
-            $newSubmissionWebhook: String!
-        ) {
-            setSubmissionWebhook(
-                modelId: $modelId
-                newSubmissionWebhook: $newSubmissionWebhook
-            )
-        }
-        ''',
-        variables={
-            'modelId': model_id,
-            'newSubmissionWebhook': config.webhook_url(node)
-        },
-        authorization=True
-    )
-
+    if model_id:
+        napi = numerapi.NumerAPI(*config.numerai_keys)
+        napi.raw_query(
+            '''
+            mutation (
+                $modelId: String!
+                $newSubmissionWebhook: String!
+            ) {
+                setSubmissionWebhook(
+                    modelId: $modelId
+                    newSubmissionWebhook: $newSubmissionWebhook
+                )
+            }
+            ''',
+            variables={
+                'modelId': model_id,
+                'newSubmissionWebhook': config.webhook_url(node)
+            },
+            authorization=True
+        )
 
 
 @config.command()

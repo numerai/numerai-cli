@@ -5,7 +5,7 @@ import click
 import boto3
 import requests
 
-from cli.doctor import exception_with_msg
+from cli.util import exception_with_msg
 from cli.config import Config, PROVIDER_AWS
 
 
@@ -64,10 +64,11 @@ def get_task_status_aws(ecs_client, task_arn, verbose):
 
 # TODO: harden source of cluster arn string and make multi-node support?
 def get_latest_task_status_aws(config, node, verbose):
+    aws_public, aws_secret = config.aws_keys
     ecs_client = boto3.client(
         'ecs', region_name='us-east-1',
-        aws_access_key_id=config.aws_public,
-        aws_secret_access_key=config.aws_secret)
+        aws_access_key_id=aws_public,
+        aws_secret_access_key=aws_secret)
 
     tasks = ecs_client.list_tasks(
         cluster='numerai-submission',
@@ -164,10 +165,11 @@ def get_name_and_print_logs(logs_client, family, limit, next_token=None, raise_o
 
 
 def logs_aws(config, node, num_lines, log_type, follow_tail, verbose):
+    aws_public, aws_secret = config.aws_keys
     logs_client = boto3.client(
         'logs', region_name='us-east-1',
-        aws_access_key_id=config.aws_public,
-        aws_secret_access_key=config.aws_secret)
+        aws_access_key_id=aws_public,
+        aws_secret_access_key=aws_secret)
 
     if log_type == "webhook":
         family = config.webhook_log_group(node)

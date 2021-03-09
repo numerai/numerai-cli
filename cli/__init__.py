@@ -1,7 +1,12 @@
 import click
 from colorama import init
 
-from cli import config, destroy, compute, docker
+from cli import \
+    config, \
+    destroy, \
+    compute, \
+    docker, \
+    doctor
 
 
 @click.group()
@@ -17,6 +22,7 @@ def main():
     cli.add_command(config.config)
     cli.add_command(destroy.destroy)
     cli.add_command(docker.docker)
+    cli.add_command(doctor.doctor)
     cli()
 
 

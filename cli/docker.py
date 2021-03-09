@@ -5,12 +5,13 @@ import subprocess
 import boto3
 import click
 
-from cli.util import copy_files, get_package_dir, format_path_if_mingw
+from cli.util import copy_files, get_package_dir, format_path_if_mingw, root_cause
 from cli.config import Config, PROVIDER_AWS
 
 EXAMPLE_DIR = os.path.join(get_package_dir(), "examples")
 DEFAULT_EXAMPLE = 'classic-python3'
 EXAMPLES = os.listdir(EXAMPLE_DIR)
+
 
 @click.group()
 def docker():
@@ -113,7 +114,10 @@ def run(verbose, node):
     if verbose:
         click.echo('running: ' + c)
     res = subprocess.run(c, shell=True)
-    res.check_returncode()
+    print(res)
+    if res.returncode != 0:
+        root_cause(res.stderr)
+
 
 
 @docker.command()
