@@ -30,8 +30,7 @@ def test_webhook(quiet, node):
 
     round_json = {
         "roundNumber": -1,
-        "dataVersion": -1,
-        "triggerId": '-1'
+        "dataVersion": -1
     }
 
     req = requests.post(config.webhook_url(node), json=round_json)
