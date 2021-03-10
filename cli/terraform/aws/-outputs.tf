@@ -4,7 +4,7 @@ output "outputs" {
       docker_repo = aws_ecr_repository.node[i].repository_url
       webhook_url = "${aws_apigatewayv2_api.submit.api_endpoint}/predict${split(" ", aws_apigatewayv2_route.submit[i].route_key)[1]}"
       cluster_log_group = aws_cloudwatch_log_group.ecs[i].name
-      webhook_log_group = aws_cloudwatch_log_group.lambda.name
+      webhook_log_group = aws_cloudwatch_log_group.lambda[i].name
     }
   }
 }

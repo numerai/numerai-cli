@@ -30,7 +30,8 @@ def test_webhook(quiet, node):
 
     round_json = {
         "roundNumber": -1,
-        "dataVersion": 1
+        "dataVersion": -1,
+        "triggerId": '-1'
     }
 
     req = requests.post(config.webhook_url(node), json=round_json)
@@ -212,8 +213,8 @@ def logs_aws(config, node, num_lines, log_type, follow_tail, verbose):
         next_token = print_logs(logs_client, family, name, limit=num_lines)
         ecs_client = boto3.client(
             'ecs', region_name='us-east-1',
-            aws_access_key_id=config.aws_public,
-            aws_secret_access_key=config.aws_secret)
+            aws_access_key_id=aws_public,
+            aws_secret_access_key=aws_secret)
         while follow_tail:
             events = logs_client.get_log_events(
                 logGroupName=family,

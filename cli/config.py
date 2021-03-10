@@ -2,7 +2,7 @@ import os
 import json
 from stat import S_IRGRP, S_IROTH
 from pathlib import Path
-from configparser import ConfigParser
+from configparser import ConfigParser, MissingSectionHeaderError
 
 import click
 import numerapi
@@ -42,9 +42,9 @@ DEFAULT_NODE = "default"
 DEFAULT_SIZE = "gen-md"
 DEFAULT_SETTINGS = {
     'provider': PROVIDER_AWS,
-    'cpu': SIZE_PRESETS[DEFAULT_SIZE],
-    'mem': SIZE_PRESETS[DEFAULT_SIZE],
-    'path': "."
+    'cpu': SIZE_PRESETS[DEFAULT_SIZE][0],
+    'memory': SIZE_PRESETS[DEFAULT_SIZE][1],
+    'path': os.getcwd()
 }
 
 
@@ -173,7 +173,7 @@ class Config:
             self.nodes_config[node]['cpu'] = SIZE_PRESETS[size][0]
             self.nodes_config[node]['memory'] = SIZE_PRESETS[size][1]
         if path:
-            self.nodes_config[node]['path'] = path
+            self.nodes_config[node]['path'] = os.path.abspath(path)
 
         self.write_nodes()
 
@@ -278,7 +278,7 @@ def keys(provider):
          f"\nSee https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-cpu-memory-error.html for more info")
 @click.option(
     '--path', '-p', type=str,
-    help=f"Target a file path. Defaults to '{DEFAULT_SETTINGS['path']}' (current directory).")
+    help=f"Target a file path. Defaults to '{DEFAULT_SETTINGS['path']}'.")
 @click.option(
     '--model-id', '-i', type=str,
     help=f"Target a model to configure this node for.")
@@ -300,10 +300,14 @@ def node(verbose, node, provider, size, path, model_id):
     if provider and provider not in config.keys_config:
         config.configure_provider_keys(provider)
 
+    if path and not os.path.isdir(path):
+        click.secho(f"could not find path {path}", fg='red')
+        return
     config.configure_node(node, provider, size, path)
 
     numerai_dir = format_path_if_mingw(get_config_path())
 
+    click.secho("running terraform to provision cloud infrastructure...")
     # terraform init
     run_terraform_cmd("init -upgrade", config, numerai_dir, verbose)
     click.echo('succesfully setup .numerai with terraform')
@@ -367,23 +371,30 @@ def upgrade():
 
     # REFORMAT OLD KEYS
     new_key_path, _ = get_key_file_path()
-    config = ConfigParser()
-    config.read(new_key_path)
-    if 'default' in config:
+    try:
+        config = ConfigParser()
+        config.read(new_key_path)
         click.secho(f"Old keyfile format found, reformatting...", fg='yellow')
-        aws_access_key = config['default']['AWS_ACCESS_KEY_ID']
-        aws_secret_key = config['default']['AWS_SECRET_ACCESS_KEY']
-        numerai_public = config['default']['NUMERAI_PUBLIC_ID']
-        numerai_secret = config['default']['NUMERAI_SECRET_KEY']
-        config.optionxform = str
-        config['aws'] = {}
-        config['aws']['AWS_ACCESS_KEY_ID'] = aws_access_key
-        config['aws']['AWS_SECRET_ACCESS_KEY'] = aws_secret_key
-        config['numerai'] = {}
-        config['numerai']['NUMERAI_PUBLIC_ID'] = numerai_public
-        config['numerai']['NUMERAI_SECRET_KEY'] = numerai_secret
+
+        new_config = {
+            'aws': {
+                'AWS_ACCESS_KEY_ID': config['default']['AWS_ACCESS_KEY_ID'],
+                'AWS_SECRET_ACCESS_KEY': config['default']['AWS_SECRET_ACCESS_KEY']
+            },
+            'numerai': {
+                'NUMERAI_PUBLIC_ID': config['default']['NUMERAI_PUBLIC_ID'],
+                'NUMERAI_SECRET_KEY': config['default']['NUMERAI_SECRET_KEY']
+            }
+        }
+
         del config['default']
-        config.write(open(os.open(new_key_path, os.O_CREAT | os.O_WRONLY, 0o600), 'w'))
+        with open(os.open(new_key_path, os.O_CREAT | os.O_WRONLY, 0o600), 'w') as f:
+            config.write(f)
+            json.dump(new_config, f, indent=2)
+
+    # if this file is already a json file skip
+    except MissingSectionHeaderError:
+        pass
 
     # DELETE OLD CONFIG FILES
     old_suburl_path = os.path.join(new_config_path, 'submission_url.txt')
@@ -411,6 +422,7 @@ def upgrade():
         click.secho(f'renaming {old_file} to {new_file} to prep for upgrade...')
         os.rename(old_file, new_file)
 
+    # Update terraform files
     click.secho('upgrading terraform files...')
     copy_files(
         os.path.join(get_package_dir(), "terraform"),

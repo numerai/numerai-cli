@@ -43,7 +43,8 @@ resource "aws_lambda_function" "submission" {
 # This is to optionally manage the CloudWatch Log Group for the Lambda Function.
 # If skipping this resource configuration, also add "logs:CreateLogGroup" to the IAM policy below.
 resource "aws_cloudwatch_log_group" "lambda" {
-  name              = "/aws/lambda/${local.node_prefix}"
+  count             = length(var.nodes)
+  name              = "/aws/lambda/${local.node_names[count.index]}"
   retention_in_days = 14
 }
 resource "aws_cloudwatch_log_group" "gateway" {

@@ -132,10 +132,11 @@ def build(verbose, node):
 
 
 def docker_cleanup_aws(config, node):
+    aws_public, aws_secret = config.aws_keys
     ecr_client = boto3.client(
         'ecr', region_name='us-east-1',
-        aws_access_key_id=config.aws_public,
-        aws_secret_access_key=config.aws_secret)
+        aws_access_key_id=aws_public,
+        aws_secret_access_key=aws_secret)
 
     docker_repo_name = config.docker_repo(node).split("/")[-1]
 
@@ -203,7 +204,7 @@ def deploy(verbose, node):
 
     provider = config.provider(node)
     if provider == PROVIDER_AWS:
-        username, password = docker_login_aws(**config.aws_keys)
+        username, password = docker_login_aws(*config.aws_keys)
     else:
         click.secho(f"Unsupported provider: '{provider}'", fg='red')
         return
