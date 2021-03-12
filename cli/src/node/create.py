@@ -1,0 +1,146 @@
+import json
+
+import numerapi
+
+from cli.src.constants import *
+from cli.src.util.docker import terraform
+from cli.src.util.files import \
+    load_or_init_nodes,\
+    store_config,\
+    copy_files
+from cli.src.util.keys import \
+    get_provider_keys,\
+    get_numerai_keys
+
+
+@click.command()
+@click.option('--verbose', '-v', is_flag=True)
+@click.option(
+    '--provider', '-P', type=str,
+    help=f"Select a cloud provider. One of {PROVIDERS}. "
+         f"Defaults to {DEFAULT_PROVIDER}.")
+@click.option(
+    '--size', '-s', type=str,
+    help=f"CPU credits (cores * 1024) and Memory (in MiB) used in the deployed container. "
+         f"Defaults to {DEFAULT_SIZE} (run 'numerai config size-presets' to see options)."
+         f"\nSee https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-cpu-memory-error.html for more info")
+@click.option(
+    '--path', '-p', type=str,
+    help=f"Target a file path. Defaults to current directory ({DEFAULT_PATH}).")
+@click.option(
+    '--model-id', '-i', type=str,
+    help=f"Target a model to configure this node for.")
+@click.option(
+    '--example', '-e', type=str,
+    help=f'Specify an example to use for this node. Options are {EXAMPLES}.')
+@click.pass_context
+def create(ctx, verbose, provider, size, path, model_id, example):
+    """
+    Uses Terraform to create a full Numerai Compute cluster in AWS.
+    Prompts for your AWS and Numerai API keys on first run, caches them in $HOME/.numerai.
+
+    At the end of running, this will output a config file 'nodes.json'.
+    """
+    ctx.ensure_object(dict)
+    node = ctx.obj['node']
+
+    if example:
+        click.secho(f'copying {example} example to {path}...')
+        copy_example(ctx, example, path, verbose)
+
+    # get nodes config object and set defaults for this node
+    click.secho(f'configuring node "{node}"...')
+    nodes_config = load_or_init_nodes()
+    nodes_config.setdefault(node, {})
+    nodes_config[node].update({
+        key: default
+        for key, default in DEFAULT_SETTINGS.items()
+        if key not in nodes_config[node]
+    })
+    # update node as needed
+    if provider:
+        nodes_config[node]['provider'] = provider
+    if size:
+        nodes_config[node]['cpu'] = SIZE_PRESETS[size][0]
+        nodes_config[node]['memory'] = SIZE_PRESETS[size][1]
+    if path:
+        nodes_config[node]['path'] = os.path.abspath(path)
+    store_config(NODES_PATH, nodes_config)
+
+    # terraform apply
+    click.secho(f'running terraform to provision cloud infrastructure...')
+    terraform(f'apply -auto-approve -var="node_config_file=nodes.json"', CONFIG_PATH,
+              verbose, env_vars=get_provider_keys(node))
+    click.secho('successfully created cloud resources!', fg='green')
+
+    # terraform output for AWS nodes
+    click.echo(f'saving node configuration to {NODES_PATH}...')
+    res = terraform(f"output -json aws_nodes", CONFIG_PATH, verbose).stdout.decode('utf-8')
+    aws_nodes = json.loads(res)
+    for node, data in aws_nodes.items():
+        nodes_config[node].update(data)
+    store_config(NODES_PATH, nodes_config)
+
+    if model_id:
+        napi = numerapi.NumerAPI(*get_numerai_keys())
+        webhook_url = nodes_config[node]['webhook_url']
+        click.echo(f'registering webhook {webhook_url} for model {model_id}...')
+        napi.raw_query(
+            '''
+            mutation (
+                $modelId: String!
+                $newSubmissionWebhook: String!
+            ) {
+                setSubmissionWebhook(
+                    modelId: $modelId
+                    newSubmissionWebhook: $newSubmissionWebhook
+                )
+            }
+            ''',
+            variables={
+                'modelId': model_id,
+                'newSubmissionWebhook': webhook_url
+            },
+            authorization=True
+        )
+
+
+@click.command()
+@click.option(
+    '--example', '-e', type=str, default=DEFAULT_EXAMPLE,
+    help=f'Specify the example to copy, defaults to {DEFAULT_EXAMPLE}. '
+         f'Options are {EXAMPLES}.'
+)
+@click.option(
+    '--dest', '-d', type=str,
+    help=f'Destination folder to which example code is written. '
+         f'Defaults to the name of the example.'
+)
+@click.option('--verbose', '-v', is_flag=True)
+def copy_example(example, dest, verbose):
+    """
+    Copies all example files into the current directory.
+
+    WARNING: this will overwrite the following files if they exist:
+
+        - Python: Dockerfile, model.py, train.py, predict.py, and requirements.txt
+
+        - RLang:  Dockerfile, install_packages.R, main.R
+    """
+    if example not in EXAMPLES:
+        click.secho(f'Invalid example, options are {EXAMPLES}', fg='red')
+        return
+
+    example_dir = os.path.join(EXAMPLE_PATH, example)
+    dst_dir = dest if dest is not None else example
+    click.echo(f'Copying {example} example to {dst_dir}')
+    copy_files(example_dir, dst_dir, force=False, verbose=verbose)
+
+    dockerignore_path = os.path.join(dst_dir, '.dockerignore')
+    if not os.path.exists(dockerignore_path):
+        with open('.dockerignore', 'a+') as f:
+            f.write(".numerai\n")
+            f.write("numerai_dataset*\n")
+            f.write(".git\n")
+            f.write("venv\n")
+

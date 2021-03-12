@@ -164,4 +164,3 @@ def add_targets_and_split(full_data):
     test_data = ml_data[ml_data["data_type"] == "validation"]
 
     return train_data, test_data
-

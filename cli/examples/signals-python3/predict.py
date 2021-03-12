@@ -29,7 +29,17 @@ MODEL_CONFIGS = [
     #  etc...
 ]
 
-napi = numerapi.SignalsAPI()
+if os.getenv('NUMERAI_PUBLIC_ID') and os.getenv('NUMERAI_SECRET_KEY'):
+    napi = numerapi.SignalsAPI()
+
+else:
+    config = configparser.ConfigParser()
+    config.read('../.numerai/.keys')
+    # initialize API client
+    napi = numerapi.SignalsAPI(
+        public_id=config['numerai']['NUMERAI_PUBLIC_ID'],
+        secret_key=config['numerai']['NUMERAI_SECRET_KEY']
+    )
 
 
 def download_data(live_data_date):

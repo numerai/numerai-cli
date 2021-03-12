@@ -4,11 +4,13 @@ import json
 from urllib import request
 from distutils.version import StrictVersion
 
-import click
-from cli.config import Config
-from cli.util import \
+from cli.src.constants import *
+from cli.src.util.keys import \
     check_aws_validity, \
-    check_numerai_validity
+    check_numerai_validity, \
+    get_numerai_keys, \
+    get_aws_keys
+from cli.src.util.files import load_or_init_nodes
 
 
 @click.command()
@@ -53,17 +55,17 @@ def doctor():
 
     # Check keys
     click.secho("Checking your API keys...")
-    config = Config()
-    used_providers = [config.provider(n) for n in config.nodes_config]
+    nodes_config = load_or_init_nodes()
+    used_providers = [nodes_config[n]['provider'] for n in nodes_config]
 
     invalid_providers = []
     try:
-        check_numerai_validity(*config.numerai_keys)
+        check_numerai_validity(*get_numerai_keys())
     except:
         invalid_providers.append('numerai')
     if 'aws' in used_providers:
         try:
-            check_aws_validity(*config.aws_keys)
+            check_aws_validity(*get_aws_keys())
         except:
             invalid_providers.append('aws')
 
@@ -83,17 +85,14 @@ def doctor():
 
     if len(invalid_providers):
         click.secho(f"✖ Invalid provider keys: {invalid_providers}"
-                    f"(run 'numerai config keys' to fix)", fg='red')
+                    f"(run 'numerai setp' to fix)", fg='red')
 
     else:
         click.secho("✓ API Keys working", fg='green')
 
     click.secho(
-        '''
-        If you need help troubleshooting or want to report a bug please read the 
-        Troubleshooting and Feedback section of the readme:
-        
-        https://github.com/numerai/numerai-cli#troubleshooting-and-feedback
-        ''',
+        "If you need help troubleshooting or want to report a bug please read the" 
+        "\nTroubleshooting and Feedback section of the readme:\n"
+        "\nhttps://github.com/numerai/numerai-cli#troubleshooting-and-feedback",
         fg='yellow'
     )

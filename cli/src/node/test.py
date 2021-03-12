@@ -1,48 +1,79 @@
 import time
 from datetime import datetime
 
-import click
 import boto3
 import requests
+import numerapi
 
-from cli.util import exception_with_msg
-from cli.config import Config, PROVIDER_AWS
+from cli.src.constants import *
+from cli.src.util import docker
+from cli.src.util.debug import exception_with_msg
+from cli.src.util.files import load_or_init_nodes
+from cli.src.util.keys import get_aws_keys
+
+LOG_TYPE_WEBHOOK = 'webhook'
+LOG_TYPE_CLUSTER = 'cluster'
+LOG_TYPES = [
+    LOG_TYPE_WEBHOOK,
+    LOG_TYPE_CLUSTER
+]
 
 
-@click.group()
-def compute():
-    """Commands for inspecting your running compute node."""
-    pass
-
-
-@compute.command()
-@click.option('--quiet', '-q', is_flag=True)
+@click.command()
 @click.option(
-    '--node', '-n', type=str, default='default',
-    help="Target a node. Defaults to 'default'.")
-def test_webhook(quiet, node):
+    '--local', '-l', type=str, default='',
+    help=f'Test the container locally with a command.' \
+         f' Defaults to the one specified in the Dockerfile.')
+@click.option('--verbose', '-v', is_flag=True)
+@click.pass_context
+def test(ctx, local, verbose):
     """
     This will POST to your webhook, and trigger compute to run in the cloud
 
     You can observe the logs for the running job by running `numerai compute logs`
     """
-    config = Config()
+    ctx.ensure_object(dict)
+    node = ctx.obj['node']
+    click.secho("checking if webhook is reachable...")
+    node_config = load_or_init_nodes(node)
 
-    round_json = {
-        "roundNumber": -1,
-        "dataVersion": -1
-    }
+    if local != '':
+        docker.build(node, verbose)
+        docker.run(node_config['docker_repo'], verbose, command=local)
 
-    req = requests.post(config.webhook_url(node), json=round_json)
+    napi = numerapi.NumerAPI()
+    napi.raw_query()
+    res = requests.post(
+        node_config['webhook_url'],
+        json={"roundNumber": -1, "dataVersion": -1}
+    )
+    res.raise_for_status()
 
-    req.raise_for_status()
+    click.secho("webhook request successful...", fg='green')
+    if verbose:
+        click.echo(f"response:\n{res.json()}")
+        click.secho(
+            "You can now run `numerai compute status` or `numerai compute logs -f` "
+            "to see your compute node running.", fg='yellow'
+        )
 
-    if not quiet:
-        click.echo("request success")
-        click.echo(req.json())
+    if node_config['provider'] == PROVIDER_AWS:
+        task_info = get_latest_task_status_aws(verbose)
 
-        click.secho("You can now run `numerai compute status` or `numerai compute logs -f` "
-                    "to see your compute node running.", fg='yellow')
+    else:
+        click.secho(f"Unsupported provider: '{node_config['provider']}'", fg='red')
+        return
+
+    if task_info is None:
+        raise exception_with_msg(
+            "No tasks in the PENDING/RUNNING/STOPPED state found. "
+            "This may mean that your task has been finished for a long time, and no longer exists. "
+            "Check `numerai compute logs` and `numerai compute logs -l lambda` to see what happened.")
+
+    task_id, task_status, task_date, _ = task_info
+    click.echo("task ID: " + task_id)
+    click.echo("status : " + task_status)
+    click.echo("created: " + task_date)
 
 
 def get_task_status_aws(ecs_client, task_arn, verbose):
@@ -63,8 +94,8 @@ def get_task_status_aws(ecs_client, task_arn, verbose):
 
 
 # TODO: harden source of cluster arn string and make multi-node support?
-def get_latest_task_status_aws(config, node, verbose):
-    aws_public, aws_secret = config.aws_keys
+def get_latest_task_status_aws(verbose):
+    aws_public, aws_secret = get_aws_keys()
     ecs_client = boto3.client(
         'ecs', region_name='us-east-1',
         aws_access_key_id=aws_public,
@@ -91,37 +122,6 @@ def get_latest_task_status_aws(config, node, verbose):
     return get_task_status_aws(ecs_client, task, verbose)
 
 
-@compute.command()
-@click.option('--verbose', '-v', is_flag=True)
-@click.option(
-    '--node', '-n', type=str, default='default',
-    help="Target a node. Defaults to 'default'.")
-def status(verbose, node):
-    """
-    Get the status of the latest task in compute
-    """
-    config = Config()
-
-    provider = config.provider(node)
-    if provider == PROVIDER_AWS:
-        task_info = get_latest_task_status_aws(config, node, verbose)
-
-    else:
-        click.secho(f"Unsupported provider: '{provider}'", fg='red')
-        return
-
-    if task_info is None:
-        raise exception_with_msg(
-            "No tasks in the PENDING/RUNNING/STOPPED state found. "
-            "This may mean that your task has been finished for a long time, and no longer exists. "
-            "Check `numerai compute logs` and `numerai compute logs -l lambda` to see what happened.")
-
-    task_id, task_status, task_date, _ = task_info
-    click.echo("task ID: " + task_id)
-    click.echo("status : " + task_status)
-    click.echo("created: " + task_date)
-
-
 def print_logs(logs_client, family, name, limit=None, next_token=None):
 
     kwargs = {}  # boto is weird, and doesn't allow `None` for parameters
@@ -144,41 +144,42 @@ def print_logs(logs_client, family, name, limit=None, next_token=None):
     return events['nextForwardToken']
 
 
-def get_name_and_print_logs(logs_client, family, limit, next_token=None, raise_on_error=True):
-    streams = logs_client.describe_log_streams(
-        logGroupName=family,
-        orderBy="LastEventTime",
-        descending=True)
+def get_logs(verbose, num_lines, log_type, follow_tail, node):
+    """
+    Get the logs from the last run task
 
-    if len(streams['logStreams']) == 0:
-        if not raise_on_error:
-            return False
-        raise exception_with_msg(
-            "No logs found. Make sure the webhook has triggered (check 'numerai compute logs -l lambda'). \n"
-            "If it has, then check `numerai compute status` and make sure it's in the RUNNING state "
-            "(this can take a few minutes). \n Also, make sure your webhook has triggered at least once by running "
-            "'numerai compute test-webhook'")
+    Keep in mind, logs are not created until a task is in the RUNNING state,
+    so the logs returned by this command might be out of date
+    """
+    if log_type not in LOG_TYPES:
+        raise exception_with_msg(f"Unknown log type '{log_type}', "
+                                 f"must be one of {LOG_TYPES}")
 
-    name = streams['logStreams'][0]['logStreamName']
-    print_logs(logs_client, family, name, limit, next_token)
-    return True
+    node_config = load_or_init_nodes(node)
+    if node_config.provider == PROVIDER_AWS:
+        get_logs_aws(node_config, num_lines, log_type, follow_tail, verbose)
+
+    else:
+        click.secho(f"Unsupported provider: '{node_config['provider']}'", fg='red')
+        return
 
 
-def logs_aws(config, node, num_lines, log_type, follow_tail, verbose):
-    aws_public, aws_secret = config.aws_keys
+def get_logs_aws(node_config, num_lines, log_type, follow_tail, verbose):
+    aws_public, aws_secret = get_aws_keys()
     logs_client = boto3.client(
         'logs', region_name='us-east-1',
         aws_access_key_id=aws_public,
         aws_secret_access_key=aws_secret)
 
-    if log_type == "webhook":
-        family = config.webhook_log_group(node)
+    if log_type == LOG_TYPE_WEBHOOK:
+        family = node_config['webhook_log_group']
         get_name_and_print_logs(logs_client, family, num_lines)
+        return
 
-    elif log_type == "cluster":
-        family = config.cluster_log_group(node)
+    if log_type == LOG_TYPE_CLUSTER:
+        family = node_config['cluster_log_group']
 
-        task_info = get_latest_task_status_aws(config, node, verbose)
+        task_info = get_latest_task_status_aws(verbose)
         if task_info is None or task_info[1] == 'STOPPED':
             get_name_and_print_logs(logs_client, family, num_lines)
             if task_info is not None and task_info[3] == 'RUNNING':
@@ -207,7 +208,7 @@ def logs_aws(config, node, num_lines, log_type, follow_tail, verbose):
                         f"Waiting{'.'*i}\r", fg='yellow', nl=False)
             time.sleep(2)
 
-        task_arn, task_status, task_date, _ = get_latest_task_status_aws(config, node, verbose)
+        task_arn, task_status, task_date, _ = get_latest_task_status_aws(verbose)
 
         next_token = print_logs(logs_client, family, name, limit=num_lines)
         ecs_client = boto3.client(
@@ -227,38 +228,48 @@ def logs_aws(config, node, num_lines, log_type, follow_tail, verbose):
             if task_status != "RUNNING":
                 click.secho(f"Task is now in the {task_status} state", fg='yellow')
                 return
+        return
 
 
-log_type_options = ['cluster', 'webhook']
-@compute.command()
+def get_name_and_print_logs(logs_client, family, limit, next_token=None, raise_on_error=True):
+    streams = logs_client.describe_log_streams(
+        logGroupName=family,
+        orderBy="LastEventTime",
+        descending=True)
+
+    if len(streams['logStreams']) == 0:
+        if not raise_on_error:
+            return False
+        raise exception_with_msg(
+            "No logs found. Make sure the webhook has triggered (check 'numerai compute logs -l lambda'). \n"
+            "If it has, then check `numerai compute status` and make sure it's in the RUNNING state "
+            "(this can take a few minutes). \n Also, make sure your webhook has triggered at least once by running "
+            "'numerai compute test-webhook'")
+
+    name = streams['logStreams'][0]['logStreamName']
+    print_logs(logs_client, family, name, limit, next_token)
+    return True
+
+
+@click.command()
 @click.option('--verbose', '-v', is_flag=True)
 @click.option(
     '--num-lines', '-n', type=int, default=20,
     help="the number of log lines to return")
 @click.option(
     "--log-type", "-l", default="cluster",
-    help=f"The log type to lookup. One of {log_type_options}. Default is fargate")
+    help=f"The log type to lookup. One of {LOG_TYPES}. Default is fargate")
 @click.option(
     "--follow-tail", "-f", is_flag=True,
     help="tail the logs constantly")
-@click.option(
-    '--node', '-n', default='default',
-    help="Target a node. Defaults to 'default'.")
-def logs(verbose, num_lines, log_type, follow_tail, node):
+@click.pass_context
+def logs(ctx, verbose, num_lines, log_type, follow_tail):
     """
     Get the logs from the last run task
 
     Keep in mind, logs are not created until a task is in the RUNNING state,
     so the logs returned by this command might be out of date
     """
-    if log_type not in log_type_options:
-        raise exception_with_msg(f"Unknown log type '{log_type}', must be one of {log_type_options}")
-
-    config = Config()
-    provider = config.provider(node)
-    if provider == PROVIDER_AWS:
-        logs_aws(config, node, num_lines, log_type, follow_tail, verbose)
-
-    else:
-        click.secho(f"Unsupported provider: '{provider}'", fg='red')
-        return
+    ctx.ensure_object(dict)
+    node = ctx.obj['node']
+    get_logs(verbose, num_lines, log_type, follow_tail, node)
