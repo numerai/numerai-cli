@@ -490,7 +490,7 @@ def copy_example(quiet, force, rlang, signals):
 
     with open('.dockerignore', 'a+') as f:
         f.write(".numerai\n")
-        f.write("numerai_dataset.zip\n")
+        f.write("numerai_dataset_*.zip\n")
         f.write(".git\n")
 
 
