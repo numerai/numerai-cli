@@ -17,6 +17,7 @@ Before posting a messaging the Rocketchat channel or creating a Github issue, pl
 
 If you still cannot find a solution or answer, include the following information with your issue/message:
 
+- The entire error output (preferably as a text file)
 - The command you ran that caused the error
 - Version from running `pip3 show numerai-cli`
 - System Information from running
