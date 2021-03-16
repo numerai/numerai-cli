@@ -80,11 +80,10 @@ def create(ctx, verbose, provider, size, path, model_id, example):
     res = terraform(f"output -json aws_nodes", CONFIG_PATH, verbose).stdout.decode('utf-8')
     aws_nodes = json.loads(res)
     for node, data in aws_nodes.items():
-        nodes_config[node].setdefault({})
         nodes_config[node].update(data)
     store_config(NODES_PATH, nodes_config)
     if verbose:
-        click.secho(f'new config:\b{load_or_init_nodes()}')
+        click.secho(f'new config:\n{str(load_or_init_nodes())}')
 
     if model_id:
         napi = numerapi.NumerAPI(*get_numerai_keys())
