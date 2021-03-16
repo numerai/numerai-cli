@@ -129,8 +129,11 @@ If you still cannot find a solution or answer, please join us on the
 [RocketChat #compute Channel](https://community.numer.ai/channel/compute) 
 and include the following information with your issue/message:
 
-- The command you ran that caused the error
-- Version from running `pip3 show numerai-cli`
+- The commands you ran that caused the error (even previous commands)
+- Version information from running:
+    - `pip3 show numerai-cli`
+    - `python -V`
+    - `docker -v`
 - System Information from running
     - Mac: `system_profiler SPSoftwareDataType && system_profiler SPHardwareDataType`
     - Linux: `lsb_release -a && uname -a`

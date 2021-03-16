@@ -64,12 +64,6 @@ def test(ctx, local, verbose):
 
 
 def monitor(node, config, verbose, num_lines, log_type, follow_tail):
-    """
-    Get the logs from the last run task
-
-    Keep in mind, logs are not created until a task is in the RUNNING state,
-    so the logs returned by this command might be out of date
-    """
     if log_type not in LOG_TYPES:
         raise exception_with_msg(f"Unknown log type '{log_type}', "
                                  f"must be one of {LOG_TYPES}")
@@ -235,9 +229,9 @@ def print_logs(logs_client, family, name, limit=None, next_token=None):
 @click.pass_context
 def status(ctx, verbose, num_lines, log_type, follow_tail):
     """
-    Get the logs from the last run task
+    Get the logs from the latest task
 
-    Keep in mind, logs are not created until a task is in the RUNNING state,
+    Logs are not created until a task is in the RUNNING state,
     so the logs returned by this command might be out of date
     """
     ctx.ensure_object(dict)

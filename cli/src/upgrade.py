@@ -104,7 +104,7 @@ def upgrade(verbose):
     if confirm("It's recommended you destroy your current Compute Node. Continue?"):
         click.secho("Removing old cloud infrastructure...", fg='yellow')
         terraform(
-            'destroy -auto-approve -var -var="node_config_file=nodes.json"',
+            'destroy -auto-approve -var="node_config_file=nodes.json"',
             CONFIG_PATH, verbose, env_vars=load_or_init_keys('aws'),
         )
 

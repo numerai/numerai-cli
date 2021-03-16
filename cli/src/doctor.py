@@ -43,13 +43,15 @@ def doctor():
         env_setup_status = res.returncode
         env_setup_err = res.stderr
 
-    # Check version
+    # Check official (non-dev) version
     click.secho(f"Checking your numerai-cli version...")
     res = str(subprocess.run('pip3 show numerai-cli', shell=True, capture_output=True, text=True))
     curr_ver = [s for s in res.split('\\n') if 'Version:' in s][0].split(': ')[1]
     url = f"https://pypi.org/pypi/numerai-cli/json"
-    versions = list(json.load(request.urlopen(url))["releases"].keys())
-    versions.sort(reverse=True)
+    versions = list(reversed(sorted(filter(
+        lambda key: 'dev' not in key,
+        json.load(request.urlopen(url))["releases"].keys()
+    ))))
 
     # Check keys
     click.secho("Checking your API keys...")
