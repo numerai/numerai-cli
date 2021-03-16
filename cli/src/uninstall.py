@@ -33,6 +33,9 @@ def uninstall():
                   CONFIG_PATH, verbose=True, env_vars=provider_keys)
         subprocess.run('docker system prune -f -a --volumes', shell=True)
         shutil.rmtree(CONFIG_PATH)
-
-    subprocess.run('pip3 uninstall numerai-cli -y', shell=True)
+    try:
+        subprocess.run('pip3 uninstall numerai-cli -y', shell=True)
+    except PermissionError as e:
+        click.secho('uninstall failed due to permissions, '
+                    'run "pip3 uninstall numerai-cli -y" manually', fg='red')
     click.secho("All those moments will be lost in time, like tears in rain.", fg='red')

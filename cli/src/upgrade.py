@@ -7,7 +7,10 @@ from cli.src.util.docker import terraform
 from cli.src.util.files import \
     maybe_create,\
     copy_files
-from cli.src.util.keys import load_or_init_keys
+from cli.src.util.keys import \
+    load_or_init_keys, \
+    config_numerai_keys, \
+    config_provider_keys
 
 
 @click.command()
@@ -16,16 +19,23 @@ def upgrade(verbose):
     """
     Upgrades configuration from <=0.2 format to >=0.3 format
     """
-    click.secho(f"Upgrading, do not interrupt or else "
-                f"your environment may be corrupted.", fg='yellow')
     home = str(Path.home())
     old_key_path = os.path.join(home, '.numerai')
     old_config_path = os.path.join(os.getcwd(), '.numerai/')
 
-    if not os.path.exists(old_config_path):
-        click.secho('Run this command from the directory in which you first ran '
-                    '"numerai setup" (it should have the .numerai folder in it)')
+    if str(old_key_path) == str(old_config_path):
+        click.secho('You cannot run this command from your home directory.')
+        return
 
+    if not os.path.exists(old_config_path):
+        click.secho(
+            'Run this command from the directory in which you first ran '
+            '"numerai setup" (it should have the .numerai folder in it)'
+        )
+        return
+
+    click.secho(f"Upgrading, do not interrupt or else "
+                f"your environment may be corrupted.", fg='yellow')
     # MOVE KEYS FILE
     if os.path.isfile(old_key_path):
         temp_key_path = os.path.join(old_config_path, '.keys')
@@ -37,6 +47,12 @@ def upgrade(verbose):
     if os.path.exists(old_config_path):
         click.secho(f"\tmoving {old_config_path} to {CONFIG_PATH}",)
         os.rename(old_config_path, CONFIG_PATH)
+
+    # Double check keys file exists
+    if not os.path.exists(KEYS_PATH):
+        click.secho(f"No key file at {KEYS_PATH}, you must re-initialize them:")
+        config_numerai_keys()
+        config_provider_keys(PROVIDER_AWS)
 
     # REFORMAT OLD KEYS
     try:
