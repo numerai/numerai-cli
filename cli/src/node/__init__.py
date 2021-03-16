@@ -1,6 +1,6 @@
 from cli.src.constants import *
 
-from cli.src.node.create import create, copy_example
+from cli.src.node.create import create
 from cli.src.node.deploy import deploy
 from cli.src.node.destroy import destroy
 from cli.src.node.test import LOG_TYPES, test, status
@@ -27,7 +27,6 @@ def node(ctx, name):
 
 
 node.add_command(create)
-node.add_command(copy_example)
 node.add_command(deploy)
 node.add_command(destroy)
 node.add_command(test)

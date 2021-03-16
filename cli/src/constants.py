@@ -34,7 +34,7 @@ SIZE_PRESETS = {
     "mem-lg": (4096, 30720),
 }
 
-DEFAULT_EXAMPLE = 'numerai-python3'
+DEFAULT_EXAMPLE = 'tournament-python3'
 DEFAULT_NODE = "default"
 DEFAULT_SIZE = "gen-md"
 DEFAULT_PROVIDER = PROVIDER_AWS

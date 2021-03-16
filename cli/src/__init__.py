@@ -1,8 +1,19 @@
 import click
 from colorama import init
 
-from cli.src import util, constants, doctor, node, setup, uninstall, upgrade
-from cli.src.util import docker, files, keys
+from cli.src import \
+    util, \
+    constants, \
+    doctor, \
+    node, \
+    setup, \
+    uninstall, \
+    upgrade, \
+    misc
+from cli.src.util import \
+    docker, \
+    files, \
+    keys
 
 
 @click.group()
@@ -21,4 +32,5 @@ def main():
     numerai.add_command(doctor.doctor)
     numerai.add_command(uninstall.uninstall)
     numerai.add_command(upgrade.upgrade)
+    numerai.add_command(misc.copy_example)
     numerai()
