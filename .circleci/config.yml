@@ -8,7 +8,7 @@ jobs:
       - checkout
       - run: pip install .
       # TODO: add better tests
-      - run: numerai node copy-example
+      - run: numerai copy-example
       - run: test -e predict.py
 
   build-python37:
@@ -19,7 +19,7 @@ jobs:
       - checkout
       - run: pip install .
       # TODO: add better tests
-      - run: numerai node copy-example
+      - run: numerai copy-example
       - run: test -e predict.py
 
   build-docker:
