@@ -24,13 +24,10 @@ jobs:
 
   build-docker:
     machine: true # this allows us to use `docker` commands directly
-    working_directory: ~/numerai-cli
+    working_directory: ~/numerai-cli/cli/examples/tournament-python3
     steps:
       - checkout
-      - run: cd cli/examples/tournament-python3 && \
-             docker build -t example-python \
-                --build-arg NUMERAI_PUBLIC_ID=test \
-                --build-arg NUMERAI_SECRET_KEY=test .
+      - run: docker build -t example-python --build-arg NUMERAI_PUBLIC_ID=test --build-arg NUMERAI_SECRET_KEY=test .
 
   pypi-release:
     docker:
