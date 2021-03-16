@@ -49,8 +49,9 @@ def upgrade(verbose):
         os.rename(old_config_path, CONFIG_PATH)
 
     # Double check keys file exists
-    if not os.path.exists(KEYS_PATH):
-        click.secho(f"No key file at {KEYS_PATH}, you must re-initialize them:")
+    keys_config = load_or_init_keys()
+    if not os.path.exists(KEYS_PATH) or 'aws' not in keys_config or 'numerai' not in keys_config:
+        click.secho(f"Keys missing from {KEYS_PATH}, you must re-initialize your keys:")
         config_numerai_keys()
         config_provider_keys(PROVIDER_AWS)
 
