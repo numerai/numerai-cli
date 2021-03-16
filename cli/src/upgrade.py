@@ -126,4 +126,5 @@ def upgrade(verbose):
         )
 
     click.secho('Upgrade complete!', fg='green')
-    click.secho('run "numerai node create" to register this directory')
+    click.secho('run "numerai node create --help" to learn how to '
+                'register this directory as a prediction node')

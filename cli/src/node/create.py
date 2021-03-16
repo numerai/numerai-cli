@@ -29,7 +29,7 @@ from cli.src.util.keys import \
     help=f"Target a file path. Defaults to current directory ({DEFAULT_PATH}).")
 @click.option(
     '--model-id', '-i', type=str,
-    help=f"Target a model to configure this node for.")
+    help=f"Configures the resulting webhook with this model id.")
 @click.option(
     '--example', '-e', type=str,
     help=f'Specify an example to use for this node. Options are {EXAMPLES}.')
@@ -80,8 +80,11 @@ def create(ctx, verbose, provider, size, path, model_id, example):
     res = terraform(f"output -json aws_nodes", CONFIG_PATH, verbose).stdout.decode('utf-8')
     aws_nodes = json.loads(res)
     for node, data in aws_nodes.items():
+        nodes_config[node].setdefault({})
         nodes_config[node].update(data)
     store_config(NODES_PATH, nodes_config)
+    if verbose:
+        click.secho(f'new config:\b{load_or_init_nodes()}')
 
     if model_id:
         napi = numerapi.NumerAPI(*get_numerai_keys())
@@ -105,3 +108,4 @@ def create(ctx, verbose, provider, size, path, model_id, example):
             },
             authorization=True
         )
+    click.secho('Prediction Node created successfully', fg='green')

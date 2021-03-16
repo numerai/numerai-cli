@@ -3,11 +3,11 @@ from pathlib import Path
 import click
 
 PACKAGE_PATH = os.path.dirname(__file__)
-CONFIG_PATH = os.path.join(str(Path.home()), '.numerai/')
+CONFIG_PATH = os.path.join(str(Path.home()), '.numerai')
 KEYS_PATH = os.path.join(CONFIG_PATH, '.keys')
 NODES_PATH = os.path.join(CONFIG_PATH, 'nodes.json')
-TERRAFORM_PATH = os.path.join(PACKAGE_PATH, "../terraform")
-EXAMPLE_PATH = os.path.join(PACKAGE_PATH, "../examples")
+TERRAFORM_PATH = os.path.join(PACKAGE_PATH, "..", "terraform")
+EXAMPLE_PATH = os.path.join(PACKAGE_PATH, "..", "examples")
 
 EXAMPLES = os.listdir(EXAMPLE_PATH)
 
