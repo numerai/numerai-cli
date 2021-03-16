@@ -19,7 +19,7 @@ jobs:
       - checkout
       - run: pip install .
       # TODO: add better tests
-      - run: numerai docker copy-example
+      - run: numerai doctor
       - run: test -e predict.py
 
   build-docker:
@@ -27,7 +27,7 @@ jobs:
     working_directory: ~/numerai-cli
     steps:
       - checkout
-      - run: cd cli/examples/classic-python3 && docker build -t example-python --build-arg NUMERAI_PUBLIC_ID=test --build-arg NUMERAI_SECRET_KEY=test .
+      - run: cd src/examples/classic-python3 && docker build -t example-python --build-arg NUMERAI_PUBLIC_ID=test --build-arg NUMERAI_SECRET_KEY=test .
 
   pypi-release:
     docker:
@@ -52,4 +52,6 @@ workflows:
             - build-docker
           filters:
             branches:
-              only: master
+              only:
+               - master
+#               - ndharasz/multi-app
