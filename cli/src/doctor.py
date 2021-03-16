@@ -2,7 +2,6 @@ import sys
 import subprocess
 import json
 from urllib import request
-from distutils.version import StrictVersion
 
 from cli.src.constants import *
 from cli.src.util.keys import \
@@ -50,8 +49,7 @@ def doctor():
     curr_ver = [s for s in res.split('\\n') if 'Version:' in s][0].split(': ')[1]
     url = f"https://pypi.org/pypi/numerai-cli/json"
     versions = list(json.load(request.urlopen(url))["releases"].keys())
-    versions.sort(key=StrictVersion, reverse=True)
-
+    versions.sort(reverse=True)
 
     # Check keys
     click.secho("Checking your API keys...")
@@ -77,7 +75,7 @@ def doctor():
     else:
         click.secho("✓ Environment setup with Docker and Python", fg='green')
 
-    if curr_ver != versions[0]:
+    if curr_ver < versions[0]:
         click.secho(f"✖ numerai-cli needs an upgrade"
                     f"(run 'pip3 install -U numerai-cli' to fix)", fg='red')
     else:
@@ -91,8 +89,8 @@ def doctor():
         click.secho("✓ API Keys working", fg='green')
 
     click.secho(
-        "If you need help troubleshooting or want to report a bug please read the" 
-        "\nTroubleshooting and Feedback section of the readme:\n"
+        "\nIf you need help troubleshooting or want to report a bug please read the" 
+        "\nTroubleshooting and Feedback section of the readme:"
         "\nhttps://github.com/numerai/numerai-cli#troubleshooting-and-feedback",
         fg='yellow'
     )
