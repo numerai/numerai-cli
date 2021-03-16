@@ -5,9 +5,9 @@ import base64
 import boto3
 
 from cli.src.constants import *
-from cli.src.util.files import load_or_init_keys, load_or_init_nodes, format_path_if_mingw
+from cli.src.util.files import load_or_init_nodes, format_path_if_mingw
 from cli.src.util.debug import root_cause
-from cli.src.util.keys import sanitize_message, get_aws_keys
+from cli.src.util.keys import sanitize_message, get_aws_keys, load_or_init_keys
 
 
 def execute(command, verbose):

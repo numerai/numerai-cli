@@ -1,9 +1,59 @@
+import json
+from configparser import \
+    ConfigParser, \
+    MissingSectionHeaderError
+
 import boto3
 import numerapi
 
 from cli.src.constants import *
+from cli.src.constants import KEYS_PATH
 from cli.src.util.debug import exception_with_msg
-from cli.src.util.files import load_or_init_keys, load_or_init_nodes, store_config
+from cli.src.util.files import \
+    load_or_init_nodes, \
+    store_config, \
+    maybe_create, \
+    load_config
+
+
+def reformat_keys():
+    # REFORMAT OLD KEYS
+    try:
+        config = ConfigParser()
+        config.read(KEYS_PATH)
+        click.secho(f"Old keyfile format found, reformatting...", fg='yellow')
+
+        new_config = {
+            'aws': {
+                'AWS_ACCESS_KEY_ID': config['default']['AWS_ACCESS_KEY_ID'],
+                'AWS_SECRET_ACCESS_KEY': config['default']['AWS_SECRET_ACCESS_KEY']
+            },
+            'numerai': {
+                'NUMERAI_PUBLIC_ID': config['default']['NUMERAI_PUBLIC_ID'],
+                'NUMERAI_SECRET_KEY': config['default']['NUMERAI_SECRET_KEY']
+            }
+        }
+
+        del config['default']
+        with open(os.open(KEYS_PATH, os.O_CREAT | os.O_WRONLY, 0o600), 'w') as f:
+            config.write(f)
+            json.dump(new_config, f, indent=2)
+
+    # if this file is already a json file skip
+    except MissingSectionHeaderError:
+        pass
+
+
+def load_or_init_keys(provider=None):
+    maybe_create(KEYS_PATH, protected=True)
+    try:
+        cfg = load_config(KEYS_PATH)
+    except json.decoder.JSONDecodeError as e:
+        reformat_keys()
+        cfg = load_config(KEYS_PATH)
+    if provider:
+        return cfg[provider]
+    return cfg
 
 
 def get_numerai_keys():
@@ -96,4 +146,3 @@ def sanitize_message(message):
                   .replace(aws_secret, '...')\
                   .replace(numerai_public, '...')\
                   .replace(numerai_secret, '...')
-

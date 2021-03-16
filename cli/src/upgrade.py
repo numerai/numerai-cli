@@ -1,11 +1,7 @@
-from configparser import ConfigParser, MissingSectionHeaderError
-import json
-
 from cli.src.constants import *
 from cli.src.util.debug import confirm
 from cli.src.util.docker import terraform
 from cli.src.util.files import \
-    maybe_create,\
     copy_files
 from cli.src.util.keys import \
     load_or_init_keys, \
@@ -47,34 +43,9 @@ def upgrade(verbose):
         click.secho(f"\tmoving {old_config_path} to {CONFIG_PATH}",)
         os.rename(old_config_path, CONFIG_PATH)
 
-    # REFORMAT OLD KEYS
-    try:
-        config = ConfigParser()
-        config.read(KEYS_PATH)
-        click.secho(f"Old keyfile format found, reformatting...", fg='yellow')
-
-        new_config = {
-            'aws': {
-                'AWS_ACCESS_KEY_ID': config['default']['AWS_ACCESS_KEY_ID'],
-                'AWS_SECRET_ACCESS_KEY': config['default']['AWS_SECRET_ACCESS_KEY']
-            },
-            'numerai': {
-                'NUMERAI_PUBLIC_ID': config['default']['NUMERAI_PUBLIC_ID'],
-                'NUMERAI_SECRET_KEY': config['default']['NUMERAI_SECRET_KEY']
-            }
-        }
-
-        del config['default']
-        with open(os.open(KEYS_PATH, os.O_CREAT | os.O_WRONLY, 0o600), 'w') as f:
-            config.write(f)
-            json.dump(new_config, f, indent=2)
-
-    # if this file is already a json file skip
-    except MissingSectionHeaderError:
-        pass
-
     # Double check keys file exists
-    if not os.path.exists(KEYS_PATH) or 'aws' not in load_or_init_keys() or 'numerai' not in load_or_init_keys():
+    keys_config = load_or_init_keys()
+    if not os.path.exists(KEYS_PATH) or 'aws' not in keys_config or 'numerai' not in keys_config:
         click.secho(f"Keys missing from {KEYS_PATH}, you must re-initialize your keys:")
         config_numerai_keys()
         config_provider_keys(PROVIDER_AWS)

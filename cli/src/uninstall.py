@@ -3,7 +3,7 @@ import shutil
 
 from cli.src.constants import *
 from cli.src.util.debug import confirm
-from cli.src.util.files import load_or_init_keys
+from cli.src.util.keys import load_or_init_keys
 from cli.src.util.docker import terraform
 
 

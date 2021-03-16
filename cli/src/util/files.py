@@ -35,14 +35,6 @@ def maybe_create(path, protected=False):
     return created
 
 
-def load_or_init_keys(provider=None):
-    maybe_create(KEYS_PATH, protected=True)
-    cfg = load_config(KEYS_PATH)
-    if provider:
-        return cfg[provider]
-    return cfg
-
-
 def load_or_init_nodes(node=None):
     maybe_create(NODES_PATH)
     cfg = load_config(NODES_PATH)

@@ -70,9 +70,10 @@ def create(ctx, verbose, provider, size, path, model_id, example):
     store_config(NODES_PATH, nodes_config)
 
     # terraform apply
+    provider_keys = get_provider_keys(node)
     click.secho(f'running terraform to provision cloud infrastructure...')
     terraform(f'apply -auto-approve -var="node_config_file=nodes.json"', CONFIG_PATH,
-              verbose, env_vars=get_provider_keys(node))
+              verbose, env_vars=provider_keys)
     click.secho('successfully created cloud resources!', fg='green')
 
     # terraform output for AWS nodes
