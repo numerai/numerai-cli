@@ -56,7 +56,7 @@ def destroy(ctx, verbose):
 
     if 'model_id' in node_config:
         napi = numerapi.NumerAPI(*get_numerai_keys())
-        model_id = node_config['node_config']
+        model_id = node_config['model_id']
         webhook_url = nodes_config[node]['webhook_url']
         click.echo(f'deregistering webhook {webhook_url} for model {model_id}...')
         napi.raw_query(
