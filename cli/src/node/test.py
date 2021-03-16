@@ -20,12 +20,14 @@ LOG_TYPES = [
 
 @click.command()
 @click.option(
-    '--local', '-l', type=str, default='',
-    help=f'Test the container locally with a command.' \
-         f' Defaults to the one specified in the Dockerfile.')
+    '--local', '-l', type=str, is_flag=True,
+    help=f'Test the container locally, uses value specified with --command. ')
+@click.option(
+    '--command', '-c', type=str, default="python predict.py",
+    help=f'The terminal command. Defaults to "python predict.py".')
 @click.option('--verbose', '-v', is_flag=True)
 @click.pass_context
-def test(ctx, local, verbose):
+def test(ctx, local, command, verbose):
     """
     This will POST to your webhook, and trigger compute to run in the cloud
 
@@ -36,9 +38,9 @@ def test(ctx, local, verbose):
     click.secho("checking if webhook is reachable...")
     node_config = load_or_init_nodes(node)
 
-    if local != '':
-        docker.build(node, verbose)
-        docker.run(node_config['docker_repo'], verbose, command=local)
+    if local:
+        docker.build(node_config, verbose)
+        docker.run(node_config['docker_repo'], verbose, command=command)
 
     napi = numerapi.NumerAPI(*get_numerai_keys())
     res = napi.raw_query(

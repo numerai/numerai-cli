@@ -45,8 +45,8 @@ def destroy(ctx, verbose):
         store_config(NODES_PATH, nodes_config)
 
         click.secho(f"deleting cloud resources for node...")
-        terraform(f'apply -auto-approve -var="node_config_file=nodes.json"',
-                  numerai_dir, verbose, env_vars=provider_keys)
+        terraform(f'apply -auto-approve -var="node_config_file=nodes.json"', verbose,
+                  env_vars=provider_keys)
 
     except Exception as e:
         click.secho(e.__str__(), fg='red')

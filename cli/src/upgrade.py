@@ -1,3 +1,5 @@
+import json
+
 from cli.src.constants import *
 from cli.src.util.debug import confirm
 from cli.src.util.docker import terraform
@@ -63,8 +65,15 @@ def upgrade(verbose):
                     f"new config file with 'numerai node create'")
         os.remove(old_docker_path)
 
-    # RENAME AND UPDATE TERRAFORM FILES
+    # UPGRADE, RENAME, AND UPDATE TERRAFORM FILES
     click.secho('Upgrading terraform files...', fg='yellow')
+    try:
+        with open(os.path.join(CONFIG_PATH, 'terraform.tfstate')) as f:
+            tfstate = json.load(f)
+        if '0.12' in tfstate['terraform_version']:
+            terraform('0.13upgrade -yes', verbose, version='0.13.6')
+    except FileNotFoundError:
+        pass
     tf_files_map = {
         'main.tf': '-main.tf',
         'variables.tf': '-inputs.tf',
@@ -83,16 +92,15 @@ def upgrade(verbose):
         force=True,
         verbose=verbose
     )
+
     # terraform init
     click.secho("Re-initializing terraform...", fg='yellow')
-    terraform("init -upgrade", CONFIG_PATH, verbose=verbose)
+    terraform("init -upgrade", verbose=verbose)
 
     if confirm("It's recommended you destroy your current Compute Node. Continue?"):
         click.secho("Removing old cloud infrastructure...", fg='yellow')
-        terraform(
-            'destroy -auto-approve -var="node_config_file=nodes.json"',
-            CONFIG_PATH, verbose, env_vars=load_or_init_keys('aws'),
-        )
+        terraform('destroy -auto-approve -var="node_config_file=nodes.json"', verbose,
+                  env_vars=load_or_init_keys('aws'))
 
     click.secho('Upgrade complete!', fg='green')
     click.secho('run "numerai node create --help" to learn how to '

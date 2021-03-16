@@ -30,7 +30,7 @@ def uninstall():
         for provider in PROVIDERS:
             provider_keys.update(all_keys[provider])
         terraform('destroy -auto-approve -var="node_config_file=nodes.json"',
-                  CONFIG_PATH, verbose=True, env_vars=provider_keys)
+                  verbose=True, env_vars=provider_keys)
         subprocess.run('docker system prune -f -a --volumes', shell=True)
         shutil.rmtree(CONFIG_PATH)
     try:

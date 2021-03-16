@@ -72,13 +72,13 @@ def create(ctx, verbose, provider, size, path, model_id, example):
     # terraform apply
     provider_keys = get_provider_keys(node)
     click.secho(f'running terraform to provision cloud infrastructure...')
-    terraform(f'apply -auto-approve -var="node_config_file=nodes.json"', CONFIG_PATH,
-              verbose, env_vars=provider_keys)
+    terraform(f'apply -auto-approve -var="node_config_file=nodes.json"', verbose,
+              env_vars=provider_keys)
     click.secho('successfully created cloud resources!', fg='green')
 
     # terraform output for AWS nodes
     click.echo(f'saving node configuration to {NODES_PATH}...')
-    res = terraform(f"output -json aws_nodes", CONFIG_PATH, verbose).stdout.decode('utf-8')
+    res = terraform(f"output -json aws_nodes", verbose).stdout.decode('utf-8')
     aws_nodes = json.loads(res)
     for node, data in aws_nodes.items():
         nodes_config[node].update(data)

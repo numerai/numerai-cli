@@ -37,13 +37,13 @@ def execute(command, verbose):
     return res
 
 
-def terraform(tf_cmd, numerai_dir, verbose, env_vars=None):
+def terraform(tf_cmd, verbose, env_vars=None, version='0.14.3'):
     cmd = f"docker run"
     if env_vars:
         for key, val in env_vars.items():
             cmd += f' -e "{key}={val}"'
-    cmd += f' --rm -it -v {numerai_dir}:/opt/plan'
-    cmd += f' -w /opt/plan hashicorp/terraform:0.14.3 {tf_cmd}'
+    cmd += f' --rm -it -v {CONFIG_PATH}:/opt/plan'
+    cmd += f' -w /opt/plan hashicorp/terraform:{version} {tf_cmd}'
 
     if verbose:
         click.echo('Running: ' + sanitize_message(cmd))
