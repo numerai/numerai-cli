@@ -2,8 +2,9 @@ import subprocess
 import shutil
 
 from cli.src.constants import *
-from cli.src.util.files import load_or_init_nodes, load_or_init_keys
-from cli.src.util.docker import terraform, cleanup
+from cli.src.util.debug import confirm
+from cli.src.util.files import load_or_init_keys
+from cli.src.util.docker import terraform
 
 
 @click.command()
@@ -20,8 +21,7 @@ def uninstall():
     - Leave Python and Docker installed on your computer
     ''', fg='red'
     )
-    confirm = click.prompt('Are you absolutely sure you want to uninstall? [y]/n').strip()
-    if confirm != "" and confirm != "y" and confirm != "yes":
+    if not confirm('Are you absolutely sure you want to uninstall?'):
         return
 
     if os.path.exists(CONFIG_PATH):

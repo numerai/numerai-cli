@@ -5,6 +5,11 @@ import platform
 import click
 
 
+def confirm(msg):
+    conf = click.prompt(f'{msg} [y]/n').strip()
+    return conf == "" or conf == "y" or conf == "yes"
+
+
 def exception_with_msg(msg):
     return click.ClickException(msg)
 

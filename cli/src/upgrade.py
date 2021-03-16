@@ -2,10 +2,12 @@ from configparser import ConfigParser, MissingSectionHeaderError
 import json
 
 from cli.src.constants import *
+from cli.src.util.debug import confirm
 from cli.src.util.docker import terraform
 from cli.src.util.files import \
     maybe_create,\
     copy_files
+from cli.src.util.keys import load_or_init_keys
 
 
 @click.command()
@@ -98,6 +100,13 @@ def upgrade(verbose):
     # terraform init
     click.secho("Re-initializing terraform...", fg='yellow')
     terraform("init -upgrade", CONFIG_PATH, verbose=verbose)
+
+    if confirm("It's recommended you destroy your current Compute Node. Continue?"):
+        click.secho("Removing old cloud infrastructure...", fg='yellow')
+        terraform(
+            'destroy -auto-approve -var -var="node_config_file=nodes.json"',
+            CONFIG_PATH, verbose, env_vars=load_or_init_keys('aws'),
+        )
 
     click.secho('Upgrade complete!', fg='green')
     click.secho('run "numerai node create" to register this directory')

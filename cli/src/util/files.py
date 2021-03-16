@@ -2,6 +2,7 @@ import json
 import shutil
 
 from cli.src.constants import *
+from cli.src.util.debug import confirm
 
 
 def load_config(path):
@@ -57,8 +58,7 @@ def copy_files(src, dst, force=False, verbose=True):
         src_file = os.path.join(src, filename)
         dst_file = os.path.join(dst, filename)
         if os.path.exists(dst_file) and not force:
-            overwrite = click.prompt(f'{filename} already exists. Overwrite? [y]/n').strip()
-            if overwrite != "" and overwrite != "y" and overwrite != "yes":
+            if not confirm(f'{filename} already exists. Overwrite?'):
                 return
         if os.path.isdir(src_file):
             if verbose:
