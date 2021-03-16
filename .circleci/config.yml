@@ -2,8 +2,8 @@ version: 2
 jobs:
   build-python36:
     docker:
-      - image: python:3.6
-    working_directory: ~/numerai-cli/cli/examples/tournament-python3
+      - image: circleci/python:3.6
+    working_directory: ~/numerai-cli
     steps:
       - checkout
       - run: pip install .
@@ -13,8 +13,8 @@ jobs:
 
   build-python37:
     docker:
-      - image: python:3.7
-    working_directory: ~/numerai-cli/cli/examples/tournament-python3
+      - image: circleci/python:3.7
+    working_directory: ~/numerai-cli
     steps:
       - checkout
       - run: pip install .
@@ -27,7 +27,7 @@ jobs:
     working_directory: ~/numerai-cli
     steps:
       - checkout
-      - run: cd src/examples/tournament-python3 && \
+      - run: ls cli/examples/ && cd src/examples/tournament-python3 && \
              docker build -t example-python \
                 --build-arg NUMERAI_PUBLIC_ID=test \
                 --build-arg NUMERAI_SECRET_KEY=test .
