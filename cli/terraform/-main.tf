@@ -10,11 +10,11 @@ provider "aws" {
 
 locals {
   nodes = jsondecode(file(var.node_config_file))
-  aws_nodes = [for node, config in local.nodes:
-    merge({name: node}, config) if config.provider == "aws"
-  ]
+  aws_nodes = {
+    for node, config in local.nodes:
+    node => config if config.provider == "aws"
+  }
 }
-
 
 module "aws" {
   count = length(local.aws_nodes) > 0 ? 1 : 0

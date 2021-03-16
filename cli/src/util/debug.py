@@ -104,5 +104,8 @@ def root_cause(err_msg):
             " and increase the memory allowance in the advanced settings."
         )
 
-    click.secho(f'Numerai CLI was unable to identify the following error:', fg='red')
-    click.secho(err_msg.decode('utf8'), fg='red')
+    raise exception_with_msg(
+        f'Numerai CLI was unable to identify the error, please try to use the '
+        f'"--verbose|-v" option for more information before reporting this\n'
+        + err_msg.decode('utf8')
+    )

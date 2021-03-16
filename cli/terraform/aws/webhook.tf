@@ -6,9 +6,10 @@ resource "aws_lambda_layer_version" "node_modules" {
 }
 
 resource "aws_lambda_function" "submission" {
-  count = length(var.nodes)
+  for_each = { for name, config in var.nodes : name => config }
+
   filename      = "lambda.zip"
-  function_name = local.node_names[count.index]
+  function_name = each.key
   role          = aws_iam_role.iam_for_lambda.arn
   handler       = "exports.handler"
 
@@ -33,7 +34,7 @@ resource "aws_lambda_function" "submission" {
       security_group = aws_security_group.ecs_tasks.id
       subnet         = aws_subnet.public.*.id[0]
       ecs_cluster    = aws_ecs_cluster.main.id
-      ecs_task_arn  = aws_ecs_task_definition.node[count.index].arn
+      ecs_task_arn  = aws_ecs_task_definition.node[each.key].arn
     }
   }
 }
@@ -43,8 +44,9 @@ resource "aws_lambda_function" "submission" {
 # This is to optionally manage the CloudWatch Log Group for the Lambda Function.
 # If skipping this resource configuration, also add "logs:CreateLogGroup" to the IAM policy below.
 resource "aws_cloudwatch_log_group" "lambda" {
-  count             = length(var.nodes)
-  name              = "/aws/lambda/${local.node_names[count.index]}"
+  for_each = { for name, config in var.nodes : name => config }
+
+  name              = "/aws/lambda/${each.key}"
   retention_in_days = 14
 }
 resource "aws_cloudwatch_log_group" "gateway" {
@@ -60,23 +62,25 @@ resource "aws_apigatewayv2_api" "submit" {
 }
 
 resource "aws_apigatewayv2_integration" "submit" {
-  count = length(var.nodes)
+  for_each = { for name, config in var.nodes : name => config }
+
   api_id = aws_apigatewayv2_api.submit.id
   integration_type = "AWS_PROXY"
 
   connection_type           = "INTERNET"
-  description               = "Serverless Prediction Node Trigger for ${local.node_names[count.index]}"
+  description               = "Serverless Prediction Node Trigger for ${each.key}"
   integration_method        = "POST"
-  integration_uri           = aws_lambda_function.submission[count.index].invoke_arn
+  integration_uri           = aws_lambda_function.submission[each.key].invoke_arn
 
 }
 
 resource "aws_apigatewayv2_route" "submit" {
-  count = length(var.nodes)
-  api_id = aws_apigatewayv2_api.submit.id
-  route_key = "POST /${var.nodes[count.index].name}"
+  for_each = { for name, config in var.nodes : name => config }
 
-  target = "integrations/${aws_apigatewayv2_integration.submit[count.index].id}"
+  api_id = aws_apigatewayv2_api.submit.id
+  route_key = "POST /${each.key}"
+
+  target = "integrations/${aws_apigatewayv2_integration.submit[each.key].id}"
 }
 
 resource "aws_apigatewayv2_deployment" "submit" {
@@ -122,10 +126,11 @@ resource "aws_apigatewayv2_stage" "submit" {
 
 ### IAM
 resource "aws_lambda_permission" "gateway" {
-  count = length(var.nodes)
+  for_each = { for name, config in var.nodes : name => config }
+
   statement_id  = "AllowAPIGatewayInvoke"
   action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.submission[count.index].arn
+  function_name = aws_lambda_function.submission[each.key].arn
   principal     = "apigateway.amazonaws.com"
 
   # The */* portion grants access from any method on any resource
@@ -133,7 +138,7 @@ resource "aws_lambda_permission" "gateway" {
   source_arn = "${replace(
     aws_apigatewayv2_stage.submit.execution_arn,
     aws_apigatewayv2_stage.submit.name,
-    "")}*/*${split(" ", aws_apigatewayv2_route.submit[count.index].route_key)[1]}"
+    "")}*/*${split(" ", aws_apigatewayv2_route.submit[each.key].route_key)[1]}"
 }
 
 resource "aws_iam_role" "iam_for_lambda" {

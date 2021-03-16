@@ -12,9 +12,8 @@ variable "az_count" {
 
 variable "nodes" {
   description = "Names of nodes to deploy"
-  type        = list(object({
+  type        = map(object({
     provider: string,
-    name: string,
     cpu: number,
     memory: number,
   }))

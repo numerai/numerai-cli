@@ -25,7 +25,7 @@ If you have any problems, questions, comments, concerns, or general feedback, pl
 
 ## Prerequisites
 
-1.  Sign up a Numerai Account and get your Numerai API Keys
+1.  Sign up a Numerai Account, get your Numerai API Keys, and your first Model:
     1.  Sign up at https://numer.ai/signup and log in to your new account
     2.  Go to https://numer.ai/account > "Your API keys" section > click "Add"
     3.  Name your key and check all boxes under "Scope this key will have"
@@ -33,7 +33,7 @@ If you have any problems, questions, comments, concerns, or general feedback, pl
     5.  Copy your secret public key and secret key somewhere safe
   
 
-3.  Pick a Cloud Provider and follow the link for directions (Currently we only support AWS)
+3.  Pick a Cloud Provider and follow the directions (Currently we only support AWS):
     - [Amazon Web Services](https://github.com/numerai/numerai-cli/wiki/Amazon-Web-Services)
     
 
@@ -54,22 +54,24 @@ If you have any problems, questions, comments, concerns, or general feedback, pl
       ```
 5.  After the setup script confirms Python and Docker, install `numerai-cli` via:
     ```
-    pip3 install numerai-cli
+    pip3 install numerai-cli --user
     ```
+    NOTE: If you are using python venv then drop the --user option. If you don't know what that is, disregard this note
 
+6. Finally 
 
 ## Node Configuration
 
 If you know you have all the prerequisites and have your AWS and Numerai API Keys at hand,
 you can run these commands to get an example node running in minutes:
 
-```
-mkdir example-numerai
-cd example-numerai
+NOTE: replace `[MODEL ID]` by going to https://numer.ai/models and copying the ID under the name of your first model.
 
-numerai config node
-numerai docker copy-example
-numerai docker deploy
+```
+numerai setup
+numerai node create --example numerai-python3 --model-id [MODEL ID]
+numerai node deploy
+numerai node test
 ```
 
 Your compute node is now setup and ready to run. It saves important configuration information in `$USER_HOME/.numerai/nodes.json`

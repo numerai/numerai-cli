@@ -2,8 +2,7 @@ import subprocess
 import shutil
 
 from cli.src.constants import *
-from cli.src.util.keys import get_provider_keys
-from cli.src.util.files import load_or_init_nodes
+from cli.src.util.files import load_or_init_nodes, load_or_init_keys
 from cli.src.util.docker import terraform, cleanup
 
 
@@ -26,12 +25,12 @@ def uninstall():
         return
 
     if os.path.exists(CONFIG_PATH):
-        node_config = load_or_init_nodes()
-        all_provider_keys = {}
-        for n in node_config.keys():
-            all_provider_keys.update(get_provider_keys(n))
-        terraform('destroy -auto-approve  -var="node_config_file=nodes.json"',
-                  CONFIG_PATH, verbose=True, env_vars=all_provider_keys)
+        all_keys = load_or_init_keys()
+        provider_keys = {}
+        for provider in PROVIDERS:
+            provider_keys.update(all_keys[provider])
+        terraform('destroy -auto-approve -var="node_config_file=nodes.json"',
+                  CONFIG_PATH, verbose=True, env_vars=provider_keys)
         subprocess.run('docker system prune -f -a --volumes', shell=True)
         shutil.rmtree(CONFIG_PATH)
 

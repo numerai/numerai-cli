@@ -2,13 +2,15 @@ from configparser import ConfigParser, MissingSectionHeaderError
 import json
 
 from cli.src.constants import *
+from cli.src.util.docker import terraform
 from cli.src.util.files import \
     maybe_create,\
     copy_files
 
 
 @click.command()
-def upgrade():
+@click.option('--verbose', '-v', is_flag=True)
+def upgrade(verbose):
     """
     Upgrades configuration from <=0.2 format to >=0.3 format
     """
@@ -18,16 +20,20 @@ def upgrade():
     old_key_path = os.path.join(home, '.numerai')
     old_config_path = os.path.join(os.getcwd(), '.numerai/')
 
+    if not os.path.exists(old_config_path):
+        click.secho('Run this command from the directory in which you first ran '
+                    '"numerai setup" (it should have the .numerai folder in it)')
+
     # MOVE KEYS FILE
     if os.path.isfile(old_key_path):
         temp_key_path = os.path.join(old_config_path, '.keys')
         maybe_create(temp_key_path)
-        click.secho(f"Moving '{old_key_path}' to '{temp_key_path}'", fg='yellow')
+        click.secho(f"\tmoving '{old_key_path}' to '{temp_key_path}'",)
         os.rename(old_key_path, temp_key_path)
 
     # MOVE CONFIG FILE
     if os.path.exists(old_config_path):
-        click.secho(f"moving {old_config_path} to {CONFIG_PATH}", fg='yellow')
+        click.secho(f"\tmoving {old_config_path} to {CONFIG_PATH}",)
         os.rename(old_config_path, CONFIG_PATH)
 
     # REFORMAT OLD KEYS
@@ -57,18 +63,20 @@ def upgrade():
         pass
 
     # DELETE OLD CONFIG FILES
+    click.secho('Checking for old config output files...', fg='yellow')
     old_suburl_path = os.path.join(CONFIG_PATH, 'submission_url.txt')
     if os.path.exists(old_suburl_path):
-        click.secho(f"deleting {old_suburl_path}, you can create the "
-                    f"new config file with 'numerai node create'", fg='yellow')
+        click.secho(f"\tdeleting {old_suburl_path}, you can create the "
+                    f"new config file with 'numerai node create'")
         os.remove(old_suburl_path)
     old_docker_path = os.path.join(CONFIG_PATH, 'docker_repo.txt')
     if os.path.exists(old_docker_path):
-        click.secho(f"deleting {old_docker_path}, you can create the "
-                    f"new config file with 'numerai node create'", fg='yellow')
+        click.secho(f"\tdeleting {old_docker_path}, you can create the "
+                    f"new config file with 'numerai node create'")
         os.remove(old_docker_path)
 
     # RENAME AND UPDATE TERRAFORM FILES
+    click.secho('Upgrading terraform files...', fg='yellow')
     tf_files_map = {
         'main.tf': '-main.tf',
         'variables.tf': '-inputs.tf',
@@ -79,14 +87,17 @@ def upgrade():
         new_file = os.path.join(CONFIG_PATH, new_file)
         if not os.path.exists(old_file):
             continue
-        click.secho(f'renaming {old_file} to {new_file} to prep for upgrade...')
+        click.secho(f'\trenaming {old_file} to {new_file} to prep for upgrade...')
         os.rename(old_file, new_file)
-
-    # Update terraform files
-    click.secho('upgrading terraform files...')
     copy_files(
         TERRAFORM_PATH,
         CONFIG_PATH,
         force=True,
-        verbose=True
+        verbose=verbose
     )
+    # terraform init
+    click.secho("Re-initializing terraform...", fg='yellow')
+    terraform("init -upgrade", CONFIG_PATH, verbose=verbose)
+
+    click.secho('Upgrade complete!', fg='green')
+    click.secho('run "numerai node create" to register this directory')

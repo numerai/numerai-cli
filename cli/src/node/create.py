@@ -65,6 +65,8 @@ def create(ctx, verbose, provider, size, path, model_id, example):
         nodes_config[node]['memory'] = SIZE_PRESETS[size][1]
     if path:
         nodes_config[node]['path'] = os.path.abspath(path)
+    if model_id:
+        nodes_config[node]['model_id'] = model_id
     store_config(NODES_PATH, nodes_config)
 
     # terraform apply

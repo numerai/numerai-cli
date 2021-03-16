@@ -5,20 +5,21 @@ resource "aws_ecs_cluster" "main" {
 }
 
 resource "aws_ecs_task_definition" "node" {
-  count = length(var.nodes)
-  family                   = local.node_names[count.index]
+  for_each = { for name, config in var.nodes : name => config }
+
+  family                   = each.key
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
-  cpu                      = var.nodes[count.index].cpu
-  memory                   = var.nodes[count.index].memory
+  cpu                      = each.value.cpu
+  memory                   = each.value.memory
   execution_role_arn       = aws_iam_role.ecsTaskExecutionRole.arn
 
   container_definitions = jsonencode([
     {
-      cpu: var.nodes[count.index].cpu,
-      image: aws_ecr_repository.node[count.index].repository_url,
-      memory: var.nodes[count.index].memory,
-      name: local.node_names[count.index],
+      cpu: each.value.cpu,
+      image: aws_ecr_repository.node[each.key].repository_url,
+      memory: each.value.memory,
+      name: each.key,
       networkMode: "awsvpc",
       portMappings: [
         {
@@ -29,7 +30,7 @@ resource "aws_ecs_task_definition" "node" {
       logConfiguration: {
           "logDriver": "awslogs",
           "options": {
-              "awslogs-group": aws_cloudwatch_log_group.ecs[count.index].name,
+              "awslogs-group": aws_cloudwatch_log_group.ecs[each.key].name,
               "awslogs-region": var.aws_region,
               "awslogs-stream-prefix": "ecs"
           }
@@ -41,16 +42,18 @@ resource "aws_ecs_task_definition" "node" {
 
 ### Cloudwatch
 resource "aws_cloudwatch_log_group" "ecs" {
-  count = length(var.nodes)
-  name              = "/fargate/service/${local.node_names[count.index]}"
+  for_each = { for name, config in var.nodes : name => config }
+
+  name              = "/fargate/service/${each.key}"
   retention_in_days = "14"
 }
 
 
 ### ECR
 resource "aws_ecr_repository" "node" {
-  count = length(var.nodes)
-  name = local.node_names[count.index]
+  for_each = { for name, config in var.nodes : name => config }
+
+  name = each.key
 }
 
 

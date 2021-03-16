@@ -1,3 +1,3 @@
 output "aws_nodes" {
-  value = jsondecode(jsonencode(module.aws[0].outputs))
+  value = length(module.aws) > 0 ? jsondecode(jsonencode(module.aws[0].outputs)) : {}
 }
