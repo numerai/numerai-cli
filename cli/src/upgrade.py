@@ -39,7 +39,6 @@ def upgrade(verbose):
     # MOVE KEYS FILE
     if os.path.isfile(old_key_path):
         temp_key_path = os.path.join(old_config_path, '.keys')
-        maybe_create(temp_key_path)
         click.secho(f"\tmoving '{old_key_path}' to '{temp_key_path}'",)
         os.rename(old_key_path, temp_key_path)
 
@@ -47,13 +46,6 @@ def upgrade(verbose):
     if os.path.exists(old_config_path):
         click.secho(f"\tmoving {old_config_path} to {CONFIG_PATH}",)
         os.rename(old_config_path, CONFIG_PATH)
-
-    # Double check keys file exists
-    keys_config = load_or_init_keys()
-    if not os.path.exists(KEYS_PATH) or 'aws' not in keys_config or 'numerai' not in keys_config:
-        click.secho(f"Keys missing from {KEYS_PATH}, you must re-initialize your keys:")
-        config_numerai_keys()
-        config_provider_keys(PROVIDER_AWS)
 
     # REFORMAT OLD KEYS
     try:
@@ -80,6 +72,12 @@ def upgrade(verbose):
     # if this file is already a json file skip
     except MissingSectionHeaderError:
         pass
+
+    # Double check keys file exists
+    if not os.path.exists(KEYS_PATH) or 'aws' not in load_or_init_keys() or 'numerai' not in load_or_init_keys():
+        click.secho(f"Keys missing from {KEYS_PATH}, you must re-initialize your keys:")
+        config_numerai_keys()
+        config_provider_keys(PROVIDER_AWS)
 
     # DELETE OLD CONFIG FILES
     click.secho('Checking for old config output files...', fg='yellow')
