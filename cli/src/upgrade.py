@@ -43,7 +43,7 @@ def upgrade(verbose):
     # MOVE CONFIG FILE
     if os.path.exists(old_config_path):
         click.secho(f"\tmoving {old_config_path} to {CONFIG_PATH}",)
-        shutil.move(old_config_path, CONFIG_PATH, force=True,)
+        shutil.move(old_config_path, CONFIG_PATH)
 
     # Double check keys file exists
     keys_config = load_or_init_keys()
