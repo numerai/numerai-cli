@@ -110,7 +110,7 @@ def root_cause(err_msg):
         )
 
     raise exception_with_msg(
-        f'Numerai CLI was unable to identify the error, please try to use the '
+        f'Numerai CLI was unable to identify an error, please try to use the '
         f'"--verbose|-v" option for more information before reporting this\n'
         + err_msg.decode('utf8')
     )

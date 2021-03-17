@@ -33,11 +33,11 @@ If you have any problems, questions, comments, concerns, or general feedback, pl
     5.  Copy your secret public key and secret key somewhere safe
   
 
-3.  Pick a Cloud Provider and follow the directions (Currently we only support AWS):
+2.  Pick a Cloud Provider and follow the directions (Currently we only support AWS):
     - [Amazon Web Services](https://github.com/numerai/numerai-cli/wiki/Amazon-Web-Services)
     
 
-4.  Install Docker and Python for your Operating System:
+3.  Install Docker and Python for your Operating System:
     - Mac Terminal (cmd + space, type `terminal`, select `terminal.app`):
         ```
         curl https://raw.githubusercontent.com/numerai/numerai-cli/master/scripts/setup-mac.sh | bash
@@ -52,13 +52,12 @@ If you have any problems, questions, comments, concerns, or general feedback, pl
         ```
         powershell -command "$Script = Invoke-WebRequest 'https://raw.githubusercontent.com/numerai/numerai-cli/master/scripts/setup-win10.ps1'; $ScriptBlock = [ScriptBlock]::Create($Script.Content); Invoke-Command -ScriptBlock $ScriptBlock"
       ```
-5.  After the setup script confirms Python and Docker, install `numerai-cli` via:
+4.  After the setup script confirms Python and Docker, install `numerai-cli` via:
     ```
     pip3 install numerai-cli --user
     ```
     NOTE: If you are using python venv then drop the --user option. If you don't know what that is, disregard this note
 
-6. Finally 
 
 ## Node Configuration
 

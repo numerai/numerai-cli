@@ -72,8 +72,14 @@ def upgrade(verbose):
             tfstate = json.load(f)
         if '0.12' in tfstate['terraform_version']:
             terraform('0.13upgrade -yes', verbose, version='0.13.6')
+            terraform('init', verbose, version='0.13.6')
+            terraform('apply -auto-approve', verbose, version='0.13.6')
     except FileNotFoundError:
         pass
+    except click.ClickException:
+        click.secho("Failed to upgrade to terraform state!", fg='red')
+        return
+
     tf_files_map = {
         'main.tf': '-main.tf',
         'variables.tf': '-inputs.tf',
