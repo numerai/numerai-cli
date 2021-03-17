@@ -1,15 +1,15 @@
-import sys
-import subprocess
 import json
+import subprocess
+import sys
 from urllib import request
 
 from numerai.cli.constants import *
+from numerai.cli.util.files import load_or_init_nodes
 from numerai.cli.util.keys import \
     check_aws_validity, \
     check_numerai_validity, \
     get_numerai_keys, \
     get_aws_keys
-from numerai.cli.util.files import load_or_init_nodes
 
 
 @click.command()

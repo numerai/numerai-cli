@@ -6,10 +6,10 @@ from numerai.cli.constants import *
 from numerai.cli.misc import copy_example
 from numerai.cli.util.docker import terraform
 from numerai.cli.util.files import \
-    load_or_init_nodes,\
+    load_or_init_nodes, \
     store_config
 from numerai.cli.util.keys import \
-    get_provider_keys,\
+    get_provider_keys, \
     get_numerai_keys
 
 
