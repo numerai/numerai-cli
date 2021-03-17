@@ -121,7 +121,7 @@ numerai [command] [sub-command] --help
 
 
 ## Troubleshooting and Feedback
-Before posting a messaging the Rocketchat channel or creating a Github issue, 
+Before messaging the Rocketchat channel or creating a Github issue, 
 please read through the following (especially the "Troubleshooting" section in the wiki):
 - [Github Wiki](https://github.com/numerai/numerai-cli/wiki)
 - [Github Issues](https://github.com/numerai/numerai-cli/issues)
