@@ -11,7 +11,7 @@ but should theoretically work anywhere that Docker and Python 3 are available.
 ## IMPORTANT
 If you have other questions or feedback, please join us on the 
 [RocketChat #compute Channel](https://community.numer.ai/channel/compute).
-Before posting a messaging the Rocketchat channel or creating a Github issue, please read through the following:
+Before messaging the Rocketchat channel or creating a Github issue, please read through the following:
 - [Github Wiki](https://github.com/numerai/numerai-cli/wiki)
 - [Github Issues](https://github.com/numerai/numerai-cli/issues)
 
