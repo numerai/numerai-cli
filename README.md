@@ -121,7 +121,7 @@ numerai [command] [sub-command] --help
 
 
 ## Troubleshooting and Feedback
-Before posting a messaging the Rocketchat channel or creating a Github issue, 
+Before messaging the Rocketchat channel or creating a Github issue, 
 please read through the following (especially the "Troubleshooting" section in the wiki):
 - [Github Wiki](https://github.com/numerai/numerai-cli/wiki)
 - [Github Issues](https://github.com/numerai/numerai-cli/issues)
@@ -158,3 +158,4 @@ If you do not include this information, we cannot help you.
 
 - Thanks to [uuazed](https://github.com/uuazed) for their work on [numerapi](https://github.com/uuazed/numerapi)
 - Thanks to [hellno](https://github.com/hellno) for starting the [ticker map](https://github.com/hellno/numerai-signals-tickermap)
+- Thanks to tit_BTCQASH ([numerai profile](https://numer.ai/tit_btcqash) and [twitter profile](https://twitter.com/tit_BTCQASH)) for debugging the environment setup process on Windows 8
