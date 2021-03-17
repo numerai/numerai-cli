@@ -28,13 +28,10 @@ from cli.src.util.keys import \
     '--path', '-p', type=str,
     help=f"Target a file path. Defaults to current directory ({DEFAULT_PATH}).")
 @click.option(
-    '--model-id', '-i', type=str,
-    help=f"Configures the resulting webhook with this model id.")
-@click.option(
     '--example', '-e', type=str,
     help=f'Specify an example to use for this node. Options are {EXAMPLES}.')
 @click.pass_context
-def create(ctx, verbose, provider, size, path, model_id, example):
+def create(ctx, verbose, provider, size, path, example):
     """
     Uses Terraform to create a full Numerai Compute cluster in AWS.
     Prompts for your AWS and Numerai API keys on first run, caches them in $HOME/.numerai.
@@ -42,7 +39,9 @@ def create(ctx, verbose, provider, size, path, model_id, example):
     At the end of running, this will output a config file 'nodes.json'.
     """
     ctx.ensure_object(dict)
-    node = ctx.obj['node']
+    model = ctx.obj['model']
+    node = model['name']
+    model_id = model['id']
 
     if example:
         click.secho(f'copying {example} example to {path}...')
@@ -71,9 +70,11 @@ def create(ctx, verbose, provider, size, path, model_id, example):
 
     # terraform apply
     provider_keys = get_provider_keys(node)
+    print(provider_keys)
     click.secho(f'running terraform to provision cloud infrastructure...')
-    terraform(f'apply -auto-approve -var="node_config_file=nodes.json"', verbose,
-              env_vars=provider_keys)
+    terraform(f'apply -auto-approve', verbose,
+              env_vars=provider_keys,
+              inputs={'node_config_file': 'nodes.json'})
     click.secho('successfully created cloud resources!', fg='green')
 
     # terraform output for AWS nodes

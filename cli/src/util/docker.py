@@ -11,6 +11,9 @@ from cli.src.util.keys import sanitize_message, get_aws_keys, load_or_init_keys
 
 
 def execute(command, verbose):
+    if verbose:
+        click.echo('Running: ' + sanitize_message(command))
+
     res = subprocess.run(
         command,
         shell=True,
@@ -28,28 +31,29 @@ def execute(command, verbose):
     if res.returncode != 0:
         root_cause(res.stderr)
 
-        if not verbose:
-            click.secho(
-                "An unexpected error occurred, try running this command again "
-                "with the '--verbose|-v' flag to get more information", fg='red'
-            )
-
     return res
 
 
-def terraform(tf_cmd, verbose, env_vars=None, version='0.14.3'):
+def build_tf_cmd(tf_cmd, env_vars, inputs, version):
     cmd = f"docker run"
     if env_vars:
-        for key, val in env_vars.items():
-            cmd += f' -e "{key}={val}"'
+        cmd += ' '.join([f' -e "{key}={val}"' for key, val in env_vars.items()])
     cmd += f' --rm -it -v {CONFIG_PATH}:/opt/plan'
     cmd += f' -w /opt/plan hashicorp/terraform:{version} {tf_cmd}'
+    if inputs:
+        cmd += ' '.join([f' -var="{key}={val}"' for key, val in inputs.items()])
+    return cmd
 
-    if verbose:
-        click.echo('Running: ' + sanitize_message(cmd))
 
-    # in case of an 'output' command
-    return execute(cmd, verbose)
+def terraform(tf_cmd, verbose, env_vars=None, inputs=None, version='0.14.3'):
+    cmd = build_tf_cmd(tf_cmd, env_vars, inputs, version)
+    res = execute(cmd, verbose)
+    # if user accidently deleted a resource, refresh terraform and try again
+    if b'ResourceNotFoundException' in res.stderr or b'NoSuchEntity' in res.stderr:
+        refresh = build_tf_cmd('refresh', env_vars, inputs, version)
+        execute(refresh, verbose)
+        res = execute(cmd, verbose)
+    return res
 
 
 def build(node_config, verbose):
@@ -61,8 +65,6 @@ def build(node_config, verbose):
 
     cmd = f'docker build -t {node_config["docker_repo"]} ' \
           f'{build_arg_str} {node_config["path"]}'
-    if verbose:
-        click.echo("running: " + sanitize_message(cmd))
 
     execute(cmd, verbose)
 
@@ -70,8 +72,6 @@ def build(node_config, verbose):
 def run(node_config, verbose, command=''):
     cmd = f"docker run --rm -it -v {node_config['path']}:/opt/app " \
           f"-w /opt/app {node_config['docker_repo']} {command}"
-    if verbose:
-        click.echo('running: ' + cmd)
 
     execute(cmd, verbose)
 

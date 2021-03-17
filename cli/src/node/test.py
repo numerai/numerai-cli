@@ -23,9 +23,9 @@ LOG_TYPES = [
     '--local', '-l', type=str, is_flag=True,
     help=f'Test the container locally, uses value specified with --command. ')
 @click.option(
-    '--command', '-c', type=str, default="python predict.py",
+    '--command', '-c', type=str, default="",
     help=f'Used to override the terminal command during local testing. '
-         f'Defaults to "python predict.py".')
+         f'Defaults to the command specified in the Dockerfile.')
 @click.option('--verbose', '-v', is_flag=True)
 @click.pass_context
 def test(ctx, local, command, verbose):
@@ -35,6 +35,8 @@ def test(ctx, local, command, verbose):
     You can observe the logs for the running job by running `numerai compute logs`
     """
     ctx.ensure_object(dict)
+    model = ctx.obj['model']
+    node = model['name']
     node = ctx.obj['node']
     click.secho("checking if webhook is reachable...")
     node_config = load_or_init_nodes(node)
@@ -237,5 +239,6 @@ def status(ctx, verbose, num_lines, log_type, follow_tail):
     so the logs returned by this command might be out of date
     """
     ctx.ensure_object(dict)
-    node = ctx.obj['node']
+    model = ctx.obj['model']
+    node = model['name']
     monitor(node, load_or_init_nodes(node), verbose, num_lines, log_type, follow_tail)

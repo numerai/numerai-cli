@@ -2,7 +2,6 @@ import subprocess
 import shutil
 
 from cli.src.constants import *
-from cli.src.util.debug import confirm
 from cli.src.util.keys import load_or_init_keys
 from cli.src.util.docker import terraform
 
@@ -21,7 +20,7 @@ def uninstall():
     - Leave Python and Docker installed on your computer
     ''', fg='red'
     )
-    if not confirm('Are you absolutely sure you want to uninstall?'):
+    if not click.confirm('Are you absolutely sure you want to uninstall?'):
         return
 
     if os.path.exists(CONFIG_PATH):
@@ -29,8 +28,9 @@ def uninstall():
         provider_keys = {}
         for provider in PROVIDERS:
             provider_keys.update(all_keys[provider])
-        terraform('destroy -auto-approve -var="node_config_file=nodes.json"',
-                  verbose=True, env_vars=provider_keys)
+        terraform('destroy -auto-approve',
+                  verbose=True, env_vars=provider_keys,
+                  inputs={'node_config_file': 'nodes.json'})
         subprocess.run('docker system prune -f -a --volumes', shell=True)
         shutil.rmtree(CONFIG_PATH)
     try:

@@ -22,13 +22,13 @@ def destroy(ctx, verbose):
     This command is idempotent and safe to run multiple times.
     """
     ctx.ensure_object(dict)
-    node = ctx.obj['node']
+    model = ctx.obj['model']
+    node = model['name']
     if not os.path.exists(CONFIG_PATH):
         click.secho(f".numerai directory not setup, "
                     f"run 'numerai setup'...",
                     fg='red')
         return
-    numerai_dir = format_path_if_mingw(CONFIG_PATH)
 
     try:
         nodes_config = load_or_init_nodes()
@@ -45,8 +45,9 @@ def destroy(ctx, verbose):
         store_config(NODES_PATH, nodes_config)
 
         click.secho(f"deleting cloud resources for node...")
-        terraform(f'apply -auto-approve -var="node_config_file=nodes.json"', verbose,
-                  env_vars=provider_keys)
+        terraform(f'apply -auto-approve', verbose,
+                  env_vars=provider_keys,
+                  inputs={'node_config_file': 'nodes.json'})
 
     except Exception as e:
         click.secho(e.__str__(), fg='red')

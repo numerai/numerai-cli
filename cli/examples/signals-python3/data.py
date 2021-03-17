@@ -138,8 +138,8 @@ def add_targets_and_split(full_data):
     )
     targets["date"] = pd.to_datetime(
         targets["friday_date"],
-        format="%Y%m%d"
-    ).dt.strftime('%Y-%m-%d')
+        format="%Y-%m-%d"
+    )
 
     # merge our feature data with Numerai targets
     logging.info('generating dataset...')

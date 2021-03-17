@@ -8,7 +8,8 @@ from cli.src.util import files, docker
 def deploy(ctx, verbose):
     """Builds and pushes your docker image to the AWS ECR repo"""
     ctx.ensure_object(dict)
-    node = ctx.obj['node']
+    model = ctx.obj['model']
+    node = model['name']
     node_config = files.load_or_init_nodes(node)
 
     click.echo('building container image...')

@@ -67,8 +67,14 @@ def get_numerai_keys():
 
 def config_numerai_keys():
     numerai_public, numerai_secret = get_numerai_keys()
-    numerai_public = click.prompt(f'NUMERAI_PUBLIC_ID', default=numerai_public).strip()
-    numerai_secret = click.prompt(f'NUMERAI_SECRET_KEY', default=numerai_secret).strip()
+    numerai_public = click.prompt(
+        f'NUMERAI_PUBLIC_ID',
+        default=sanitize_message(numerai_public)
+    ).strip()
+    numerai_secret = click.prompt(
+        f'NUMERAI_SECRET_KEY',
+        default=sanitize_message(numerai_secret)
+    ).strip()
     check_numerai_validity(numerai_public, numerai_secret)
 
     keys_config = load_or_init_keys()
@@ -103,8 +109,14 @@ def get_aws_keys():
 
 def config_aws_keys():
     aws_public, aws_secret = get_aws_keys()
-    aws_public = click.prompt(f'AWS_ACCESS_KEY_ID', default=aws_public).strip()
-    aws_secret = click.prompt(f'AWS_SECRET_ACCESS_KEY', default=aws_secret).strip()
+    aws_public = click.prompt(
+        f'AWS_ACCESS_KEY_ID',
+        default=sanitize_message(aws_public)
+    ).strip()
+    aws_secret = click.prompt(
+        f'AWS_SECRET_ACCESS_KEY',
+        default=sanitize_message(aws_secret)
+    ).strip()
     check_aws_validity(aws_public, aws_secret)
 
     keys_config = load_or_init_keys()
@@ -142,7 +154,7 @@ def config_provider_keys(cloud_provider):
 def sanitize_message(message):
     aws_public, aws_secret = get_aws_keys()
     numerai_public, numerai_secret = get_numerai_keys()
-    return message.replace(aws_public, '...')\
-                  .replace(aws_secret, '...')\
-                  .replace(numerai_public, '...')\
-                  .replace(numerai_secret, '...')
+    return message.replace(aws_public, f'...{aws_public[-5:]}')\
+                  .replace(aws_secret, f'...{aws_secret[-5:]}')\
+                  .replace(numerai_public, f'...{numerai_public[-5:]}')\
+                  .replace(numerai_secret, f'...{numerai_secret[-5:]}')

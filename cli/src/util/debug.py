@@ -5,11 +5,6 @@ import platform
 import click
 
 
-def confirm(msg):
-    conf = click.prompt(f'{msg} [y]/n').strip()
-    return conf == "" or conf == "y" or conf == "yes"
-
-
 def exception_with_msg(msg):
     return click.ClickException(msg)
 
@@ -30,8 +25,8 @@ def is_win10_professional():
     return False
 
 
-# error checking for docker not being installed correctly
-# sadly this is a mess, since there's tons of ways to mess up your docker install,
+# error checking for docker; sadly this is a mess,
+# especially b/c there's tons of ways to mess up your docker install
 # especially on windows :(
 def root_cause(err_msg):
     if b'is not recognized as an internal or external command' in err_msg:
@@ -108,6 +103,15 @@ def root_cause(err_msg):
             "Your docker container ran out of memory. Please open the docker desktop UI"
             " and increase the memory allowance in the advanced settings."
         )
+
+    if b'Temporary failure in name resolution' in err_msg:
+        raise exception_with_msg("You network failed temporarily, please try again.")
+
+    # these are non-errors that either shouldn't be handled or are handled elsewhere
+    if b'Can\'t update submission after deadline' in err_msg:
+        return
+    if b'ResourceNotFoundException: The specified' in err_msg:
+        return
 
     raise exception_with_msg(
         f'Numerai CLI was unable to identify an error, please try to use the '

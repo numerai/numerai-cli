@@ -2,7 +2,6 @@ import json
 import shutil
 
 from cli.src.constants import *
-from cli.src.util.debug import confirm
 from cli.src.util.docker import terraform
 from cli.src.util.files import \
     copy_files
@@ -44,7 +43,7 @@ def upgrade(verbose):
     # MOVE CONFIG FILE
     if os.path.exists(old_config_path):
         click.secho(f"\tmoving {old_config_path} to {CONFIG_PATH}",)
-        copy_files(old_config_path, CONFIG_PATH, force=True,)
+        shutil.move(old_config_path, CONFIG_PATH, force=True,)
 
     # Double check keys file exists
     keys_config = load_or_init_keys()
@@ -111,10 +110,11 @@ def upgrade(verbose):
     click.secho("Re-initializing terraform...", fg='yellow')
     terraform("init -upgrade", verbose=verbose)
 
-    if confirm("It's recommended you destroy your current Compute Node. Continue?"):
+    if click.confirm("It's recommended you destroy your current Compute Node. Continue?"):
         click.secho("Removing old cloud infrastructure...", fg='yellow')
-        terraform('destroy -auto-approve -var="node_config_file=nodes.json"', verbose,
-                  env_vars=load_or_init_keys('aws'))
+        terraform('destroy -auto-approve', verbose,
+                  env_vars=load_or_init_keys('aws'),
+                  inputs={'node_config_file': 'nodes.json'})
 
     click.secho('Upgrade complete!', fg='green')
     click.secho('run "numerai node create --help" to learn how to '
