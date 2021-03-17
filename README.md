@@ -37,18 +37,20 @@ If you have any problems, questions, comments, concerns, or general feedback, pl
     - [Amazon Web Services](https://github.com/numerai/numerai-cli/wiki/Amazon-Web-Services)
     
 
-3.  Install Docker and Python for your Operating System:
+3.  Install Docker and Python for your Operating System (if you encounter errors or your
+    OS is not supported, please [read the troubleshooting wiki](
+    https://github.com/numerai/numerai-cli/wiki/Troubleshooting) to install Python and Docker):
     - Mac Terminal (cmd + space, type `terminal`, select `terminal.app`):
         ```
         curl https://raw.githubusercontent.com/numerai/numerai-cli/master/scripts/setup-mac.sh | bash
         ```
       
-    - Ubuntu Terminal (ctrl + alt + t):
+    - Ubuntu 18/20 Terminal (ctrl + alt + t):
         ```
         sudo apt update && sudo apt install -y libcurl4 curl && sudo curl https://raw.githubusercontent.com/numerai/numerai-cli/master/scripts/setup-ubu.sh | sudo bash
         ```
     
-    - Windows Command Prompt (windows key, type `cmd`, select Command Prompt):
+    - Windows 10 Command Prompt (windows key, type `cmd`, select Command Prompt):
         ```
         powershell -command "$Script = Invoke-WebRequest 'https://raw.githubusercontent.com/numerai/numerai-cli/master/scripts/setup-win10.ps1'; $ScriptBlock = [ScriptBlock]::Create($Script.Content); Invoke-Command -ScriptBlock $ScriptBlock"
       ```
