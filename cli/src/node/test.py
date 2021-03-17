@@ -24,7 +24,8 @@ LOG_TYPES = [
     help=f'Test the container locally, uses value specified with --command. ')
 @click.option(
     '--command', '-c', type=str, default="python predict.py",
-    help=f'The terminal command. Defaults to "python predict.py".')
+    help=f'Used to override the terminal command during local testing. '
+         f'Defaults to "python predict.py".')
 @click.option('--verbose', '-v', is_flag=True)
 @click.pass_context
 def test(ctx, local, command, verbose):
@@ -40,7 +41,7 @@ def test(ctx, local, command, verbose):
 
     if local:
         docker.build(node_config, verbose)
-        docker.run(node_config['docker_repo'], verbose, command=command)
+        docker.run(node_config, verbose, command=command)
 
     napi = numerapi.NumerAPI(*get_numerai_keys())
     res = napi.raw_query(

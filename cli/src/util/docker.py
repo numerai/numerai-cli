@@ -59,16 +59,17 @@ def build(node_config, verbose):
     for arg in numerai_keys:
         build_arg_str += f' --build-arg {arg}={numerai_keys[arg]}'
 
-    cmd = f'docker build -t {node_config["docker_repo"]} {build_arg_str} {node_config["path"]}'
+    cmd = f'docker build -t {node_config["docker_repo"]} ' \
+          f'{build_arg_str} {node_config["path"]}'
     if verbose:
         click.echo("running: " + sanitize_message(cmd))
 
     execute(cmd, verbose)
 
 
-def run(docker_repo, verbose, command=''):
-    cur_dir = format_path_if_mingw(os.getcwd())
-    cmd = f"docker run --rm -it -v {cur_dir}:/opt/app -w /opt/app {docker_repo} {command}"
+def run(node_config, verbose, command=''):
+    cmd = f"docker run --rm -it -v {node_config['path']}:/opt/app " \
+          f"-w /opt/app {node_config['docker_repo']} {command}"
     if verbose:
         click.echo('running: ' + cmd)
 
