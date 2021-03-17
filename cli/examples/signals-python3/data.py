@@ -140,13 +140,10 @@ def add_targets_and_split(full_data):
         targets["friday_date"], format="%Y%m%d"
     ).dt.strftime("%Y-%m-%d"), format="%Y-%m-%d")
 
-    full_data.reset_index(inplace=True)
-    full_data["date"] = full_data["date"].astype(str)
-
     # merge our feature data with Numerai targets
     logging.info('generating dataset...')
     ml_data = pd.merge(
-        full_data, targets,
+        full_data.reset_index(), targets,
         on=["date", "bloomberg_ticker"]
     )
 
