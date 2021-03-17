@@ -37,7 +37,6 @@ def test(ctx, local, command, verbose):
     ctx.ensure_object(dict)
     model = ctx.obj['model']
     node = model['name']
-    node = ctx.obj['node']
     click.secho("checking if webhook is reachable...")
     node_config = load_or_init_nodes(node)
 
