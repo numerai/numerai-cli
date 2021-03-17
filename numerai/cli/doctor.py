@@ -3,13 +3,13 @@ import subprocess
 import json
 from urllib import request
 
-from cli.src.constants import *
-from cli.src.util.keys import \
+from numerai.cli.constants import *
+from numerai.cli.util.keys import \
     check_aws_validity, \
     check_numerai_validity, \
     get_numerai_keys, \
     get_aws_keys
-from cli.src.util.files import load_or_init_nodes
+from numerai.cli.util.files import load_or_init_nodes
 
 
 @click.command()

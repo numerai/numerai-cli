@@ -1,1 +1,1 @@
-recursive-include cli *
+recursive-include numerai *

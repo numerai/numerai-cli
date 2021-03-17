@@ -1,5 +1,5 @@
-from cli.src.constants import *
-from cli.src.util.files import copy_files
+from numerai.cli.constants import *
+from numerai.cli.util.files import copy_files
 
 
 @click.command()

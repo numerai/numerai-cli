@@ -1,5 +1,5 @@
-from cli.src.constants import *
-from cli.src.util import files, docker
+from numerai.cli.constants import *
+from numerai.cli.util import files, docker
 
 
 @click.command()

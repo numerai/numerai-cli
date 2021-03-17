@@ -1,9 +1,9 @@
 import subprocess
 import shutil
 
-from cli.src.constants import *
-from cli.src.util.keys import load_or_init_keys
-from cli.src.util.docker import terraform
+from numerai.cli.constants import *
+from numerai.cli.util.keys import load_or_init_keys
+from numerai.cli.util.docker import terraform
 
 
 @click.command()

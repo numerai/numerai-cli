@@ -4,11 +4,11 @@ from datetime import datetime
 import boto3
 import numerapi
 
-from cli.src.constants import *
-from cli.src.util import docker
-from cli.src.util.debug import exception_with_msg
-from cli.src.util.files import load_or_init_nodes
-from cli.src.util.keys import get_aws_keys, get_numerai_keys
+from numerai.cli.constants import *
+from numerai.cli.util import docker
+from numerai.cli.util.debug import exception_with_msg
+from numerai.cli.util.files import load_or_init_nodes
+from numerai.cli.util.keys import get_aws_keys, get_numerai_keys
 
 LOG_TYPE_WEBHOOK = 'webhook'
 LOG_TYPE_CLUSTER = 'cluster'

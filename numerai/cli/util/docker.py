@@ -4,9 +4,9 @@ import base64
 
 import boto3
 
-from cli.src.constants import *
-from cli.src.util.debug import root_cause
-from cli.src.util.keys import sanitize_message, get_aws_keys, load_or_init_keys
+from numerai.cli.constants import *
+from numerai.cli.util.debug import root_cause
+from numerai.cli.util.keys import sanitize_message, get_aws_keys, load_or_init_keys
 
 
 def execute(command, verbose):

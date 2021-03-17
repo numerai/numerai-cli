@@ -2,13 +2,13 @@ import json
 
 import numerapi
 
-from cli.src.constants import *
-from cli.src.misc import copy_example
-from cli.src.util.docker import terraform
-from cli.src.util.files import \
+from numerai.cli.constants import *
+from numerai.cli.misc import copy_example
+from numerai.cli.util.docker import terraform
+from numerai.cli.util.files import \
     load_or_init_nodes,\
     store_config
-from cli.src.util.keys import \
+from numerai.cli.util.keys import \
     get_provider_keys,\
     get_numerai_keys
 
@@ -22,8 +22,7 @@ from cli.src.util.keys import \
 @click.option(
     '--size', '-s', type=str,
     help=f"CPU credits (cores * 1024) and Memory (in MiB) used in the deployed container. "
-         f"Defaults to {DEFAULT_SIZE} (run 'numerai config size-presets' to see options)."
-         f"\nSee https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-cpu-memory-error.html for more info")
+         f"Defaults to {DEFAULT_SIZE} (run 'numerai size-presets' to see options).")
 @click.option(
     '--path', '-p', type=str,
     help=f"Target a file path. Defaults to current directory ({DEFAULT_PATH}).")

@@ -6,10 +6,10 @@ from configparser import \
 import boto3
 import numerapi
 
-from cli.src.constants import *
-from cli.src.constants import KEYS_PATH
-from cli.src.util.debug import exception_with_msg
-from cli.src.util.files import \
+from numerai.cli.constants import *
+from numerai.cli.constants import KEYS_PATH
+from numerai.cli.util.debug import exception_with_msg
+from numerai.cli.util.files import \
     load_or_init_nodes, \
     store_config, \
     maybe_create, \

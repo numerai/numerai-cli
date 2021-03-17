@@ -1,12 +1,13 @@
 import json
 import shutil
 
-from cli.src.constants import *
-from cli.src.util.docker import terraform
-from cli.src.util.files import \
+from numerai.cli.constants import *
+from numerai.cli.util.docker import terraform
+from numerai.cli.util.files import \
     copy_files
-from cli.src.util.keys import \
+from numerai.cli.util.keys import \
     load_or_init_keys, \
+    load_or_init_nodes, \
     config_numerai_keys, \
     config_provider_keys
 
@@ -34,6 +35,7 @@ def upgrade(verbose):
 
     click.secho(f"Upgrading, do not interrupt or else "
                 f"your environment may be corrupted.", fg='yellow')
+
     # MOVE KEYS FILE
     if os.path.isfile(old_key_path):
         temp_key_path = os.path.join(old_config_path, '.keys')
@@ -45,24 +47,25 @@ def upgrade(verbose):
         click.secho(f"\tmoving {old_config_path} to {CONFIG_PATH}",)
         shutil.move(old_config_path, CONFIG_PATH)
 
-    # Double check keys file exists
+    # INIT KEYS AND NODES
     keys_config = load_or_init_keys()
     if not os.path.exists(KEYS_PATH) or 'aws' not in keys_config or 'numerai' not in keys_config:
         click.secho(f"Keys missing from {KEYS_PATH}, you must re-initialize your keys:")
         config_numerai_keys()
         config_provider_keys(PROVIDER_AWS)
+    nodes_config = load_or_init_nodes()
 
     # DELETE OLD CONFIG FILES
     click.secho('Checking for old config output files...', fg='yellow')
     old_suburl_path = os.path.join(CONFIG_PATH, 'submission_url.txt')
     if os.path.exists(old_suburl_path):
-        click.secho(f"\tdeleting {old_suburl_path}, you can create the "
-                    f"new config file with 'numerai node create'")
+        click.secho(f"\tdeleting {old_suburl_path}, you can populate the "
+                    f"new nodes.json file with 'numerai node create'")
         os.remove(old_suburl_path)
     old_docker_path = os.path.join(CONFIG_PATH, 'docker_repo.txt')
     if os.path.exists(old_docker_path):
-        click.secho(f"\tdeleting {old_docker_path}, you can create the "
-                    f"new config file with 'numerai node create'")
+        click.secho(f"\tdeleting {old_docker_path}, you can populate the "
+                    f"new nodes.json file with 'numerai node create'")
         os.remove(old_docker_path)
 
     # UPGRADE, RENAME, AND UPDATE TERRAFORM FILES

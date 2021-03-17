@@ -136,14 +136,17 @@ def add_targets_and_split(full_data):
         "https://numerai-signals-public-data.s3-us-west-2.amazonaws.com/"
         "signals_train_val_bbg.csv"
     )
-    targets["date"] = pd.to_datetime(pd.to_datetime(
+    targets["date"] = pd.to_datetime(
         targets["friday_date"], format="%Y%m%d"
-    ).dt.strftime("%Y-%m-%d"), format="%Y-%m-%d")
+    ).dt.strftime("%Y-%m-%d")
+
+    full_data.reset_index()
+    full_data["date"] = full_data["date"].astype(str)
 
     # merge our feature data with Numerai targets
     logging.info('generating dataset...')
     ml_data = pd.merge(
-        full_data.reset_index(), targets,
+        full_data, targets,
         on=["date", "bloomberg_ticker"]
     )
 

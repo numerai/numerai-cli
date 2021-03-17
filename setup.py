@@ -15,7 +15,7 @@ setup(
     author='Numer.ai',
     author_email='contact@numer.ai',
     license='MIT',
-    packages=['cli'],
+    packages=['numerai'],
     include_package_data=True,
     long_description=long_description,
     long_description_content_type='text/markdown',
@@ -28,6 +28,6 @@ setup(
         "requests",
     ],
     entry_points={
-        'console_scripts': ['numerai=cli:main'],
+        'console_scripts': ['numerai=numerai:main'],
     }
 )

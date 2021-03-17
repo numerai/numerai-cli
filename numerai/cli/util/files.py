@@ -1,7 +1,7 @@
 import json
 import shutil
 
-from cli.src.constants import *
+from numerai.cli.constants import *
 
 
 def load_config(path):

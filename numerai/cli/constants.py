@@ -49,11 +49,16 @@ DEFAULT_SETTINGS = {
 
 @click.command()
 def size_presets():
+    """
+    Displays the options for Prediction Node sizes allowed by AWS.
+    """
     for size, preset in SIZE_PRESETS.items():
         suffix = '(default)' if size == DEFAULT_SIZE else ''
         color = 'green' if size == DEFAULT_SIZE else 'yellow'
         click.secho(
-            f'{size} -> cpus: {preset[0] / 1024}, mem: {preset[1]/1024} GB {suffix}',
+            f'{size} -> '
+            f'cpus: {preset[0] / 1024}, '
+            f'mem: {preset[1]/1024} GB {suffix}',
             fg=color
         )
     click.secho("See https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-cpu-memory-error.html for more info")

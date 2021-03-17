@@ -1,7 +1,7 @@
 import click
 from colorama import init
 
-from cli.src import \
+from numerai.cli import \
     util, \
     constants, \
     doctor, \
@@ -10,7 +10,7 @@ from cli.src import \
     uninstall, \
     upgrade, \
     misc
-from cli.src.util import \
+from numerai.cli.util import \
     docker, \
     files, \
     keys

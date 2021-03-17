@@ -1,4 +1,4 @@
-from cli.src import main
+from numerai.cli import main
 
 if __name__ == '__main__':
     main()
