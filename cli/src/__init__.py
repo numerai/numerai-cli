@@ -33,4 +33,5 @@ def main():
     numerai.add_command(uninstall.uninstall)
     numerai.add_command(upgrade.upgrade)
     numerai.add_command(misc.copy_example)
+    numerai.add_command(constants.size_presets)
     numerai()
