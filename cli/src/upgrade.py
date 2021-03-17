@@ -70,14 +70,18 @@ def upgrade(verbose):
     try:
         with open(os.path.join(CONFIG_PATH, 'terraform.tfstate')) as f:
             tfstate = json.load(f)
+        keys_config = load_or_init_keys('aws')
         if '0.12' in tfstate['terraform_version']:
-            terraform('0.13upgrade -yes', verbose, version='0.13.6')
-            terraform('init', verbose, version='0.13.6')
-            terraform('apply -auto-approve', verbose, version='0.13.6')
+            terraform('0.13upgrade -yes', verbose, version='0.13.6', env_vars=keys_config)
+            terraform('init', verbose, version='0.13.6', env_vars=keys_config)
+            terraform('apply -auto-approve', verbose, version='0.13.6', env_vars=keys_config)
     except FileNotFoundError:
         pass
     except click.ClickException:
         click.secho("Failed to upgrade to terraform state!", fg='red')
+        return
+    except Exception as e:
+        click.secho(f'Uncaught exception: {str(e)}', fg='red')
         return
 
     tf_files_map = {
@@ -90,8 +94,11 @@ def upgrade(verbose):
         new_file = os.path.join(CONFIG_PATH, new_file)
         if not os.path.exists(old_file):
             continue
-        click.secho(f'\trenaming {old_file} to {new_file} to prep for upgrade...')
-        os.rename(old_file, new_file)
+        if not os.path.exists(old_file):
+            click.secho(f'\trenaming {old_file} to {new_file} to prep for upgrade...')
+            os.rename(old_file, new_file)
+        else:
+            os.remove(old_file)
     copy_files(
         TERRAFORM_PATH,
         CONFIG_PATH,
