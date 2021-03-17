@@ -46,7 +46,7 @@ def download_data(live_data_date):
     eligible_tickers = pd.Series(napi.ticker_universe(), name="bloomberg_ticker")
     logging.info(f"Number of eligible tickers: {len(eligible_tickers)}")
 
-    yfinance_tickers = map_tickers(eligible_tickers, "bloomberg", "yahoo")
+    yfinance_tickers = map_tickers(eligible_tickers, "bloomberg_ticker", "yahoo")
     logging.info(f"Number of yahoo tickers: {len(yfinance_tickers)}")
 
     num_days_lag = 5
@@ -59,7 +59,7 @@ def download_data(live_data_date):
         full_data = download_yahoo_data(yfinance_tickers)
 
         full_data["bloomberg_ticker"] = map_tickers(
-            full_data.ticker, "yahoo", "bloomberg")
+            full_data.ticker, "yahoo", "bloomberg_ticker")
         logging.info(
             f"Num tickers with data: {len(full_data.bloomberg_ticker.unique())}")
         logging.info(f"data size: {full_data.shape}")

@@ -5,10 +5,10 @@ import numpy as np
 # a fork of yfinance that implements retries nicely, see requirements.txt
 import yfinance
 
-# read in user-maintained ticker map
+# read in ticker map
 TICKER_MAP = pd.read_csv(
-    "https://raw.githubusercontent.com/hellno/"
-    "numerai-signals-tickermap/main/ticker_map.csv"
+    "https://numerai-signals-public-data.s3-us-west-2.amazonaws.com/"
+    "signals_ticker_map_w_bbg.csv"
 )
 
 
@@ -140,10 +140,13 @@ def add_targets_and_split(full_data):
         targets["friday_date"], format="%Y%m%d"
     ).dt.strftime("%Y-%m-%d"), format="%Y-%m-%d")
 
+    full_data.reset_index(inplace=True)
+    full_data["date"] = full_data["date"].astype(str)
+
     # merge our feature data with Numerai targets
     logging.info('generating dataset...')
     ml_data = pd.merge(
-        full_data.reset_index(), targets,
+        full_data, targets,
         on=["date", "bloomberg_ticker"]
     )
 
