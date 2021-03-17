@@ -28,7 +28,9 @@ def is_win10_professional():
 # error checking for docker; sadly this is a mess,
 # especially b/c there's tons of ways to mess up your docker install
 # especially on windows :(
-def root_cause(err_msg):
+def root_cause(subprocess_result):
+    std_out = subprocess_result.stdout
+    err_msg = subprocess_result.stderr
     if b'is not recognized as an internal or external command' in err_msg:
         if sys.platform == 'win32':
             if is_win10_professional():
@@ -110,7 +112,7 @@ def root_cause(err_msg):
     # these are non-errors that either shouldn't be handled or are handled elsewhere
     if b'Can\'t update submission after deadline' in err_msg:
         return
-    if b'ResourceNotFoundException: The specified' in err_msg:
+    if b'ResourceNotFoundException' in std_out or b'NoSuchEntity' in std_out:
         return
 
     raise exception_with_msg(

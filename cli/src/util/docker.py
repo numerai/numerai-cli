@@ -5,7 +5,6 @@ import base64
 import boto3
 
 from cli.src.constants import *
-from cli.src.util.files import load_or_init_nodes, format_path_if_mingw
 from cli.src.util.debug import root_cause
 from cli.src.util.keys import sanitize_message, get_aws_keys, load_or_init_keys
 
@@ -29,7 +28,7 @@ def execute(command, verbose):
         click.secho(res.stderr.decode('utf8'), fg='red', file=sys.stderr)
 
     if res.returncode != 0:
-        root_cause(res.stderr)
+        root_cause(res)
 
     return res
 
@@ -49,7 +48,7 @@ def terraform(tf_cmd, verbose, env_vars=None, inputs=None, version='0.14.3'):
     cmd = build_tf_cmd(tf_cmd, env_vars, inputs, version)
     res = execute(cmd, verbose)
     # if user accidently deleted a resource, refresh terraform and try again
-    if b'ResourceNotFoundException' in res.stderr or b'NoSuchEntity' in res.stderr:
+    if b'ResourceNotFoundException' in res.stdout or b'NoSuchEntity' in res.stdout:
         refresh = build_tf_cmd('refresh', env_vars, inputs, version)
         execute(refresh, verbose)
         res = execute(cmd, verbose)

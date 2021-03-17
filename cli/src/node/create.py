@@ -95,7 +95,7 @@ def create(ctx, verbose, provider, size, path, example):
             '''
             mutation (
                 $modelId: String!
-                $newSubmissionWebhook: String!
+                $newSubmissionWebhook: String
             ) {
                 setSubmissionWebhook(
                     modelId: $modelId

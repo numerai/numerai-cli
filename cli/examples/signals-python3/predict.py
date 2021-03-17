@@ -66,6 +66,7 @@ def download_data(live_data_date):
 
         full_data, feature_names = generate_rsi_features(full_data, num_days=num_days_lag)
         logging.info(f"Features for training:\n {feature_names}")
+        full_data.to_csv('full_data.csv')
 
     # add numerai targets and do train/test split
     train_data, test_data = add_targets_and_split(full_data)

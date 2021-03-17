@@ -64,7 +64,7 @@ def destroy(ctx, verbose):
             '''
             mutation (
                 $modelId: String!
-                $newSubmissionWebhook: String!
+                $newSubmissionWebhook: String
             ) {
                 setSubmissionWebhook(
                     modelId: $modelId
