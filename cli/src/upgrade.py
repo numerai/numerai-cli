@@ -1,4 +1,5 @@
 import json
+import shutil
 
 from cli.src.constants import *
 from cli.src.util.debug import confirm
@@ -38,12 +39,12 @@ def upgrade(verbose):
     if os.path.isfile(old_key_path):
         temp_key_path = os.path.join(old_config_path, '.keys')
         click.secho(f"\tmoving '{old_key_path}' to '{temp_key_path}'",)
-        os.rename(old_key_path, temp_key_path)
+        shutil.move(old_key_path, temp_key_path)
 
     # MOVE CONFIG FILE
     if os.path.exists(old_config_path):
         click.secho(f"\tmoving {old_config_path} to {CONFIG_PATH}",)
-        os.rename(old_config_path, CONFIG_PATH)
+        copy_files(old_config_path, CONFIG_PATH, force=True,)
 
     # Double check keys file exists
     keys_config = load_or_init_keys()
@@ -96,7 +97,7 @@ def upgrade(verbose):
             continue
         if not os.path.exists(old_file):
             click.secho(f'\trenaming {old_file} to {new_file} to prep for upgrade...')
-            os.rename(old_file, new_file)
+            shutil.move(old_file, new_file)
         else:
             os.remove(old_file)
     copy_files(

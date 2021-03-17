@@ -39,13 +39,24 @@ def doctor():
         env_setup_err = f"Unrecognized Operating System {sys.platform}, " \
                         f"cannot run environment setup script, skipping..."
     else:
-        res = subprocess.run(env_setup_cmd, shell=True)
+        res = subprocess.run(
+            env_setup_cmd,
+            shell=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
         env_setup_status = res.returncode
         env_setup_err = res.stderr
 
     # Check official (non-dev) version
     click.secho(f"Checking your numerai-cli version...")
-    res = str(subprocess.run('pip3 show numerai-cli', shell=True, capture_output=True, text=True))
+    res = str(subprocess.run(
+        'pip3 show numerai-cli',
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        shell=True
+    ))
     curr_ver = [s for s in res.split('\\n') if 'Version:' in s][0].split(': ')[1]
     url = f"https://pypi.org/pypi/numerai-cli/json"
     versions = list(reversed(sorted(filter(

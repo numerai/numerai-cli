@@ -18,6 +18,12 @@ def setup(provider, verbose):
     """
     Initializes configuration directory and provider API keys
     """
+    # check for old format, tell user to run numerai upgrade first
+    if os.path.isfile(CONFIG_PATH) or os.path.isdir('.numerai'):
+        click.secho('It looks like you have an old configuration of numerai-cli,'
+                    'run "numerai upgrade" first.')
+        return
+
     # setup numerai keys
     click.secho("Initializing numerai keys "
                 "(press enter to keep value in brackets)...", fg='yellow')
