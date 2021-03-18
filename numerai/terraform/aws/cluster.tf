@@ -66,7 +66,10 @@ resource "aws_iam_role" "ecsTaskExecutionRole" {
       Effect: "Allow",
       Action: "sts:AssumeRole",
       Principal: {
-        Service: "ecs-tasks.amazonaws.com"
+        Service: [
+          "lambda.amazonaws.com",
+          "ecs-tasks.amazonaws.com"
+        ]
       }
     }]
   })

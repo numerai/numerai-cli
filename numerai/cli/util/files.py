@@ -37,9 +37,13 @@ def maybe_create(path, protected=False):
 def load_or_init_nodes(node=None):
     maybe_create(NODES_PATH)
     cfg = load_config(NODES_PATH)
-    if node:
-        return cfg[node]
-    return cfg
+    try:
+        return cfg[node] if node else cfg
+    except KeyError:
+        click.secho(
+            'Node has not been created, run `numerai node --help` '
+            'to learn how to create one', fg='red'
+        )
 
 
 def copy_files(src, dst, force=False, verbose=True):

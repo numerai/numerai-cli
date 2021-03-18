@@ -152,6 +152,7 @@ def monitor_aws(node, config, num_lines, log_type, follow_tail, verbose):
             if task['lastStatus'] == "STOPPED":
                 click.secho(f"Task is stopping...", fg='yellow')
                 container = task['containers'][0]
+                print(container)
                 click.secho(f'Exit code: {container["exitCode"]}', fg='yellow')
                 click.secho(f'Reason: {container["reason"]}', fg='yellow')
                 break
