@@ -3,11 +3,11 @@ import json
 import numerapi
 
 from numerai.cli.constants import *
-from numerai.cli.misc import copy_example
 from numerai.cli.util.docker import terraform
 from numerai.cli.util.files import \
     load_or_init_nodes, \
-    store_config
+    store_config, \
+    copy_example
 from numerai.cli.util.keys import \
     get_provider_keys, \
     get_numerai_keys
@@ -27,7 +27,7 @@ from numerai.cli.util.keys import \
     '--path', '-p', type=str,
     help=f"Target a file path. Defaults to current directory ({DEFAULT_PATH}).")
 @click.option(
-    '--example', '-e', type=str,
+    '--example', '-e', type=click.Choice(EXAMPLES),
     help=f'Specify an example to use for this node. Options are {EXAMPLES}.')
 @click.pass_context
 def create(ctx, verbose, provider, size, path, example):
@@ -44,7 +44,7 @@ def create(ctx, verbose, provider, size, path, example):
 
     if example:
         click.secho(f'copying {example} example to {path}...')
-        copy_example(ctx, example, path, verbose)
+        copy_example(example, path, verbose)
 
     # get nodes config object and set defaults for this node
     click.secho(f'configuring node "{node}"...')
@@ -73,39 +73,39 @@ def create(ctx, verbose, provider, size, path, example):
     terraform(f'apply -auto-approve', verbose,
               env_vars=provider_keys,
               inputs={'node_config_file': 'nodes.json'})
-    click.secho('successfully created cloud resources!', fg='green')
+    click.secho('cloud resources created successfully', fg='green')
 
     # terraform output for AWS nodes
     click.echo(f'saving node configuration to {NODES_PATH}...')
     res = terraform(f"output -json aws_nodes", verbose).stdout.decode('utf-8')
     aws_nodes = json.loads(res)
-    for node, data in aws_nodes.items():
-        nodes_config[node].update(data)
+    for node_name, data in aws_nodes.items():
+        nodes_config[node_name].update(data)
     store_config(NODES_PATH, nodes_config)
     if verbose:
-        click.secho(f'new config:\n{str(load_or_init_nodes())}')
+        click.secho(f'new config:\n{json.dumps(load_or_init_nodes(), indent=2)}')
 
-    if model_id:
-        napi = numerapi.NumerAPI(*get_numerai_keys())
-        webhook_url = nodes_config[node]['webhook_url']
-        click.echo(f'registering webhook {webhook_url} for model {model_id}...')
-        # napi.set_submission_webhook(model_id, webhook_url)
-        napi.raw_query(
-            '''
-            mutation (
-                $modelId: String!
-                $newSubmissionWebhook: String
-            ) {
-                setSubmissionWebhook(
-                    modelId: $modelId
-                    newSubmissionWebhook: $newSubmissionWebhook
-                )
-            }
-            ''',
-            variables={
-                'modelId': model_id,
-                'newSubmissionWebhook': webhook_url
-            },
-            authorization=True
-        )
+    napi = numerapi.NumerAPI(*get_numerai_keys())
+    webhook_url = nodes_config[node]['webhook_url']
+    click.echo(f'registering webhook {webhook_url} for model {model_id}...')
+
+    # napi.set_submission_webhook(model_id, webhook_url)
+    napi.raw_query(
+        '''
+        mutation (
+            $modelId: String!
+            $newSubmissionWebhook: String
+        ) {
+            setSubmissionWebhook(
+                modelId: $modelId
+                newSubmissionWebhook: $newSubmissionWebhook
+            )
+        }
+        ''',
+        variables={
+            'modelId': model_id,
+            'newSubmissionWebhook': webhook_url
+        },
+        authorization=True
+    )
     click.secho('Prediction Node created successfully', fg='green')

@@ -1,10 +1,10 @@
 from numerai.cli.constants import *
-from numerai.cli.util.files import copy_files
+from numerai.cli.util import files
 
 
 @click.command()
 @click.option(
-    '--example', '-e', type=str, default=DEFAULT_EXAMPLE,
+    '--example', '-e', type=click.Choice(EXAMPLES), default=DEFAULT_EXAMPLE,
     help=f'Specify the example to copy, defaults to {DEFAULT_EXAMPLE}. '
          f'Options are {EXAMPLES}.'
 )
@@ -24,19 +24,4 @@ def copy_example(example, dest, verbose):
 
         - RLang:  Dockerfile, install_packages.R, main.R
     """
-    if example not in EXAMPLES:
-        click.secho(f'Invalid example, options are {EXAMPLES}', fg='red')
-        return
-
-    example_dir = os.path.join(EXAMPLE_PATH, example)
-    dst_dir = dest if dest is not None else example
-    click.echo(f'Copying {example} example to {dst_dir}')
-    copy_files(example_dir, dst_dir, force=False, verbose=verbose)
-
-    dockerignore_path = os.path.join(dst_dir, '.dockerignore')
-    if not os.path.exists(dockerignore_path):
-        with open(dockerignore_path, 'a+') as f:
-            f.write(".numerai\n")
-            f.write("numerai_dataset*\n")
-            f.write(".git\n")
-            f.write("venv\n")
+    files.copy_example(example, dest, verbose)

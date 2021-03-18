@@ -152,9 +152,13 @@ def config_provider_keys(cloud_provider):
 
 
 def sanitize_message(message):
-    aws_public, aws_secret = get_aws_keys()
-    numerai_public, numerai_secret = get_numerai_keys()
-    return message.replace(aws_public, f'...{aws_public[-5:]}')\
-                  .replace(aws_secret, f'...{aws_secret[-5:]}')\
-                  .replace(numerai_public, f'...{numerai_public[-5:]}')\
-                  .replace(numerai_secret, f'...{numerai_secret[-5:]}')
+    if message is None:
+        return None
+    all_keys = get_aws_keys() + get_numerai_keys()
+    for key in all_keys:
+        try:
+            message = message.replace(key, f'...{key[-5:]}')
+        except AttributeError:
+            continue
+
+    return message

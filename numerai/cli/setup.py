@@ -37,8 +37,7 @@ def setup(provider, verbose):
 
     # copy tf files
     click.secho("copying terraform files...")
-    numerai_dir = format_path_if_mingw(CONFIG_PATH)
-    copy_files(TERRAFORM_PATH, numerai_dir, verbose=True)
+    copy_files(TERRAFORM_PATH, CONFIG_PATH, verbose=True)
 
     # terraform init
     click.secho("initializing terraform to provision cloud infrastructure...")
@@ -46,5 +45,5 @@ def setup(provider, verbose):
 
     click.secho("✓ Numerai API Keys setup and working", fg='green')
     click.secho(f"✓ {provider} API Keys setup and working", fg='green')
-    click.secho(f"✓ Terraform files copied to {numerai_dir}", fg='green')
+    click.secho(f"✓ Terraform files copied to {CONFIG_PATH}", fg='green')
     click.echo('succesfully initialized numerai-cli')

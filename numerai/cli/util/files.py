@@ -62,12 +62,16 @@ def copy_files(src, dst, force=False, verbose=True):
             shutil.copy(src_file, dst_file)
 
 
-def format_path_if_mingw(p):
-    '''
-    Helper function to format if the system is running docker toolbox + mingw.
-    The paths need to be formatted like unix paths, and the drive letter needs to be lowercased
-    '''
-    if 'DOCKER_TOOLBOX_INSTALL_PATH' in os.environ and 'MSYSTEM' in os.environ:
-        p = '/' + p[0].lower() + p[2:]
-        p = p.replace('\\', '/')
-    return p
+def copy_example(example, dest, verbose):
+    example_dir = os.path.join(EXAMPLE_PATH, example)
+    dst_dir = dest if dest is not None else example
+    click.echo(f'Copying {example} example to {dst_dir}')
+    copy_files(example_dir, dst_dir, force=False, verbose=verbose)
+
+    dockerignore_path = os.path.join(dst_dir, '.dockerignore')
+    if not os.path.exists(dockerignore_path):
+        with open(dockerignore_path, 'a+') as f:
+            f.write(".numerai\n")
+            f.write("numerai_dataset*\n")
+            f.write(".git\n")
+            f.write("venv\n")
