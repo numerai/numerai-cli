@@ -14,6 +14,8 @@ def format_path_if_mingw(p):
     return p
 
 
+TOURNAMENT_NUMERAI = 8
+TOURNAMENT_SIGNALS = 11
 PACKAGE_PATH = os.path.dirname(__file__)
 CONFIG_PATH = format_path_if_mingw(os.path.join(str(Path.home()), '.numerai'))
 KEYS_PATH = os.path.join(CONFIG_PATH, '.keys')

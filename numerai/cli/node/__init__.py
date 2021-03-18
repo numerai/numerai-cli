@@ -16,8 +16,12 @@ from numerai.cli.util.keys import get_numerai_keys
     help=f"The name of one of your models to configure the Prediction Node for."
          f"It defaults to the first model returned from your account."
 )
+@click.option(
+    '--signals', '-s', is_flag=True,
+    help=f"Target a signals model with this name. Defaults to false."
+)
 @click.pass_context
-def node(ctx, model_name):
+def node(ctx, model_name, signals):
     """
     Commands to create, deploy, test, and destroy Prediction Nodes.
     """
@@ -26,28 +30,36 @@ def node(ctx, model_name):
                     'run "numerai setup"', fg='red')
         exit(1)
 
+    tournament = TOURNAMENT_SIGNALS if signals else TOURNAMENT_NUMERAI
     napi = numerapi.NumerAPI(*get_numerai_keys())
-    acct = napi.get_account()
-    models = acct['models']
-    latest_model = models[0]
+    models = napi.get_models(tournament)
+    if len(models) == 0:
+        click.secho(f'No models for tournament {tournament}', fg='red')
+        return
+
     if model_name is None and not click.confirm(
-        f"Use default model '{latest_model['name']}'?"
+        f"Use default model '{models[0]['name']}'?"
     ):
         model_name = click.prompt(
-            'Provide one of your model name '
+            'Provide one of your numerai tournament model names '
             '(or use the --model-name option as a shortcut):'
         )
     try:
         model = list(filter(
-            lambda m: model_name is None or m['name'] == model_name,
+            lambda m:
+            model_name is None or
+            m['name'] == model_name,
             models
         ))[0]
-        ctx.ensure_object(dict)
-        ctx.obj['model'] = {'id': model['id'], 'name': model['name']}
     except IndexError:
-        click.secho(f'No model with name {model_name} found in list of models:\n'
-                    f'{json.dumps(list(map(lambda m: m["name"], models)), indent=2)}',
-                    fg='red')
+        click.secho(
+            f'No tournament {tournament} model with name {model_name} '
+            f'found in list of models:\n{json.dumps(models, indent=2)}',
+            fg='red'
+        )
+
+    ctx.ensure_object(dict)
+    ctx.obj['model'] = {'id': model['id'], 'name': model['name']}
 
 
 node.add_command(create)
