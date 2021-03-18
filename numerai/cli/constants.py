@@ -14,7 +14,7 @@ def format_path_if_mingw(p):
     return p
 
 
-PACKAGE_PATH = format_path_if_mingw(os.path.dirname(__file__))
+PACKAGE_PATH = os.path.dirname(__file__)
 CONFIG_PATH = format_path_if_mingw(os.path.join(str(Path.home()), '.numerai'))
 KEYS_PATH = os.path.join(CONFIG_PATH, '.keys')
 NODES_PATH = os.path.join(CONFIG_PATH, 'nodes.json')
