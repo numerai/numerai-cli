@@ -3,6 +3,17 @@ from pathlib import Path
 import click
 
 
+def format_path_if_mingw(p):
+    '''
+    Helper function to format if the system is running docker toolbox + mingw.
+    The paths need to be formatted like unix paths, and the drive letter needs to be lowercased
+    '''
+    if 'DOCKER_TOOLBOX_INSTALL_PATH' in os.environ and 'MSYSTEM' in os.environ:
+        p = '/' + p[0].lower() + p[2:]
+        p = p.replace('\\', '/')
+    return p
+
+
 PACKAGE_PATH = format_path_if_mingw(os.path.dirname(__file__))
 CONFIG_PATH = format_path_if_mingw(os.path.join(str(Path.home()), '.numerai'))
 KEYS_PATH = os.path.join(CONFIG_PATH, '.keys')
@@ -63,14 +74,3 @@ def size_presets():
             fg=color
         )
     click.secho("See https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-cpu-memory-error.html for more info")
-
-
-def format_path_if_mingw(p):
-    '''
-    Helper function to format if the system is running docker toolbox + mingw.
-    The paths need to be formatted like unix paths, and the drive letter needs to be lowercased
-    '''
-    if 'DOCKER_TOOLBOX_INSTALL_PATH' in os.environ and 'MSYSTEM' in os.environ:
-        p = '/' + p[0].lower() + p[2:]
-        p = p.replace('\\', '/')
-    return p
