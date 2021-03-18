@@ -11,7 +11,7 @@ RUN pip install -r requirements.txt
 # (including your code, compiled files, and serialized models)
 ADD . .
 
-# These are docker arguments that `numerai train/run/deploy` will always pass into docker.
+# These are docker arguments that `numerai node deploy/test` will always pass into docker.
 # They are then set in your environment, so that you can access them from your script like so:
     # import os
     # public_id = os.environ["NUMERAI_PUBLIC_ID"]
@@ -23,6 +23,6 @@ ARG NUMERAI_SECRET_KEY
 ENV NUMERAI_SECRET_KEY=$NUMERAI_SECRET_KEY
 
 # This sets the default command to run your docker container.
-# It runs by default in the cloud and when running `numerai docker run`.
-# This is overridden in the `numerai docker train` command.
+# It runs by default in the cloud and when running `numerai node test`.
+# This is overridden when using `numerai node test --command [COMMAND]`.
 CMD [ "python", "./predict.py" ]

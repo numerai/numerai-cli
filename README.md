@@ -55,9 +55,12 @@ If you have any problems, questions, comments, concerns, or general feedback, pl
       ```
 4.  After the setup script confirms Python and Docker, install `numerai-cli` via:
     ```
-    pip3 install numerai-cli --user
+    pip3 install --upgrade numerai-cli --user
     ```
-    NOTE: If you are using python venv then drop the --user option. If you don't know what that is, disregard this note
+    NOTES:
+    - This command will also work to update to new versions of the package in the future
+    - If you are using python venv then drop the --user option. 
+      If you don't know what that is, disregard this note
 
 
 ## Node Configuration

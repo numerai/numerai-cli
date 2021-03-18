@@ -54,7 +54,6 @@ def doctor():
         'pip3 show numerai-cli',
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        text=True,
         shell=True
     ))
     curr_ver = [s for s in res.split('\\n') if 'Version:' in s][0].split(': ')[1]

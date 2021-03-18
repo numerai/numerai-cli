@@ -45,20 +45,27 @@ def test(ctx, local, command, verbose):
         docker.run(node_config, verbose, command=command)
 
     napi = numerapi.NumerAPI(*get_numerai_keys())
-    res = napi.raw_query(
-        '''
-        mutation ( $modelId: String! ) {
-            triggerModelWebhook( modelId: $modelId )
-        }
-        ''',
-        variables={
-            'modelId': node_config['model_id'],
-        },
-        authorization=True
-    )
+    try:
+        res = napi.raw_query(
+            '''
+            mutation ( $modelId: String! ) {
+                triggerModelWebhook( modelId: $modelId )
+            }
+            ''',
+            variables={
+                'modelId': node_config['model_id'],
+            },
+            authorization=True
+        )
+        if verbose:
+            click.echo(f"response:\n{res}")
 
-    if verbose:
-        click.echo(f"response:\n{res}")
+    except ValueError as e:
+        click.secho(f'there was a problem calling your webhook: {str(e)}', fg='red')
+        if 'Internal Server Error' in str(e):
+            click.secho('attempting to dump webhook logs', fg='red')
+            monitor(node, node_config, True, 10, LOG_TYPE_WEBHOOK, False)
+        return
 
     click.secho("webhook reachable checking task status...", fg='green')
     monitor(node, node_config, verbose, 15, LOG_TYPE_CLUSTER, follow_tail=True)
@@ -144,11 +151,10 @@ def monitor_aws(node, config, num_lines, log_type, follow_tail, verbose):
             task = get_recent_task_status_aws(ecs_client, node, verbose)
             if task['lastStatus'] == "STOPPED":
                 click.secho(f"Task is stopping...", fg='yellow')
+                container = task['containers'][0]
+                click.secho(f'Exit code: {container["exitCode"]}', fg='yellow')
+                click.secho(f'Reason: {container["reason"]}', fg='yellow')
                 break
-
-        container = task['containers'][0]
-        click.secho(f'Exit code: {container["exitCode"]}', fg='yellow')
-        click.secho(f'Reason: {container["reason"]}', fg='yellow')
 
         return
 
@@ -187,10 +193,10 @@ def get_name_and_print_logs(logs_client, family, limit, next_token=None, raise_o
         if not raise_on_error:
             return False
         raise exception_with_msg(
-            "No logs found. Make sure the webhook has triggered (check 'numerai compute logs -l lambda'). \n"
-            "If it has, then check `numerai compute status` and make sure it's in the RUNNING state "
-            "(this can take a few minutes). \n Also, make sure your webhook has triggered at least once by running "
-            "'numerai compute test-webhook'")
+            "No logs found. Make sure the webhook has triggered by checking "
+            "'numerai node status' and make sure a task is in the RUNNING state "
+            "(this can take a few minutes). Also, make sure your webhook has "
+            "triggered at least once by running 'numerai node test'")
 
     name = streams['logStreams'][0]['logStreamName']
     print_logs(logs_client, family, name, limit, next_token)
@@ -224,8 +230,8 @@ def print_logs(logs_client, family, name, limit=None, next_token=None):
     '--num-lines', '-n', type=int, default=20,
     help="the number of log lines to return")
 @click.option(
-    "--log-type", "-l", default="cluster",
-    help=f"The log type to lookup. One of {LOG_TYPES}. Default is fargate")
+    "--log-type", "-l", type=click.Choice(LOG_TYPES),
+    help=f"The log type to lookup. One of {LOG_TYPES}. Default is 'cluster'.")
 @click.option(
     "--follow-tail", "-f", is_flag=True,
     help="tail the logs constantly")
