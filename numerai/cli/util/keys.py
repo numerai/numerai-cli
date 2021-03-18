@@ -141,8 +141,8 @@ def check_aws_validity(key_id, secret):
 
         raise exception_with_msg(
             f"AWS keys seem to be invalid. Make sure you've entered them correctly "
-            f"and that your user has the necessary permissions "
-            f"(see https://github.com/numerai/numerai-cli/wiki/Prerequisites-Help)."
+            f"and that your user has the necessary permissions (for help, see "
+            f"https://github.com/numerai/numerai-cli/wiki/Amazon-Web-Services)."
         )
 
 
