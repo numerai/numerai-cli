@@ -44,6 +44,7 @@ def load_or_init_nodes(node=None):
             'Node has not been created, run `numerai node --help` '
             'to learn how to create one', fg='red'
         )
+        exit(1)
 
 
 def copy_files(src, dst, force=False, verbose=True):
