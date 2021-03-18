@@ -59,6 +59,7 @@ def destroy(ctx, verbose):
         model_id = node_config['model_id']
         webhook_url = node_config['webhook_url']
         click.echo(f'deregistering webhook {webhook_url} for model {model_id}...')
+        # napi.set_submission_webhook(model_id, None)
         napi.raw_query(
             '''
             mutation (

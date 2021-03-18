@@ -69,7 +69,6 @@ def create(ctx, verbose, provider, size, path, example):
 
     # terraform apply
     provider_keys = get_provider_keys(node)
-    print(provider_keys)
     click.secho(f'running terraform to provision cloud infrastructure...')
     terraform(f'apply -auto-approve', verbose,
               env_vars=provider_keys,
@@ -90,6 +89,7 @@ def create(ctx, verbose, provider, size, path, example):
         napi = numerapi.NumerAPI(*get_numerai_keys())
         webhook_url = nodes_config[node]['webhook_url']
         click.echo(f'registering webhook {webhook_url} for model {model_id}...')
+        # napi.set_submission_webhook(model_id, webhook_url)
         napi.raw_query(
             '''
             mutation (
