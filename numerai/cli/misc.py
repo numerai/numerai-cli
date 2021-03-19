@@ -1,3 +1,5 @@
+import json
+
 import click
 
 from numerai.cli.constants import *
