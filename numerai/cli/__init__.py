@@ -2,7 +2,6 @@ import click
 from colorama import init
 
 from numerai.cli import \
-    util, \
     constants, \
     doctor, \
     node, \
@@ -11,6 +10,7 @@ from numerai.cli import \
     upgrade, \
     misc
 from numerai.cli.util import \
+    debug, \
     docker, \
     files, \
     keys
@@ -25,7 +25,10 @@ def numerai():
 
 
 def main():
-    init(autoreset=True)
+    if debug.is_win8():
+        init(wrap=False)
+    else:
+        init(autoreset=True)
 
     numerai.add_command(setup.setup)
     numerai.add_command(node.node)

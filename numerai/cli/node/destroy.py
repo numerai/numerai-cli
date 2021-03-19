@@ -1,4 +1,4 @@
-import numerapi
+from numerapi import base_api
 
 from numerai.cli.constants import *
 from numerai.cli.util.docker import terraform
@@ -55,26 +55,8 @@ def destroy(ctx, verbose):
         return
 
     if 'model_id' in node_config:
-        napi = numerapi.NumerAPI(*get_numerai_keys())
+        napi = base_api.Api(*get_numerai_keys())
         model_id = node_config['model_id']
         webhook_url = node_config['webhook_url']
         click.echo(f'deregistering webhook {webhook_url} for model {model_id}...')
-        # napi.set_submission_webhook(model_id, None)
-        napi.raw_query(
-            '''
-            mutation (
-                $modelId: String!
-                $newSubmissionWebhook: String
-            ) {
-                setSubmissionWebhook(
-                    modelId: $modelId
-                    newSubmissionWebhook: $newSubmissionWebhook
-                )
-            }
-            ''',
-            variables={
-                'modelId': model_id,
-                'newSubmissionWebhook': None
-            },
-            authorization=True
-        )
+        napi.set_submission_webhook(model_id, None)

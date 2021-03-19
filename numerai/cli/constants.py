@@ -3,21 +3,21 @@ from pathlib import Path
 import click
 
 
-def format_path_if_mingw(p):
-    '''
-    Helper function to format if the system is running docker toolbox + mingw.
-    The paths need to be formatted like unix paths, and the drive letter needs to be lowercased
-    '''
-    if 'DOCKER_TOOLBOX_INSTALL_PATH' in os.environ and 'MSYSTEM' in os.environ:
-        p = '/' + p[0].lower() + p[2:]
-        p = p.replace('\\', '/')
-    return p
+# def format_path_if_mingw(p):
+#     '''
+#     Helper function to format if the system is running docker toolbox + mingw.
+#     The paths need to be formatted like unix paths, and the drive letter needs to be lowercased
+#     '''
+#     if 'DOCKER_TOOLBOX_INSTALL_PATH' in os.environ and 'MSYSTEM' in os.environ:
+#         p = '/' + p[0].lower() + p[2:]
+#         p = p.replace('\\', '/')
+#     return p
 
 
 TOURNAMENT_NUMERAI = 8
 TOURNAMENT_SIGNALS = 11
 PACKAGE_PATH = os.path.dirname(__file__)
-CONFIG_PATH = format_path_if_mingw(os.path.join(str(Path.home()), '.numerai'))
+CONFIG_PATH = os.path.join(str(Path.home()), '.numerai')
 KEYS_PATH = os.path.join(CONFIG_PATH, '.keys')
 NODES_PATH = os.path.join(CONFIG_PATH, 'nodes.json')
 TERRAFORM_PATH = os.path.join(PACKAGE_PATH, "..", "terraform")
@@ -59,6 +59,14 @@ DEFAULT_SETTINGS = {
     'memory': SIZE_PRESETS[DEFAULT_SIZE][1],
     'path': DEFAULT_PATH
 }
+
+
+LOG_TYPE_WEBHOOK = 'webhook'
+LOG_TYPE_CLUSTER = 'cluster'
+LOG_TYPES = [
+    LOG_TYPE_WEBHOOK,
+    LOG_TYPE_CLUSTER
+]
 
 
 @click.command()

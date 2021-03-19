@@ -1,6 +1,6 @@
 import json
 
-import numerapi
+from numerapi import base_api
 
 from numerai.cli.constants import *
 from numerai.cli.node.create import create
@@ -30,14 +30,22 @@ def node(ctx, model_name, signals):
                     'run "numerai setup"', fg='red')
         exit(1)
 
-    tournament = TOURNAMENT_SIGNALS if signals else TOURNAMENT_NUMERAI
-    napi = numerapi.NumerAPI(*get_numerai_keys())
+    if signals:
+        tournament = TOURNAMENT_SIGNALS
+        name_prefix = 'signals'
+    else:
+        tournament = TOURNAMENT_NUMERAI
+        name_prefix = 'numerai'
+    napi = base_api.Api(*get_numerai_keys())
     models = napi.get_models(tournament)
 
     try:
         model_id = models[model_name]
         ctx.ensure_object(dict)
-        ctx.obj['model'] = {'id': model_id, 'name': model_name}
+        ctx.obj['model'] = {
+            'id': model_id,
+            'name': f'{name_prefix}-{model_name}'
+        }
 
     except IndexError:
         click.secho(

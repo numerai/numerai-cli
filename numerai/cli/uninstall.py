@@ -1,8 +1,13 @@
 import subprocess
 import shutil
 
+from numerapi import base_api
+
 from numerai.cli.constants import *
-from numerai.cli.util.keys import load_or_init_keys
+from numerai.cli.util.keys import \
+    load_or_init_keys, \
+    load_or_init_nodes, \
+    get_numerai_keys
 from numerai.cli.util.docker import terraform
 
 
@@ -24,6 +29,14 @@ def uninstall():
         return
 
     if os.path.exists(CONFIG_PATH):
+        napi = base_api.Api(*get_numerai_keys())
+
+        node_config = load_or_init_nodes()
+        click.secho('deregistering all webhooks...')
+        for node, config in node_config.items():
+            napi.set_submission_webhook(config['model_id'], None)
+
+        click.secho('destroying cloud resources...')
         all_keys = load_or_init_keys()
         provider_keys = {}
         for provider in PROVIDERS:
@@ -31,11 +44,17 @@ def uninstall():
         terraform('destroy -auto-approve',
                   verbose=True, env_vars=provider_keys,
                   inputs={'node_config_file': 'nodes.json'})
+
+        click.secho('cleaning up docker images...')
         subprocess.run('docker system prune -f -a --volumes', shell=True)
         shutil.rmtree(CONFIG_PATH)
+
     try:
+        click.secho('uninstalling python package...')
         subprocess.run('pip3 uninstall numerai-cli -y', shell=True)
-    except PermissionError as e:
+
+    except (PermissionError, WindowsError, subprocess.SubprocessError):
         click.secho('uninstall failed due to permissions, '
                     'run "pip3 uninstall numerai-cli -y" manually', fg='red')
+
     click.secho("All those moments will be lost in time, like tears in rain.", fg='red')

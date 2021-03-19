@@ -2,7 +2,6 @@ from numerai.cli.constants import *
 from numerai.cli.util.docker import terraform
 from numerai.cli.util.files import \
     maybe_create, \
-    format_path_if_mingw, \
     copy_files
 from numerai.cli.util.keys import \
     config_numerai_keys, \

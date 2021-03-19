@@ -9,18 +9,21 @@ def exception_with_msg(msg):
     return click.ClickException(msg)
 
 
+def is_win8():
+    if sys.platform == 'win32':
+        return '8' in platform.win32_ver()[0]
+    return False
+
+
 def is_win10_professional():
-    name = sys.platform
-    if name != 'win32':
-        return False
+    if sys.platform == 'win32':
+        version = platform.win32_ver()[0]
 
-    version = platform.win32_ver()[0]
-
-    if version == '10':
-        # for windows 10 only, we need to know if it's pro vs home
-        import winreg
-        with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Windows NT\CurrentVersion") as key:
-            return winreg.QueryValueEx(key, "EditionID")[0] == 'Professional'
+        if version == '10':
+            # for windows 10 only, we need to know if it's pro vs home
+            import winreg
+            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Windows NT\CurrentVersion") as key:
+                return winreg.QueryValueEx(key, "EditionID")[0] == 'Professional'
 
     return False
 

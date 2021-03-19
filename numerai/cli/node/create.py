@@ -1,6 +1,6 @@
 import json
 
-import numerapi
+from numerapi import base_api
 
 from numerai.cli.constants import *
 from numerai.cli.util.docker import terraform
@@ -85,27 +85,9 @@ def create(ctx, verbose, provider, size, path, example):
     if verbose:
         click.secho(f'new config:\n{json.dumps(load_or_init_nodes(), indent=2)}')
 
-    napi = numerapi.NumerAPI(*get_numerai_keys())
+    napi = base_api.Api(*get_numerai_keys())
     webhook_url = nodes_config[node]['webhook_url']
     click.echo(f'registering webhook {webhook_url} for model {model_id}...')
 
-    # napi.set_submission_webhook(model_id, webhook_url)
-    napi.raw_query(
-        '''
-        mutation (
-            $modelId: String!
-            $newSubmissionWebhook: String
-        ) {
-            setSubmissionWebhook(
-                modelId: $modelId
-                newSubmissionWebhook: $newSubmissionWebhook
-            )
-        }
-        ''',
-        variables={
-            'modelId': model_id,
-            'newSubmissionWebhook': webhook_url
-        },
-        authorization=True
-    )
+    napi.set_submission_webhook(model_id, webhook_url)
     click.secho('Prediction Node created successfully', fg='green')

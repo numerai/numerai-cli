@@ -2,20 +2,13 @@ import time
 from datetime import datetime
 
 import boto3
-import numerapi
+from numerapi import base_api
 
 from numerai.cli.constants import *
 from numerai.cli.util import docker
 from numerai.cli.util.debug import exception_with_msg
 from numerai.cli.util.files import load_or_init_nodes
 from numerai.cli.util.keys import get_aws_keys, get_numerai_keys
-
-LOG_TYPE_WEBHOOK = 'webhook'
-LOG_TYPE_CLUSTER = 'cluster'
-LOG_TYPES = [
-    LOG_TYPE_WEBHOOK,
-    LOG_TYPE_CLUSTER
-]
 
 
 @click.command()
@@ -37,15 +30,15 @@ def test(ctx, local, command, verbose):
     ctx.ensure_object(dict)
     model = ctx.obj['model']
     node = model['name']
-    click.secho("checking if webhook is reachable...")
     node_config = load_or_init_nodes(node)
 
     if local:
         docker.build(node_config, verbose)
         docker.run(node_config, verbose, command=command)
 
-    napi = numerapi.NumerAPI(*get_numerai_keys())
+    napi = base_api.Api(*get_numerai_keys(), verbosity="DEBUG")
     try:
+        click.secho("checking if webhook is reachable...")
         res = napi.raw_query(
             '''
             mutation ( $modelId: String! ) {
