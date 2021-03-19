@@ -112,6 +112,9 @@ def root_cause(subprocess_result):
     if b'Temporary failure in name resolution' in err_msg:
         raise exception_with_msg("You network failed temporarily, please try again.")
 
+    if b'No Fargate configuration exists for given values.' in std_out:
+        raise exception_with_msg("Invalid size preset, report this to Numerai")
+
     # these are non-errors that either shouldn't be handled or are handled elsewhere
     if b'Can\'t update submission after deadline' in err_msg:
         return

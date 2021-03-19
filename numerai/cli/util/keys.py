@@ -66,16 +66,20 @@ def get_numerai_keys():
         return None, None
 
 
+def prompt_for_key(name, default):
+    hidden = sanitize_message(default)
+    new = click.prompt(name, default=hidden).strip()
+    if new == hidden:
+        return default
+    return new
+
+
 def config_numerai_keys():
     numerai_public, numerai_secret = get_numerai_keys()
-    numerai_public = click.prompt(
-        f'NUMERAI_PUBLIC_ID',
-        default=sanitize_message(numerai_public)
-    ).strip()
-    numerai_secret = click.prompt(
-        f'NUMERAI_SECRET_KEY',
-        default=sanitize_message(numerai_secret)
-    ).strip()
+
+    numerai_public = prompt_for_key('NUMERAI_PUBLIC_ID', numerai_public)
+    numerai_secret = prompt_for_key('NUMERAI_SECRET_KEY', numerai_secret)
+    print(numerai_public, numerai_secret)
     check_numerai_validity(numerai_public, numerai_secret)
 
     keys_config = load_or_init_keys()
@@ -110,14 +114,8 @@ def get_aws_keys():
 
 def config_aws_keys():
     aws_public, aws_secret = get_aws_keys()
-    aws_public = click.prompt(
-        f'AWS_ACCESS_KEY_ID',
-        default=sanitize_message(aws_public)
-    ).strip()
-    aws_secret = click.prompt(
-        f'AWS_SECRET_ACCESS_KEY',
-        default=sanitize_message(aws_secret)
-    ).strip()
+    aws_public = prompt_for_key('AWS_ACCESS_KEY_ID', aws_public)
+    aws_secret = prompt_for_key('AWS_SECRET_ACCESS_KEY', aws_secret)
     check_aws_validity(aws_public, aws_secret)
 
     keys_config = load_or_init_keys()
