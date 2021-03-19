@@ -3,7 +3,8 @@ import subprocess
 import sys
 from urllib import request
 
-from numerai.cli.constants import *
+import click
+
 from numerai.cli.util.files import load_or_init_nodes
 from numerai.cli.util.keys import \
     check_aws_validity, \

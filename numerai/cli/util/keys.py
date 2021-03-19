@@ -4,6 +4,7 @@ from configparser import \
     MissingSectionHeaderError
 
 import boto3
+import click
 import numerapi
 
 from numerai.cli.constants import *

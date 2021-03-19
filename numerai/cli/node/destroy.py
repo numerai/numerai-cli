@@ -1,3 +1,4 @@
+import click
 from numerapi import base_api
 
 from numerai.cli.constants import *

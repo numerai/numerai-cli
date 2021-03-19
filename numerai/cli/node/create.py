@@ -1,5 +1,6 @@
 import json
 
+import click
 from numerapi import base_api
 
 from numerai.cli.constants import *
@@ -22,7 +23,7 @@ from numerai.cli.util.keys import \
 @click.option(
     '--size', '-s', type=str,
     help=f"CPU credits (cores * 1024) and Memory (in MiB) used in the deployed container. "
-         f"Defaults to {DEFAULT_SIZE} (run 'numerai size-presets' to see options).")
+         f"Defaults to {DEFAULT_SIZE} (run 'numerai list-constants' to see options).")
 @click.option(
     '--path', '-p', type=str,
     help=f"Target a file path. Defaults to current directory ({DEFAULT_PATH}).")

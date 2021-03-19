@@ -1,17 +1,5 @@
 import os
 from pathlib import Path
-import click
-
-
-# def format_path_if_mingw(p):
-#     '''
-#     Helper function to format if the system is running docker toolbox + mingw.
-#     The paths need to be formatted like unix paths, and the drive letter needs to be lowercased
-#     '''
-#     if 'DOCKER_TOOLBOX_INSTALL_PATH' in os.environ and 'MSYSTEM' in os.environ:
-#         p = '/' + p[0].lower() + p[2:]
-#         p = p.replace('\\', '/')
-#     return p
 
 
 TOURNAMENT_NUMERAI = 8
@@ -32,6 +20,13 @@ PROVIDERS = [
     # PROVIDER_GCP
 ]
 
+LOG_TYPE_WEBHOOK = 'webhook'
+LOG_TYPE_CLUSTER = 'cluster'
+LOG_TYPES = [
+    LOG_TYPE_WEBHOOK,
+    LOG_TYPE_CLUSTER
+]
+
 SIZE_PRESETS = {
     "gen-sm": (1024, 4096),
     "gen-md": (2048, 8192),
@@ -49,7 +44,6 @@ SIZE_PRESETS = {
 }
 
 DEFAULT_EXAMPLE = 'tournament-python3'
-DEFAULT_NODE = "default"
 DEFAULT_SIZE = "gen-md"
 DEFAULT_PROVIDER = PROVIDER_AWS
 DEFAULT_PATH = os.getcwd()
@@ -59,28 +53,3 @@ DEFAULT_SETTINGS = {
     'memory': SIZE_PRESETS[DEFAULT_SIZE][1],
     'path': DEFAULT_PATH
 }
-
-
-LOG_TYPE_WEBHOOK = 'webhook'
-LOG_TYPE_CLUSTER = 'cluster'
-LOG_TYPES = [
-    LOG_TYPE_WEBHOOK,
-    LOG_TYPE_CLUSTER
-]
-
-
-@click.command()
-def size_presets():
-    """
-    Displays the options for Prediction Node sizes allowed by AWS.
-    """
-    for size, preset in SIZE_PRESETS.items():
-        suffix = '(default)' if size == DEFAULT_SIZE else ''
-        color = 'green' if size == DEFAULT_SIZE else 'yellow'
-        click.secho(
-            f'{size} -> '
-            f'cpus: {preset[0] / 1024}, '
-            f'mem: {preset[1]/1024} GB {suffix}',
-            fg=color
-        )
-    click.secho("See https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-cpu-memory-error.html for more info")

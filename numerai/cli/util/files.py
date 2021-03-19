@@ -1,6 +1,8 @@
 import json
 import shutil
 
+import click
+
 from numerai.cli.constants import *
 
 

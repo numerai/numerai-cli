@@ -1,12 +1,13 @@
 import json
 
+import click
 from numerapi import base_api
 
 from numerai.cli.constants import *
 from numerai.cli.node.create import create
 from numerai.cli.node.deploy import deploy
 from numerai.cli.node.destroy import destroy
-from numerai.cli.node.test import LOG_TYPES, test, status
+from numerai.cli.node.test import test, status
 from numerai.cli.util.keys import get_numerai_keys
 
 

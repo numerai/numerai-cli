@@ -2,6 +2,7 @@ import time
 from datetime import datetime
 
 import boto3
+import click
 from numerapi import base_api
 
 from numerai.cli.constants import *

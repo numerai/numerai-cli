@@ -1,6 +1,7 @@
 import subprocess
 import shutil
 
+import click
 from numerapi import base_api
 
 from numerai.cli.constants import *
@@ -49,12 +50,23 @@ def uninstall():
         subprocess.run('docker system prune -f -a --volumes', shell=True)
         shutil.rmtree(CONFIG_PATH)
 
-    try:
-        click.secho('uninstalling python package...')
-        subprocess.run('pip3 uninstall numerai-cli -y', shell=True)
+    click.secho('uninstalling python package...')
+    res = subprocess.run(
+        'pip3 uninstall numerai-cli -y',
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        shell=True
+    )
 
-    except (PermissionError, WindowsError, subprocess.SubprocessError):
-        click.secho('uninstall failed due to permissions, '
-                    'run "pip3 uninstall numerai-cli -y" manually', fg='red')
+    if res.returncode != 0:
+        if b'PermissionError' in res.stderr:
+            click.secho(
+                'uninstall failed due to permissions, '
+                'run "pip3 uninstall numerai-cli -y" manually'
+                'to ensure the package was uninstalled',
+                fg='red'
+            )
+        else:
+            click.secho(f'Unexpected error occurred:\n{res.stderr}', fg='red')
 
     click.secho("All those moments will be lost in time, like tears in rain.", fg='red')

@@ -3,6 +3,7 @@ import subprocess
 import sys
 
 import boto3
+import click
 
 from numerai.cli.constants import *
 from numerai.cli.util.debug import root_cause
@@ -33,11 +34,25 @@ def execute(command, verbose):
     return res
 
 
-def build_tf_cmd(tf_cmd, env_vars, inputs, version):
+def format_if_docker_toolbox(path, verbose):
+    '''
+    Helper function to format if the system is running docker toolbox + mingw.
+    Paths need to be formatted like unix paths, and the drive letter lower-cased
+    '''
+    if 'DOCKER_TOOLBOX_INSTALL_PATH' in os.environ and 'MSYSTEM' in os.environ:
+        # '//' found working on win8.1 docker quickstart terminal, previously just '/'
+        new_path = ('//' + path[0].lower() + path[2:]).replace('\\', '/')
+        if verbose:
+            click.secho(f"formatted path for docker toolbox: {path} -> {new_path}")
+        return new_path
+    return path
+
+
+def build_tf_cmd(tf_cmd, env_vars, inputs, version, verbose):
     cmd = f"docker run"
     if env_vars:
         cmd += ' '.join([f' -e "{key}={val}"' for key, val in env_vars.items()])
-    cmd += f' --rm -it -v {CONFIG_PATH}:/opt/plan'
+    cmd += f' --rm -it -v {format_if_docker_toolbox(CONFIG_PATH, verbose)}:/opt/plan'
     cmd += f' -w /opt/plan hashicorp/terraform:{version} {tf_cmd}'
     if inputs:
         cmd += ' '.join([f' -var="{key}={val}"' for key, val in inputs.items()])
@@ -45,11 +60,11 @@ def build_tf_cmd(tf_cmd, env_vars, inputs, version):
 
 
 def terraform(tf_cmd, verbose, env_vars=None, inputs=None, version='0.14.3'):
-    cmd = build_tf_cmd(tf_cmd, env_vars, inputs, version)
+    cmd = build_tf_cmd(tf_cmd, env_vars, inputs, version, verbose)
     res = execute(cmd, verbose)
     # if user accidently deleted a resource, refresh terraform and try again
     if b'ResourceNotFoundException' in res.stdout or b'NoSuchEntity' in res.stdout:
-        refresh = build_tf_cmd('refresh', env_vars, inputs, version)
+        refresh = build_tf_cmd('refresh', env_vars, inputs, version, verbose)
         execute(refresh, verbose)
         res = execute(cmd, verbose)
     return res
@@ -69,7 +84,8 @@ def build(node_config, verbose):
 
 
 def run(node_config, verbose, command=''):
-    cmd = f"docker run --rm -it -v {node_config['path']}:/opt/app " \
+    cmd = f"docker run --rm -it -v " \
+          f"{format_if_docker_toolbox(node_config['path'], verbose)}:/opt/app " \
           f"-w /opt/app {node_config['docker_repo']} {command}"
 
     execute(cmd, verbose)

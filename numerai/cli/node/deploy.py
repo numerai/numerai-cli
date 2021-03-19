@@ -1,4 +1,5 @@
-from numerai.cli.constants import *
+import click
+
 from numerai.cli.util import files, docker
 
 
