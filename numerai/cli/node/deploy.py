@@ -20,7 +20,7 @@ def deploy(ctx, verbose):
     docker.login(node_config, verbose)
 
     click.echo('pushing image to registry...')
-    docker.push(node_config['docker_repo'], verbose)
+    docker.push(node_config['docker_repo'])
 
     click.echo('cleaning up local images...')
     docker.cleanup(node_config)

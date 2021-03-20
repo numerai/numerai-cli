@@ -1,4 +1,5 @@
 import time
+import json
 from datetime import datetime
 
 import boto3
@@ -145,12 +146,8 @@ def monitor_aws(node, config, num_lines, log_type, follow_tail, verbose):
             task = get_recent_task_status_aws(ecs_client, node, verbose)
             if task['lastStatus'] == "STOPPED":
                 click.secho(f"Task is stopping...", fg='yellow')
-                container = task['containers'][0]
-                print(container)
-                click.secho(f'Exit code: {container["exitCode"]}', fg='yellow')
-                click.secho(f'Reason: {container["reason"]}', fg='yellow')
+                click.secho(f'Reason: {task["stoppedReason"]}', fg='yellow')
                 break
-
         return
 
 
@@ -225,8 +222,8 @@ def print_logs(logs_client, family, name, limit=None, next_token=None):
     '--num-lines', '-n', type=int, default=20,
     help="the number of log lines to return")
 @click.option(
-    "--log-type", "-l", type=click.Choice(LOG_TYPES),
-    help=f"The log type to lookup. One of {LOG_TYPES}. Default is 'cluster'.")
+    "--log-type", "-l", type=click.Choice(LOG_TYPES), default=LOG_TYPE_CLUSTER,
+    help=f"The log type to lookup. One of {LOG_TYPES}. Default is {LOG_TYPE_CLUSTER}.")
 @click.option(
     "--follow-tail", "-f", is_flag=True,
     help="tail the logs constantly")

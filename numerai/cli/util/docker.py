@@ -10,21 +10,21 @@ from numerai.cli.util.debug import root_cause
 from numerai.cli.util.keys import sanitize_message, get_aws_keys, load_or_init_keys
 
 
-def execute(command, verbose):
+def execute(command, verbose, pipe=True):
     if verbose:
         click.echo('Running: ' + sanitize_message(command))
 
     res = subprocess.run(
         command,
         shell=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE
+        stdout=subprocess.PIPE if pipe else None,
+        stderr=subprocess.PIPE if pipe else None
     )
 
     if not verbose:
         pass
     elif res.stdout:
-        click.echo(res.stdout.decode('utf8'))
+        click.secho(res.stdout.decode('utf8'))
     elif res.stderr:
         click.secho(res.stderr.decode('utf8'), fg='red', file=sys.stderr)
 
@@ -117,9 +117,9 @@ def login_aws():
     return username, password
 
 
-def push(docker_repo, verbose):
+def push(docker_repo):
     cmd = f'docker push {docker_repo}'
-    execute(cmd, verbose)
+    execute(cmd, verbose=False, pipe=False)
 
 
 def cleanup(node_config):
