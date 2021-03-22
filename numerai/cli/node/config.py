@@ -4,7 +4,7 @@ import click
 from numerapi import base_api
 
 from numerai.cli.constants import *
-from numerai.cli.util.docker import terraform
+from numerai.cli.util.docker import terraform, check_for_dockerfile
 from numerai.cli.util.files import \
     load_or_init_nodes, \
     store_config, \
@@ -31,7 +31,7 @@ from numerai.cli.util.keys import \
     '--example', '-e', type=click.Choice(EXAMPLES),
     help=f'Specify an example to use for this node. Options are {EXAMPLES}.')
 @click.pass_context
-def create(ctx, verbose, provider, size, path, example):
+def config(ctx, verbose, provider, size, path, example):
     """
     Uses Terraform to create a full Numerai Compute cluster in AWS.
     Prompts for your AWS and Numerai API keys on first run, caches them in $HOME/.numerai.
@@ -46,6 +46,9 @@ def create(ctx, verbose, provider, size, path, example):
     if example:
         click.secho(f'copying {example} example to {path}...')
         copy_example(example, path, verbose)
+
+    else:
+        check_for_dockerfile(path)
 
     # get nodes config object and set defaults for this node
     click.secho(f'configuring node "{node}"...')
@@ -91,4 +94,4 @@ def create(ctx, verbose, provider, size, path, example):
     click.echo(f'registering webhook {webhook_url} for model {model_id}...')
 
     napi.set_submission_webhook(model_id, webhook_url)
-    click.secho('Prediction Node created successfully', fg='green')
+    click.secho('Prediction Node configured successfully', fg='green')

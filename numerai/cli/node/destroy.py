@@ -36,7 +36,7 @@ def destroy(ctx, verbose):
         provider_keys = get_provider_keys(node)
     except (KeyError, FileNotFoundError) as e:
         click.secho(f"make sure you run `numerai setup` and "
-                    f"`numerai node -n {node} create` first...", fg='red')
+                    f"`numerai node -n {node} config` first...", fg='red')
         return
 
     try:

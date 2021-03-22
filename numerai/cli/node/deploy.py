@@ -1,3 +1,5 @@
+import os
+
 import click
 
 from numerai.cli.util import files, docker
@@ -12,6 +14,8 @@ def deploy(ctx, verbose):
     model = ctx.obj['model']
     node = model['name']
     node_config = files.load_or_init_nodes(node)
+
+    docker.check_for_dockerfile(node_config['path'])
 
     click.echo('building container image...')
     docker.build(node_config, verbose)

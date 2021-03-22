@@ -59,7 +59,7 @@ def test(ctx, local, command, verbose):
         click.secho(f'there was a problem calling your webhook: {str(e)}', fg='red')
         if 'Internal Server Error' in str(e):
             click.secho('attempting to dump webhook logs', fg='red')
-            monitor(node, node_config, True, 10, LOG_TYPE_WEBHOOK, False)
+            monitor(node, node_config, True, 20, LOG_TYPE_WEBHOOK, False)
         return
 
     click.secho("webhook reachable checking task status...", fg='green')
@@ -113,41 +113,56 @@ def monitor_aws(node, config, num_lines, log_type, follow_tail, verbose):
 
             streams = logs_client.describe_log_streams(
                 logGroupName=family,
-                orderBy="LastEventTime",
-                descending=True
+                logStreamNamePrefix=f"ecs/{node}/{task_id}"
             )
             streams = list(filter(
                 lambda s: s['logStreamName'].endswith(task_id),
                 streams['logStreams']
             ))
-            if len(streams):
+
+            msg = f"Task status: {task['lastStatus']}. "
+            if len(streams) == 0:
+                msg += f"Waiting for log file to be created...{'.' * i}\r"
+                click.secho(msg, fg='yellow', nl=False)
+                time.sleep(2)
+
+            else:
                 name = streams[0]['logStreamName']
+                msg = f"\n{msg} Log file created: {name}"
+                click.secho(msg, fg='green')
                 break
 
-            msg = (f"Task status: "
-                   f"{task['lastStatus']} -> {task['desiredStatus']}. "
-                   f"Waiting for log file to be created...{'.'*i}\r")
-            click.secho(msg, fg='yellow', nl=False)
-            time.sleep(2)
 
         # print out the logs
-        click.secho('\ntask started and log file created', fg='green')
-        next_token = print_logs(logs_client, family, name, limit=num_lines)
+        next_token, num_events = print_logs(logs_client, family, name, limit=num_lines)
+        total_events = num_events
         while follow_tail:
-            events = logs_client.get_log_events(
-                logGroupName=family,
-                logStreamName=name,
-                nextToken=next_token)
-
-            for event in events["events"]:
-                timestamp = datetime.fromtimestamp(event['timestamp'] / 1000)
-                click.echo(f"{str(timestamp)}: {event['message']}")
+            next_token, num_events = print_logs(
+                logs_client, family, name,
+                next_token=(next_token if total_events > 0 else None)
+            )
+            total_events += num_events
+            if total_events == 0:
+                click.secho(f"Waiting for log events...\r", fg='yellow', nl=False)
 
             task = get_recent_task_status_aws(ecs_client, node, verbose)
+
             if task['lastStatus'] == "STOPPED":
-                click.secho(f"Task is stopping...", fg='yellow')
-                click.secho(f'Reason: {task["stoppedReason"]}', fg='yellow')
+                click.secho(f"\nTask is stopping...", fg='yellow')
+
+                if len(task['containers']) and 'exitCode' in task['containers'][0]:
+                    container = task['containers'][0]
+                    click.secho(f"Container Exit code: {container['exitCode']}", fg='red')
+                    click.secho(f'Reason: {container["reason"]}', fg='red')
+
                 break
+
+        if total_events == 0:
+            while total_events == 0:
+                click.secho(f"No log events yet, still waiting...\r", fg='yellow', nl=False)
+                next_token, num_events = print_logs(logs_client, family, name)
+                total_events += num_events
+
         return
 
 
@@ -205,15 +220,15 @@ def print_logs(logs_client, family, name, limit=None, next_token=None):
     events = logs_client.get_log_events(
         logGroupName=family,
         logStreamName=name,
-        limit=limit)
+        **kwargs
+    )
 
-    click.echo("log for " + family + ":" + name + ":")
     if len(events["events"]) == limit:
         click.echo('...more log lines available: use -n option to get more...')
     for event in events["events"]:
-        click.echo(f"{str(datetime.fromtimestamp(event['timestamp'] / 1000))}: {event['message']}")
+        click.echo(f"[{name}] {str(datetime.fromtimestamp(event['timestamp'] / 1000))}: {event['message']}")
 
-    return events['nextForwardToken']
+    return events['nextForwardToken'], len(events['events'])
 
 
 @click.command()

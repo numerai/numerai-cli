@@ -43,7 +43,7 @@ def load_or_init_nodes(node=None):
         return cfg[node] if node else cfg
     except KeyError:
         click.secho(
-            'Node has not been created, run `numerai node --help` '
+            'Node has not been configured, run `numerai node --help` '
             'to learn how to create one', fg='red'
         )
         exit(1)

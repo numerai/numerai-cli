@@ -30,26 +30,30 @@ def uninstall():
         return
 
     if os.path.exists(CONFIG_PATH):
-        napi = base_api.Api(*get_numerai_keys())
+        if len(os.listdir(CONFIG_PATH)) == 0:
+            os.rmdir(CONFIG_PATH)
 
-        node_config = load_or_init_nodes()
-        click.secho('deregistering all webhooks...')
-        for node, config in node_config.items():
-            napi.set_submission_webhook(config['model_id'], None)
+        else:
+            napi = base_api.Api(*get_numerai_keys())
 
-        click.secho('destroying cloud resources...')
-        all_keys = load_or_init_keys()
-        provider_keys = {}
-        for provider in PROVIDERS:
-            if provider in all_keys.keys():
-                provider_keys.update(all_keys[provider])
-        terraform('destroy -auto-approve',
-                  verbose=True, env_vars=provider_keys,
-                  inputs={'node_config_file': 'nodes.json'})
+            node_config = load_or_init_nodes()
+            click.secho('deregistering all webhooks...')
+            for node, config in node_config.items():
+                napi.set_submission_webhook(config['model_id'], None)
 
-        click.secho('cleaning up docker images...')
-        subprocess.run('docker system prune -f -a --volumes', shell=True)
-        shutil.rmtree(CONFIG_PATH)
+            click.secho('destroying cloud resources...')
+            all_keys = load_or_init_keys()
+            provider_keys = {}
+            for provider in PROVIDERS:
+                if provider in all_keys.keys():
+                    provider_keys.update(all_keys[provider])
+            terraform('destroy -auto-approve',
+                      verbose=True, env_vars=provider_keys,
+                      inputs={'node_config_file': 'nodes.json'})
+
+            click.secho('cleaning up docker images...')
+            subprocess.run('docker system prune -f -a --volumes', shell=True)
+            shutil.rmtree(CONFIG_PATH)
 
     click.secho('uninstalling python package...')
     res = subprocess.run(
@@ -63,7 +67,7 @@ def uninstall():
         if b'PermissionError' in res.stderr:
             click.secho(
                 'uninstall failed due to permissions, '
-                'run "pip3 uninstall numerai-cli -y" manually'
+                'run "pip3 uninstall numerai-cli -y" manually '
                 'to ensure the package was uninstalled',
                 fg='red'
             )

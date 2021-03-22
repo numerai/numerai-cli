@@ -4,7 +4,7 @@ import click
 from numerapi import base_api
 
 from numerai.cli.constants import *
-from numerai.cli.node.create import create
+from numerai.cli.node.config import config
 from numerai.cli.node.deploy import deploy
 from numerai.cli.node.destroy import destroy
 from numerai.cli.node.test import test, status
@@ -48,16 +48,16 @@ def node(ctx, model_name, signals):
             'name': f'{name_prefix}-{model_name}'
         }
 
-    except IndexError:
+    except KeyError:
         click.secho(
-            f'No tournament {tournament} model with name {model_name} '
+            f'No tournament {tournament} model with name "{model_name}" '
             f'found in list of models:\n{json.dumps(models, indent=2)}',
             fg='red'
         )
         return
 
 
-node.add_command(create)
+node.add_command(config)
 node.add_command(deploy)
 node.add_command(destroy)
 node.add_command(test)

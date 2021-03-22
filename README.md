@@ -70,7 +70,7 @@ you can run these commands to get an example node running in minutes:
 
 ```
 numerai setup
-numerai node create --example numerai-python3
+numerai node config --example numerai-python3
 numerai node deploy
 numerai node test
 ```
@@ -82,12 +82,12 @@ Each trigger will be called Saturday morning right after a new round opens,
 and if the related job fails it will be triggered again around 24 hours later.
 
 NOTES:
-    - The default example does _not_ make stake changes; you will still have to do that manually.
-      Please refer to the [numerapi docs](https://numerapi.readthedocs.io/en/latest/api/numerapi.html#module-numerapi.numerapi)
-      for the methods you must call to do this.
-    - You can view resources and logs in the AWS Console (region us-east-1) for your
-      [ECS Cluster](https://console.aws.amazon.com/ecs/home?region=us-east-1#/clusters/numerai-submission-ecs-cluster/tasks)
-      and [other resources](https://console.aws.amazon.com/cloudwatch/home?region=us-east-1#logsV2:log-groups)
+- The default example does _not_ make stake changes; you will still have to do that manually.
+  Please refer to the [numerapi docs](https://numerapi.readthedocs.io/en/latest/api/numerapi.html#module-numerapi.numerapi)
+  for the methods you must call to do this.
+- You can view resources and logs in the AWS Console (region us-east-1) for your
+  [ECS Cluster](https://console.aws.amazon.com/ecs/home?region=us-east-1#/clusters/numerai-submission-ecs-cluster/tasks)
+  and [other resources](https://console.aws.amazon.com/cloudwatch/home?region=us-east-1#logsV2:log-groups)
 
 For more information on Prediction Nodes, please read the
 [Prediction Node Architecture wiki](https://github.com/numerai/numerai-cli/wiki/Prediction-Node-Architecture)
