@@ -155,9 +155,10 @@ def sanitize_message(message):
         return None
     all_keys = get_aws_keys() + get_numerai_keys()
     for key in all_keys:
-        try:
-            message = message.replace(key, f'...{key[-5:]}')
-        except AttributeError:
-            continue
+        if key:
+            try:
+                message = message.replace(key, f'...{key[-5:]}')
+            except AttributeError:
+                continue
 
     return message
