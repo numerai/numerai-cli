@@ -35,10 +35,12 @@ def test(ctx, local, command, verbose):
     node_config = load_or_init_nodes(node)
 
     if local:
+        click.secho("starting local test; building container...")
         docker.build(node_config, verbose)
+        click.secho("running container...")
         docker.run(node_config, verbose, command=command)
 
-    napi = base_api.Api(*get_numerai_keys(), verbosity="DEBUG")
+    napi = base_api.Api(*get_numerai_keys())
     try:
         click.secho("checking if webhook is reachable...")
         res = napi.raw_query(

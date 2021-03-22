@@ -47,9 +47,6 @@ def config(ctx, verbose, provider, size, path, example):
         click.secho(f'copying {example} example to {path}...')
         copy_example(example, path, verbose)
 
-    else:
-        check_for_dockerfile(path)
-
     # get nodes config object and set defaults for this node
     click.secho(f'configuring node "{node}"...')
     nodes_config = load_or_init_nodes()
@@ -70,6 +67,8 @@ def config(ctx, verbose, provider, size, path, example):
     if model_id:
         nodes_config[node]['model_id'] = model_id
     store_config(NODES_PATH, nodes_config)
+
+    check_for_dockerfile(nodes_config[node]['path'])
 
     # terraform apply
     provider_keys = get_provider_keys(node)
