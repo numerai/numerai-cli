@@ -15,14 +15,14 @@ If you have any problems, questions, comments, concerns, or general feedback, pl
 
 
 ## Contents
-- [Prerequisites](#prerequisites)
-- [Node Configuration](#node-configuration)
-- [Discovering Commands](#discovering-commands)
+- [Getting Started](#getting-started)
+- [Node Configuration Tutorial](#node-configuration)
+- [List of Commands](#list-of-commands)
 - [Troubleshooting and Feedback](#troubleshooting-and-feedback)
 - [Uninstall](#uninstall)
 
 
-## Prerequisites
+## Getting Started
 
 1.  Sign up a Numerai Account, get your Numerai API Keys, and your first Model:
     1.  Sign up at https://numer.ai/signup and log in to your new account
@@ -63,7 +63,7 @@ If you have any problems, questions, comments, concerns, or general feedback, pl
       If you don't know what that is, disregard this note
 
 
-## Node Configuration
+## Node Configuration Tutorial
 
 If you know you have all the prerequisites and have your AWS and Numerai API Keys at hand,
 you can run these commands to get an example node running in minutes:
@@ -89,11 +89,10 @@ NOTES:
   [ECS Cluster](https://console.aws.amazon.com/ecs/home?region=us-east-1#/clusters/numerai-submission-ecs-cluster/tasks)
   and [other resources](https://console.aws.amazon.com/cloudwatch/home?region=us-east-1#logsV2:log-groups)
 
-For more information on Prediction Nodes, please read the
-[Prediction Node Architecture wiki](https://github.com/numerai/numerai-cli/wiki/Prediction-Node-Architecture)
-      
+NEXT: [read the Prediction Nodes wiki](https://github.com/numerai/numerai-cli/wiki/Prediction-Nodes)
+to learn about Numerai Examples and how to customize Prediction Nodes.
 
-## Discovering Commands
+## List of Commands
 Use the `--help` option on any command to get a full description of options and sub-commands:
 ```
 numerai

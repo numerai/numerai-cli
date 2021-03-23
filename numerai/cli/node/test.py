@@ -45,14 +45,10 @@ def test(ctx, local, command, verbose):
     try:
         click.secho("checking if webhook is reachable...")
         res = api.raw_query(
-            '''
-            mutation ( $modelId: String! ) {
+            '''mutation ( $modelId: String! ) {
                 triggerModelWebhook( modelId: $modelId )
-            }
-            ''',
-            variables={
-                'modelId': node_config['model_id'],
-            },
+            }''',
+            variables={'modelId': node_config['model_id'],},
             authorization=True
         )
         trigger_id = res['data']['triggerModelWebhook']
@@ -71,14 +67,14 @@ def test(ctx, local, command, verbose):
 
     click.secho("checking for submission...")
     res = api.raw_query(
-        '''
-        query ( $modelId: String! ) {
+        '''query ( $modelId: String! ) {
             submissions( modelId: $modelId ){
                 round{ number, tournament },
                 triggerId
             }
-        }
-        '''
+        }''',
+        variables={'modelId': node_config['model_id']},
+        authorization=True
     )
     tournament = TOURNAMENT_SIGNALS if is_signals else TOURNAMENT_NUMERAI
     round = api.get_current_round(tournament)
