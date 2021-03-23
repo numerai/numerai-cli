@@ -45,7 +45,8 @@ def node(ctx, model_name, signals):
         ctx.ensure_object(dict)
         ctx.obj['model'] = {
             'id': model_id,
-            'name': f'{name_prefix}-{model_name}'
+            'name': f'{name_prefix}-{model_name}',
+            'is_signals': signals
         }
 
     except KeyError:

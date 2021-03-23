@@ -32,6 +32,7 @@ def test(ctx, local, command, verbose):
     ctx.ensure_object(dict)
     model = ctx.obj['model']
     node = model['name']
+    is_signals = model['is_signals']
     node_config = load_or_init_nodes(node)
 
     if local:
@@ -40,10 +41,10 @@ def test(ctx, local, command, verbose):
         click.secho("running container...")
         docker.run(node_config, verbose, command=command)
 
-    napi = base_api.Api(*get_numerai_keys())
+    api = base_api.Api(*get_numerai_keys())
     try:
         click.secho("checking if webhook is reachable...")
-        res = napi.raw_query(
+        res = api.raw_query(
             '''
             mutation ( $modelId: String! ) {
                 triggerModelWebhook( modelId: $modelId )
@@ -54,6 +55,7 @@ def test(ctx, local, command, verbose):
             },
             authorization=True
         )
+        trigger_id = res['data']['triggerModelWebhook']
         if verbose:
             click.echo(f"response:\n{res}")
 
@@ -66,6 +68,40 @@ def test(ctx, local, command, verbose):
 
     click.secho("webhook reachable checking task status...", fg='green')
     monitor(node, node_config, verbose, 15, LOG_TYPE_CLUSTER, follow_tail=True)
+
+    click.secho("checking for submission...")
+    res = api.raw_query(
+        '''
+        query ( $modelId: String! ) {
+            submissions( modelId: $modelId ){
+                round{ number, tournament },
+                triggerId
+            }
+        }
+        '''
+    )
+    tournament = TOURNAMENT_SIGNALS if is_signals else TOURNAMENT_NUMERAI
+    round = api.get_current_round(tournament)
+    print(round)
+    submission_triggers = [
+        sub['triggerId']
+        for sub in res['data']['submissions']
+        if sub['round']['number'] == round
+    ]
+    if len(submission_triggers) == 0:
+        click.secho("No submission found for current round, test failed", fg='red')
+        return
+
+    if trigger_id not in submission_triggers:
+        click.secho(
+            "Your node did not submit the Trigger ID assigned during this test, "
+            "please ensure your node uses numerapi >= 0.2.4 (ignore if using rlang)",
+            fg='red'
+        )
+        return
+
+    else:
+        click.secho("Correct trigger id submitted!", fg='green')
 
     click.secho("test complete", fg='green')
 
@@ -152,18 +188,27 @@ def monitor_aws(node, config, num_lines, log_type, follow_tail, verbose):
             if task['lastStatus'] == "STOPPED":
                 click.secho(f"\nTask is stopping...", fg='yellow')
 
-                if len(task['containers']) and 'exitCode' in task['containers'][0]:
+                if len(task['containers']) and 'reason' in task['containers'][0]:
                     container = task['containers'][0]
-                    click.secho(f"Container Exit code: {container['exitCode']}", fg='red')
-                    click.secho(f'Reason: {container["reason"]}', fg='red')
-
+                    click.secho(f"Container Exit code: {container['exitCode']}\n"
+                                f"Reason: {container['reason']}", fg='red')
                 break
 
+        start = time.time()
         if total_events == 0:
             while total_events == 0:
                 click.secho(f"No log events yet, still waiting...\r", fg='yellow', nl=False)
                 next_token, num_events = print_logs(logs_client, family, name)
                 total_events += num_events
+                if (time.time() - start) > 60 * 5:
+                    click.secho(
+                        f"\nTimeout after 5 minutes, please run the `numerai node status`"
+                        f"command for this model or visit the log console:"
+                        f"https://console.aws.amazon.com/cloudwatch/home?"
+                        f"region=us-east-1#logsV2:log-groups/log-group/$252Ffargate$252Fservice$252F{node}"
+                        f"/log-events/{name.replace('/', '$252F')}", fg='red'
+                    )
+                    break
 
         return
 
