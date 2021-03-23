@@ -72,6 +72,11 @@ def copy_files(src, dst, force=False, verbose=True):
 def copy_example(example, dest, verbose):
     example_dir = os.path.join(EXAMPLE_PATH, example)
     dst_dir = dest if dest is not None else example
+
+    if Path.home() == dst_dir:
+        click.secho("Do not copy example files to your home directory.", fg='red')
+        exit(1)
+
     click.echo(f'Copying {example} example to {dst_dir}')
     copy_files(example_dir, dst_dir, force=False, verbose=verbose)
 

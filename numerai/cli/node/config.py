@@ -66,7 +66,6 @@ def config(ctx, verbose, provider, size, path, example):
 
     path = nodes_config[node]['path']
     if example:
-        click.secho(f'copying {example} example to {path}...')
         copy_example(example, path, verbose)
 
     check_for_dockerfile(nodes_config[node]['path'])

@@ -1,6 +1,7 @@
 import base64
 import subprocess
 import sys
+from pathlib import Path
 
 import boto3
 import click
@@ -11,9 +12,18 @@ from numerai.cli.util.keys import sanitize_message, get_aws_keys, load_or_init_k
 
 
 def check_for_dockerfile(path):
-    if not os.path.exists(os.path.join(path, 'Dockerfile')):
+    dockerfile_path = os.path.join(path, 'Dockerfile')
+    if not os.path.exists(dockerfile_path):
         click.secho(
             f"No Dockerfile found in {path}, please ensure this node "
+            f"was created from an example or follows the Prediction Node Architecture. "
+            f"Learn More:\nhttps://github.com/numerai/numerai-cli/wiki/Prediction-Node-Architecture",
+            fg='red'
+        )
+        exit(1)
+    if Path.home() == dockerfile_path:
+        click.secho(
+            f"DO NOT PUT THE DOCKERFILE IN YOUR HOME PATH, please ensure this node "
             f"was created from an example or follows the Prediction Node Architecture. "
             f"Learn More:\nhttps://github.com/numerai/numerai-cli/wiki/Prediction-Node-Architecture",
             fg='red'

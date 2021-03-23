@@ -1,6 +1,7 @@
 import os
 import platform
 import sys
+import json
 
 import click
 
@@ -34,6 +35,7 @@ def is_win10_professional():
 def root_cause(subprocess_result):
     std_out = subprocess_result.stdout
     err_msg = subprocess_result.stderr
+    all = f'{std_out.decode("utf-8") }\n{err_msg.decode("utf-8") }'
     if b'is not recognized as an internal or external command' in err_msg:
         if sys.platform == 'win32':
             if is_win10_professional():
@@ -115,6 +117,14 @@ def root_cause(subprocess_result):
     if b'No Fargate configuration exists for given values.' in std_out:
         raise exception_with_msg("Invalid size preset, report this to Numerai")
 
+    if 'Can\'t add file' in all or b'Error processing tar file(exit status 1): unexpected EOF' in err_msg:
+        err_files = [f for f in all.split('\n') if 'Can\'t add file' in f]
+        raise exception_with_msg(
+            "Docker was unable to access some files while trying to build,"
+            "either another program is using them or docker does not have permissions"
+            f"to access them: {json.dumps(err_files, indent=2)}"
+        )
+
     # these are non-errors that either shouldn't be handled or are handled elsewhere
     if b'Can\'t update submission after deadline' in err_msg:
         return
@@ -123,6 +133,5 @@ def root_cause(subprocess_result):
 
     raise exception_with_msg(
         f'Numerai CLI was unable to identify an error, please try to use the '
-        f'"--verbose|-v" option for more information before reporting this\n'
-        + err_msg.decode('utf8')
+        f'"--verbose|-v" option for more information before reporting this\n{all}'
     )
