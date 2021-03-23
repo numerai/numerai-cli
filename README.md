@@ -70,7 +70,7 @@ you can run these commands to get an example node running in minutes:
 
 ```
 numerai setup
-numerai node config --example numerai-python3
+numerai node config --example tournament-python3
 numerai node deploy
 numerai node test
 ```
