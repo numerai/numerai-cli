@@ -16,6 +16,7 @@ If you have any problems, questions, comments, concerns, or general feedback, pl
 
 ## Contents
 - [Getting Started](#getting-started)
+- [Upgrading to 0.3.0](#upgrading-to-030)
 - [Node Configuration Tutorial](#node-configuration)
 - [List of Commands](#list-of-commands)
 - [Troubleshooting and Feedback](#troubleshooting-and-feedback)
@@ -58,10 +59,16 @@ If you have any problems, questions, comments, concerns, or general feedback, pl
     pip3 install --upgrade numerai-cli --user
     ```
     NOTES:
-    - This command will also work to update to new versions of the package in the future
+    - This command will also work to update to new versions of the package in the future.
     - If you are using python venv then drop the --user option. 
-      If you don't know what that is, disregard this note
-
+      If you don't know what that is, disregard this note.
+      
+## Upgrading to 0.3.0
+CLI 0.3.0 uses a new configuration format that is incompatible with versions 0.1 and 0.2,
+but a command to migrate you configuration is provided for you:
+```
+numerai upgrade
+```
 
 ## Node Configuration Tutorial
 
@@ -88,6 +95,7 @@ NOTES:
 - You can view resources and logs in the AWS Console (region us-east-1) for your
   [ECS Cluster](https://console.aws.amazon.com/ecs/home?region=us-east-1#/clusters/numerai-submission-ecs-cluster/tasks)
   and [other resources](https://console.aws.amazon.com/cloudwatch/home?region=us-east-1#logsV2:log-groups)
+- If you're getting
 
 NEXT: [read the Prediction Nodes wiki](https://github.com/numerai/numerai-cli/wiki/Prediction-Nodes)
 to learn about Numerai Examples and how to customize Prediction Nodes.

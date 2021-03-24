@@ -31,8 +31,6 @@ def copy_example(example, dest, verbose):
     files.copy_example(example, dest, verbose)
 
 
-
-
 @click.command()
 def list_constants():
     """

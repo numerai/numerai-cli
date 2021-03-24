@@ -38,7 +38,7 @@ def setup(provider, verbose):
 
     # copy tf files
     click.secho("copying terraform files...")
-    copy_files(TERRAFORM_PATH, CONFIG_PATH, verbose=True)
+    copy_files(TERRAFORM_PATH, CONFIG_PATH, force=True, verbose=True)
 
     # terraform init
     click.secho("initializing terraform to provision cloud infrastructure...")

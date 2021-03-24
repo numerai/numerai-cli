@@ -41,12 +41,12 @@ def upgrade(verbose):
     # MOVE KEYS FILE
     if os.path.isfile(old_key_path):
         temp_key_path = os.path.join(old_config_path, '.keys')
-        click.secho(f"\tmoving '{old_key_path}' to '{temp_key_path}'",)
+        click.secho(f"\tmoving old keyfile from '{old_key_path}' to '{temp_key_path}'",)
         shutil.move(old_key_path, temp_key_path)
 
     # MOVE CONFIG FILE
     if os.path.exists(old_config_path):
-        click.secho(f"\tmoving {old_config_path} to {CONFIG_PATH}",)
+        click.secho(f"\tmoving old config from {old_config_path} to {CONFIG_PATH}",)
         shutil.move(old_config_path, CONFIG_PATH)
 
     # INIT KEYS AND NODES
