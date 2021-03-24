@@ -25,9 +25,13 @@ from numerai.cli.util.keys import get_aws_keys, get_numerai_keys
 @click.pass_context
 def test(ctx, local, command, verbose):
     """
-    This will POST to your webhook, and trigger compute to run in the cloud
+    Full end-to-end cloud or local test for a Prediction Node.
 
-    You can observe the logs for the running job by running `numerai compute logs`
+    This checks that:
+    1. Numerai can reach the Trigger
+    2. The Trigger schedules a Container to run
+    3. The Container starts up on the Compute Cluster
+    4. The Container uploads a submission with the Trigger ID assigned to it
     """
     ctx.ensure_object(dict)
     model = ctx.obj['model']
@@ -162,7 +166,7 @@ def monitor_aws(node, config, num_lines, log_type, follow_tail, verbose):
 
             else:
                 name = streams[0]['logStreamName']
-                msg = f"\n{msg} Log file created: {name}"
+                msg = f"\n{msg}Log file created: {name}"
                 click.secho(msg, fg='green')
                 break
 
@@ -288,10 +292,10 @@ def print_logs(logs_client, family, name, limit=None, next_token=None):
 @click.pass_context
 def status(ctx, verbose, num_lines, log_type, follow_tail):
     """
-    Get the logs from the latest task
+    Get the logs from the latest task for this node
 
     Logs are not created until a task is in the RUNNING state,
-    so the logs returned by this command might be out of date
+    so the logs returned by this command might be out of date.
     """
     ctx.ensure_object(dict)
     model = ctx.obj['model']

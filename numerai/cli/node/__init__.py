@@ -24,7 +24,7 @@ from numerai.cli.util.keys import get_numerai_keys
 @click.pass_context
 def node(ctx, model_name, signals):
     """
-    Commands to create, deploy, test, and destroy Prediction Nodes.
+    Commands to manage and test Prediction Nodes.
     """
     if not os.path.exists(CONFIG_PATH):
         click.secho('cannot find .numerai config directory, '
@@ -52,10 +52,11 @@ def node(ctx, model_name, signals):
     except KeyError:
         click.secho(
             f'No tournament {tournament} model with name "{model_name}" '
-            f'found in list of models:\n{json.dumps(models, indent=2)}',
+            f'found in list of models:\n{json.dumps(models, indent=2)}'
+            f'\n(use the "-s" flag for signals models)',
             fg='red'
         )
-        return
+        exit(1)
 
 
 node.add_command(config)

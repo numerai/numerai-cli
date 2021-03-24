@@ -125,6 +125,12 @@ def root_cause(subprocess_result):
             f"to access them: {json.dumps(err_files, indent=2)}"
         )
 
+    # TODO: handle linux permissions error
+    # if b'' in err_msg:
+    #     raise exception_with_msg(
+    #         "https://docs.docker.com/engine/security/rootless/"
+    #     )
+
     # these are non-errors that either shouldn't be handled or are handled elsewhere
     if b'Can\'t update submission after deadline' in err_msg:
         return

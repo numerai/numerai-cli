@@ -15,7 +15,7 @@ from numerai.cli.util.docker import terraform
 @click.command()
 def uninstall():
     """
-    Completely removes everything created by numerai-cli and uninstall the package.
+    Removes cloud resources, local config, and python package.
     """
     click.secho(
     '''DANGER WILL ROBINSON, This will:

@@ -18,7 +18,7 @@ from numerai.cli.util.keys import \
 @click.option('--verbose', '-v', is_flag=True)
 def upgrade(verbose):
     """
-    Upgrades configuration from <=0.2 format to >=0.3 format
+    Upgrades configuration from <=0.2 format to >=0.3 format.
     """
     home = str(Path.home())
     old_key_path = os.path.join(home, '.numerai')

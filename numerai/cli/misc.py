@@ -31,41 +31,19 @@ def copy_example(example, dest, verbose):
     files.copy_example(example, dest, verbose)
 
 
+
+
 @click.command()
 def list_constants():
     """
-    Default and constant values used by the CLI
+    Display default and constant values used by the CLI.
     """
-    click.secho(f'''
-    
-    ---Tournament Numbers---
-    TOURNAMENT_NUMERAI: {TOURNAMENT_NUMERAI}
-    TOURNAMENT_SIGNALS: {TOURNAMENT_SIGNALS}
-
-    ---Paths---
-    PACKAGE_PATH: {PACKAGE_PATH}
-    CONFIG_PATH: {CONFIG_PATH}
-    KEYS_PATH: {KEYS_PATH}
-    NODES_PATH: {NODES_PATH}
-    TERRAFORM_PATH: {TERRAFORM_PATH}
-    EXAMPLE_PATH: {EXAMPLE_PATH}
-
-    ---Cloud Interaction---
-    PROVIDERS: {PROVIDERS}
-    LOG_TYPES: {LOG_TYPES}
-
-    ---Prediction Nodes---
-    DEFAULT_EXAMPLE: {DEFAULT_EXAMPLE}
-    DEFAULT_SIZE: {DEFAULT_SIZE}
-    DEFAULT_PROVIDER: {DEFAULT_PROVIDER}
-    DEFAULT_PATH: {DEFAULT_PATH}
-    DEFAULT_SETTINGS: {json.dumps(DEFAULT_SETTINGS, indent=2)}
-    SIZE_PRESETS:
-    ''')
+    click.secho(CONSTANTS_STR, fg='green')
+    click.secho("SIZE_PRESETS:", fg='green')
     for size, preset in SIZE_PRESETS.items():
         suffix = '(default)' if size == DEFAULT_SIZE else ''
         click.secho(
-            f'\t{size} -> cpus: {preset[0] / 1024}, '
+            f'  {size} -> cpus: {preset[0] / 1024}, '
             f'mem: {preset[1] / 1024} GB {suffix}',
             fg='green' if size == DEFAULT_SIZE else 'yellow'
         )

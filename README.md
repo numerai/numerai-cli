@@ -93,13 +93,23 @@ NEXT: [read the Prediction Nodes wiki](https://github.com/numerai/numerai-cli/wi
 to learn about Numerai Examples and how to customize Prediction Nodes.
 
 ## List of Commands
-Use the `--help` option on any command to get a full description of options and sub-commands:
+Use the `--help` option on any command or sub-command to get a full description of it:
 ```
 numerai
 numerai --help
 numerai [command] --help
 numerai [command] [sub-command] --help
 ```
+Each command or sub-command takes its own options, for example if you want to copy the 
+numerai signals example and configure a node for a signals model with large memory 
+requirements you'd use something like this (replacing [MODEL NAME] with the relevant 
+signals model name):
+```
+numerai node -m [MODEL NAME] -s config -s mem-lg -e signals-python3
+```
+Here, the `node` command takes a model name with `-m` and a flag `-s` to detect if it's 
+a signals model or numerai model. The `config` sub-command also takes a `-s` option to
+specify the size of the node to configure.
 
 
 ## Troubleshooting and Feedback

@@ -17,7 +17,7 @@ from numerai.cli.util.keys import \
 @click.option('--verbose', '-v', is_flag=True)
 def setup(provider, verbose):
     """
-    Initializes configuration directory and provider API keys
+    Initializes cli and provider API keys.
     """
     # check for old format, tell user to run numerai upgrade first
     if os.path.isfile(CONFIG_PATH) or os.path.isdir('.numerai'):
