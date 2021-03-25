@@ -28,3 +28,5 @@ def deploy(ctx, verbose):
 
     click.echo('cleaning up local images...')
     docker.cleanup(node_config)
+
+    click.secho('✓ Prediction Node deployed. Next: test your node.', fg='green')

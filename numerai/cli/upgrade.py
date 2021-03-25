@@ -30,8 +30,8 @@ def upgrade(verbose):
 
     if not os.path.exists(old_config_path):
         click.secho(
-            'Run this command from the directory in which you first ran '
-            '`numerai setup` (it should have the .numerai folder in it)'
+            'Run this command from the directory in which you first ran `numerai setup`'
+            ' for CLI version 0.1 and 0.2 (it should have the .numerai folder in it)'
         )
         return
 
@@ -121,6 +121,6 @@ def upgrade(verbose):
                   env_vars=load_or_init_keys('aws'),
                   inputs={'node_config_file': 'nodes.json'})
 
-    click.secho('Upgrade complete!', fg='green')
+    click.secho('✓ Upgrade complete!', fg='green')
     click.secho('run `numerai node config --help` to learn how to '
                 'register this directory as a prediction node')

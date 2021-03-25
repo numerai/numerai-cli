@@ -97,4 +97,5 @@ def config(ctx, verbose, provider, size, path, example):
     click.echo(f'registering webhook {webhook_url} for model {model_id}...')
 
     napi.set_submission_webhook(model_id, webhook_url)
-    click.secho('Prediction Node configured successfully', fg='green')
+    click.secho('✓ Prediction Node configured successfully. '
+                'Next: deploy and test your node', fg='green')

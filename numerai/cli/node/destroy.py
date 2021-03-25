@@ -59,3 +59,5 @@ def destroy(ctx, verbose):
         webhook_url = node_config['webhook_url']
         click.echo(f'deregistering webhook {webhook_url} for model {model_id}...')
         napi.set_submission_webhook(model_id, None)
+
+    click.secho("✓ Prediction Node destroyed successfully", fg='green')

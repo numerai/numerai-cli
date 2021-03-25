@@ -62,7 +62,7 @@ def test(ctx, local, command, verbose):
         click.secho(f"Trigger ID assigned for this test: {trigger_id}", fg='green')
 
     except ValueError as e:
-        click.secho(f'there was a problem calling your webhook: {str(e)}', fg='red')
+        click.secho(f'there was a problem calling your webhook...', fg='red')
         if 'Internal Server Error' in str(e):
             click.secho('attempting to dump webhook logs', fg='red')
             monitor(node, node_config, True, 20, LOG_TYPE_WEBHOOK, False)
@@ -104,7 +104,7 @@ def test(ctx, local, command, verbose):
     else:
         click.secho("Submission uploaded correctly", fg='green')
 
-    click.secho("Test complete, your model will now submit automatically!", fg='green')
+    click.secho("✓ Test complete, your model now submits automatically!", fg='green')
 
 
 def monitor(node, config, verbose, num_lines, log_type, follow_tail):
@@ -132,8 +132,8 @@ def monitor_aws(node, config, num_lines, log_type, follow_tail, verbose):
         aws_secret_access_key=aws_secret)
 
     if log_type == LOG_TYPE_WEBHOOK:
-        family = config['webhook_log_group']
-        get_name_and_print_logs(logs_client, family, num_lines)
+        get_name_and_print_logs(logs_client, config['api_log_group'], num_lines)
+        get_name_and_print_logs(logs_client, config['webhook_log_group'], num_lines)
         return
 
     if log_type == LOG_TYPE_CLUSTER:

@@ -79,7 +79,6 @@ def config_numerai_keys():
 
     numerai_public = prompt_for_key('NUMERAI_PUBLIC_ID', numerai_public)
     numerai_secret = prompt_for_key('NUMERAI_SECRET_KEY', numerai_secret)
-    print(numerai_public, numerai_secret)
     check_numerai_validity(numerai_public, numerai_secret)
 
     keys_config = load_or_init_keys()
