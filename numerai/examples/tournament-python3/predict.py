@@ -47,6 +47,7 @@ def train(train_data_path, model_id, model, force_training=False):
     logging.info('extracting features and targets')
     train_features = train_data.iloc[:, 3:-1]   # get all rows and all columns from 4th to last-1
     train_targets = train_data.iloc[:, -1]      # get all rows and only last column
+    del train_data
 
     logging.info(f'training model')
     model.fit(X=train_features, y=train_targets)
@@ -64,6 +65,7 @@ def predict(model, predict_data_path):
     logging.info('extracting features')
     predict_ids = predict_data.iloc[:, 0]           # get all rows and only first column
     predict_features = predict_data.iloc[:, 3:-1]   # get all rows and all columns from 4th to last-1
+    del predict_data
 
     logging.info(f'generating predictions')
     predictions = model.predict(predict_features)
@@ -86,11 +88,9 @@ def submit(predictions, predict_output_path, model_id=None):
 
 def main():
     train_data_path, predict_data_path, predict_output_path = download_data()
-
-    for model_id, model_type in MODEL_CONFIGS:
-        trained_model = train(train_data_path, model_id, model_type)
-        predictions = predict(trained_model, predict_data_path)
-        submit(predictions, predict_output_path, model_id)
+    trained_model = train(train_data_path, MODEL_ID, MODEL)
+    predictions = predict(trained_model, predict_data_path)
+    submit(predictions, predict_output_path, MODEL_ID)
 
 
 if __name__ == '__main__':

@@ -58,7 +58,7 @@ def test(ctx, local, command, verbose):
         trigger_id = res['data']['triggerModelWebhook']
         if verbose:
             click.echo(f"response:\n{res}")
-        click.secho(f"Webhook reachable", fg='green')
+        click.secho(f"Webhook reachable...", fg='green')
         click.secho(f"Trigger ID assigned for this test: {trigger_id}", fg='green')
 
     except ValueError as e:
@@ -68,7 +68,7 @@ def test(ctx, local, command, verbose):
             monitor(node, node_config, True, 20, LOG_TYPE_WEBHOOK, False)
         return
 
-    click.secho("webhook reachable checking task status...", fg='green')
+    click.secho("checking task status...")
     monitor(node, node_config, verbose, 15, LOG_TYPE_CLUSTER, follow_tail=True)
 
     click.secho("checking for submission...")
@@ -162,7 +162,8 @@ def monitor_aws(node, config, num_lines, log_type, follow_tail, verbose):
             msg = f"Task status: {task['lastStatus']}."
 
             if task['lastStatus'] == "STOPPED":
-
+                click.secho(f"{msg} Checking for logs...", fg='yellow')
+                break
 
             elif len(streams) == 0:
                 click.secho(
@@ -173,7 +174,7 @@ def monitor_aws(node, config, num_lines, log_type, follow_tail, verbose):
 
             else:
                 name = streams[0]['logStreamName']
-                click.secho(f"\n{msg}Log file created: {name}", fg='green')
+                click.secho(f"\n{msg} Log file created: {name}", fg='green')
                 break
 
         # print out the logs

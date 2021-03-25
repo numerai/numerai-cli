@@ -97,6 +97,7 @@ def train(train_data, feature_names, model_id, model, force_training=False):
 
     logging.info('training model')
     model.fit(train_data[feature_names], train_data[TARGET_NAME])
+    del train_data
 
     logging.info('saving model')
     joblib.dump(model, model_name)
@@ -113,6 +114,9 @@ def predict(test_data, live_data, live_data_date, feature_names, model):
 
     # prepare and writeout example file
     diagnostic_df = pd.concat([test_data, live_data])
+    del test_data
+    del live_data
+
     diagnostic_df["friday_date"] = diagnostic_df.friday_date.fillna(
         live_data_date.strftime("%Y%m%d")
     ).astype(int)
@@ -145,10 +149,9 @@ def main():
     last_friday = datetime.now() + relativedelta(weekday=FR(-1))
     feature_names, train_data, test_data, live_data = download_data(last_friday)
 
-    for model_id, model_obj in MODEL_CONFIGS:
-        model = train(train_data, feature_names, model_id, model_obj)
-        predictions = predict(test_data, live_data, last_friday, feature_names, model)
-        submit(predictions, "example_signals.csv", model_id)
+    model = train(train_data, feature_names, MODEL_ID, MODEL)
+    predictions = predict(test_data, live_data, last_friday, feature_names, model)
+    submit(predictions, "example_signals.csv", MODEL_ID)
 
 
 if __name__ == "__main__":
