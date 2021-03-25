@@ -31,7 +31,7 @@ def upgrade(verbose):
     if not os.path.exists(old_config_path):
         click.secho(
             'Run this command from the directory in which you first ran '
-            '"numerai setup" (it should have the .numerai folder in it)'
+            '`numerai setup` (it should have the .numerai folder in it)'
         )
         return
 
@@ -62,12 +62,12 @@ def upgrade(verbose):
     old_suburl_path = os.path.join(CONFIG_PATH, 'submission_url.txt')
     if os.path.exists(old_suburl_path):
         click.secho(f"\tdeleting {old_suburl_path}, you can populate the "
-                    f"new nodes.json file with 'numerai node config'")
+                    f"new nodes.json file with `numerai node config`")
         os.remove(old_suburl_path)
     old_docker_path = os.path.join(CONFIG_PATH, 'docker_repo.txt')
     if os.path.exists(old_docker_path):
         click.secho(f"\tdeleting {old_docker_path}, you can populate the "
-                    f"new nodes.json file with 'numerai node config'")
+                    f"new nodes.json file with `numerai node config`")
         os.remove(old_docker_path)
 
     # UPGRADE, RENAME, AND UPDATE TERRAFORM FILES
@@ -122,5 +122,5 @@ def upgrade(verbose):
                   inputs={'node_config_file': 'nodes.json'})
 
     click.secho('Upgrade complete!', fg='green')
-    click.secho('run "numerai node config --help" to learn how to '
+    click.secho('run `numerai node config --help` to learn how to '
                 'register this directory as a prediction node')

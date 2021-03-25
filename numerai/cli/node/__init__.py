@@ -28,7 +28,7 @@ def node(ctx, model_name, signals):
     """
     if not os.path.exists(CONFIG_PATH):
         click.secho('cannot find .numerai config directory, '
-                    'run "numerai setup"', fg='red')
+                    'run `numerai setup`', fg='red')
         exit(1)
 
     if signals:

@@ -22,7 +22,7 @@ def setup(provider, verbose):
     # check for old format, tell user to run numerai upgrade first
     if os.path.isfile(CONFIG_PATH) or os.path.isdir('.numerai'):
         click.secho('It looks like you have an old configuration of numerai-cli,'
-                    'run "numerai upgrade" first.')
+                    'run `numerai upgrade` first.')
         return
 
     # setup numerai keys

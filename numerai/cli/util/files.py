@@ -87,3 +87,4 @@ def copy_example(example, dest, verbose):
             f.write("numerai_dataset*\n")
             f.write(".git\n")
             f.write("venv\n")
+    return dst_dir

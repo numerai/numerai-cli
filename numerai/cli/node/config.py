@@ -23,7 +23,7 @@ from numerai.cli.util.keys import \
 @click.option(
     '--size', '-s', type=str,
     help=f"CPU credits (cores * 1024) and Memory (in MiB) used in the deployed container. "
-         f"Defaults to {DEFAULT_SIZE} (run 'numerai list-constants' to see options).")
+         f"Defaults to {DEFAULT_SIZE} (run `numerai list-constants` to see options).")
 @click.option(
     '--path', '-p', type=str,
     help=f"Target a file path. Defaults to current directory ({DEFAULT_PATH}).")
@@ -42,6 +42,9 @@ def config(ctx, verbose, provider, size, path, example):
     model = ctx.obj['model']
     node = model['name']
     model_id = model['id']
+
+    if example is not None:
+        path = copy_example(example, path, verbose)
 
     # get nodes config object and set defaults for this node
     click.secho(f'configuring node "{node}"...')
@@ -62,13 +65,10 @@ def config(ctx, verbose, provider, size, path, example):
         nodes_config[node]['path'] = os.path.abspath(path)
     if model_id:
         nodes_config[node]['model_id'] = model_id
-    store_config(NODES_PATH, nodes_config)
 
-    path = nodes_config[node]['path']
-    if example:
-        copy_example(example, path, verbose)
-
+    # double check there is a dockerfile in the path we are about to configure
     check_for_dockerfile(nodes_config[node]['path'])
+    store_config(NODES_PATH, nodes_config)
 
     # terraform apply
     provider_keys = get_provider_keys(node)
@@ -81,7 +81,11 @@ def config(ctx, verbose, provider, size, path, example):
     # terraform output for AWS nodes
     click.echo(f'saving node configuration to {NODES_PATH}...')
     res = terraform(f"output -json aws_nodes", verbose).stdout.decode('utf-8')
-    aws_nodes = json.loads(res)
+    try:
+        aws_nodes = json.loads(res)
+    except json.JSONDecodeError:
+        click.secho("failed to save node configuration, pleas retry.", fg='red')
+        return
     for node_name, data in aws_nodes.items():
         nodes_config[node_name].update(data)
     store_config(NODES_PATH, nodes_config)

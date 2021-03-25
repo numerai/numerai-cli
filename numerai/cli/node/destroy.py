@@ -25,9 +25,7 @@ def destroy(ctx, verbose):
     model = ctx.obj['model']
     node = model['name']
     if not os.path.exists(CONFIG_PATH):
-        click.secho(f".numerai directory not setup, "
-                    f"run 'numerai setup'...",
-                    fg='red')
+        click.secho(f".numerai directory not setup, run `numerai setup`...", fg='red')
         return
 
     try:

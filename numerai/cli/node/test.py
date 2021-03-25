@@ -47,7 +47,7 @@ def test(ctx, local, command, verbose):
 
     api = base_api.Api(*get_numerai_keys())
     try:
-        click.secho("checking if webhook is reachable...")
+        click.secho("Checking if Numerai can Trigger your model...")
         res = api.raw_query(
             '''mutation ( $modelId: String! ) {
                 triggerModelWebhook( modelId: $modelId )
@@ -58,6 +58,8 @@ def test(ctx, local, command, verbose):
         trigger_id = res['data']['triggerModelWebhook']
         if verbose:
             click.echo(f"response:\n{res}")
+        click.secho(f"Webhook reachable", fg='green')
+        click.secho(f"Trigger ID assigned for this test: {trigger_id}", fg='green')
 
     except ValueError as e:
         click.secho(f'there was a problem calling your webhook: {str(e)}', fg='red')
@@ -82,7 +84,6 @@ def test(ctx, local, command, verbose):
     )
     tournament = TOURNAMENT_SIGNALS if is_signals else TOURNAMENT_NUMERAI
     round = api.get_current_round(tournament)
-    print(round)
     submission_triggers = [
         sub['triggerId']
         for sub in res['data']['submissions']
@@ -101,9 +102,9 @@ def test(ctx, local, command, verbose):
         return
 
     else:
-        click.secho("Correct trigger id submitted!", fg='green')
+        click.secho("Submission uploaded correctly", fg='green')
 
-    click.secho("test complete", fg='green')
+    click.secho("Test complete, your model will now submit automatically!", fg='green')
 
 
 def monitor(node, config, verbose, num_lines, log_type, follow_tail):
@@ -158,18 +159,22 @@ def monitor_aws(node, config, num_lines, log_type, follow_tail, verbose):
                 streams['logStreams']
             ))
 
-            msg = f"Task status: {task['lastStatus']}. "
-            if len(streams) == 0:
-                msg += f"Waiting for log file to be created...{'.' * i}\r"
-                click.secho(msg, fg='yellow', nl=False)
+            msg = f"Task status: {task['lastStatus']}."
+
+            if task['lastStatus'] == "STOPPED":
+
+
+            elif len(streams) == 0:
+                click.secho(
+                    f"{msg} Waiting for log file to be created..."
+                    f"{'.' * i}\r", fg='yellow', nl=False
+                )
                 time.sleep(2)
 
             else:
                 name = streams[0]['logStreamName']
-                msg = f"\n{msg}Log file created: {name}"
-                click.secho(msg, fg='green')
+                click.secho(f"\n{msg}Log file created: {name}", fg='green')
                 break
-
 
         # print out the logs
         next_token, num_events = print_logs(logs_client, family, name, limit=num_lines)
@@ -203,7 +208,7 @@ def monitor_aws(node, config, num_lines, log_type, follow_tail, verbose):
                 if (time.time() - start) > 60 * 5:
                     click.secho(
                         f"\nTimeout after 5 minutes, please run the `numerai node status`"
-                        f"command for this model or visit the log console:"
+                        f"command for this model or visit the log console:\n"
                         f"https://console.aws.amazon.com/cloudwatch/home?"
                         f"region=us-east-1#logsV2:log-groups/log-group/$252Ffargate$252Fservice$252F{node}"
                         f"/log-events/{name.replace('/', '$252F')}", fg='red'
@@ -248,9 +253,9 @@ def get_name_and_print_logs(logs_client, family, limit, next_token=None, raise_o
             return False
         raise exception_with_msg(
             "No logs found. Make sure the webhook has triggered by checking "
-            "'numerai node status' and make sure a task is in the RUNNING state "
+            "`numerai node status` and make sure a task is in the RUNNING state "
             "(this can take a few minutes). Also, make sure your webhook has "
-            "triggered at least once by running 'numerai node test'")
+            "triggered at least once by running `numerai node test`")
 
     name = streams['logStreams'][0]['logStreamName']
     print_logs(logs_client, family, name, limit, next_token)

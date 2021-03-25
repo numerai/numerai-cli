@@ -6,6 +6,7 @@ from urllib import request
 import click
 
 from numerai.cli.util.files import load_or_init_nodes
+from numerai.cli.util.debug import is_win8, is_win10
 from numerai.cli.util.keys import \
     check_aws_validity, \
     check_numerai_validity, \
@@ -22,6 +23,8 @@ def doctor():
     # Check environment pre-reqs
     click.secho("Running the environment setup script for your OS...")
     env_setup_cmd = None
+    env_setup_status = -1
+    env_setup_err = ''
     if sys.platform == "linux" or sys.platform == "linux2":
         env_setup_cmd = 'sudo apt update && sudo apt install -y libcurl4 curl && ' \
                         'sudo curl https://raw.githubusercontent.com/numerai/numerai-cli/master/scripts/setup-ubu.sh ' \
@@ -30,16 +33,21 @@ def doctor():
     elif sys.platform == "darwin":
         env_setup_cmd = 'curl https://raw.githubusercontent.com/numerai/numerai-cli/master/scripts/setup-mac.sh | bash'
 
-    elif sys.platform == "win32":
+    elif is_win10():
         env_setup_cmd = 'powershell -command "$Script = Invoke-WebRequest ' \
                         '\'https://raw.githubusercontent.com/numerai/numerai-cli/master/scripts/setup-win10.ps1\'; ' \
                         '$ScriptBlock = [ScriptBlock]::Create($Script.Content); Invoke-Command -ScriptBlock $ScriptBlock"'
 
-    if env_setup_cmd is None:
+    elif is_win8():
+        # TODO: check if more is needed?
+        env_setup_cmd = 'docker info'
+
+    else:
         env_setup_status = 1
         env_setup_err = f"Unrecognized Operating System {sys.platform}, " \
                         f"cannot run environment setup script, skipping..."
-    else:
+
+    if env_setup_cmd is not None:
         res = subprocess.run(
             env_setup_cmd,
             shell=True,
@@ -83,20 +91,20 @@ def doctor():
     if env_setup_status != 0:
         click.secho(f"✖ Environment setup incomplete:", fg='red')
         click.secho(env_setup_err, fg='red')
-        click.secho(f"Ensure your OS is supported and "
-                    f"Docker/Python3 are installed to fix", fg='red')
+        click.secho(f"Ensure your OS is supported and read the Troubleshooting wiki: "
+                    f"https://github.com/numerai/numerai-cli/wiki/Troubleshooting", fg='red')
     else:
         click.secho("✓ Environment setup with Docker and Python", fg='green')
 
     if curr_ver < versions[0]:
         click.secho(f"✖ numerai-cli needs an upgrade"
-                    f"(run 'pip3 install -U numerai-cli' to fix)", fg='red')
+                    f"(run `pip3 install -U numerai-cli` to fix)", fg='red')
     else:
         click.secho("✓ numerai-cli is up to date", fg='green')
 
     if len(invalid_providers):
         click.secho(f"✖ Invalid provider keys: {invalid_providers}"
-                    f"(run 'numerai setp' to fix)", fg='red')
+                    f"(run `numerai setup` to fix)", fg='red')
 
     else:
         click.secho("✓ API Keys working", fg='green')

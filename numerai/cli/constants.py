@@ -43,7 +43,7 @@ SIZE_PRESETS = {
 }
 
 DEFAULT_EXAMPLE = 'tournament-python3'
-DEFAULT_SIZE = "gen-md"
+DEFAULT_SIZE = "mem-md"
 DEFAULT_PROVIDER = PROVIDER_AWS
 DEFAULT_PATH = os.getcwd()
 DEFAULT_SETTINGS = {
@@ -53,7 +53,8 @@ DEFAULT_SETTINGS = {
     'path': DEFAULT_PATH
 }
 
-CONSTANTS_STR = f'''
+CONSTANTS_STR = f'''Default values (not your configured node values):
+
 ---Tournament Numbers---
 TOURNAMENT_NUMERAI: {TOURNAMENT_NUMERAI}
 TOURNAMENT_SIGNALS: {TOURNAMENT_SIGNALS}

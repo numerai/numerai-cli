@@ -12,7 +12,8 @@ RUN pip install -r requirements.txt
 ADD . .
 
 # These are docker arguments that `numerai node deploy/test` will always pass into docker.
-# They are then set in your environment, so that you can access them from your script like so:
+# They are then set in your environment so that numerapi can access them when uploading submissions.
+# You can also access them from your script like so:
     # import os
     # public_id = os.environ["NUMERAI_PUBLIC_ID"]
     # secret_key = os.environ["NUMERAI_SECRET_KEY"]
@@ -21,6 +22,9 @@ ENV NUMERAI_PUBLIC_ID=$NUMERAI_PUBLIC_ID
 
 ARG NUMERAI_SECRET_KEY
 ENV NUMERAI_SECRET_KEY=$NUMERAI_SECRET_KEY
+
+ARG MODEL_ID
+ENV MODEL_ID=$MODEL_ID
 
 # This sets the default command to run your docker container.
 # It runs by default in the cloud and when running `numerai node test`.

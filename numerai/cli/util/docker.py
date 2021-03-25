@@ -97,6 +97,7 @@ def build(node_config, verbose):
     build_arg_str = ''
     for arg in numerai_keys:
         build_arg_str += f' --build-arg {arg}={numerai_keys[arg]}'
+    build_arg_str += f' --build-arg MODEL_ID={node_config["model_id"]}'
 
     cmd = f'docker build -t {node_config["docker_repo"]} ' \
           f'{build_arg_str} {node_config["path"]}'

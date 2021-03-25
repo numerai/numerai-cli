@@ -35,6 +35,8 @@ def copy_example(example, dest, verbose):
 def list_constants():
     """
     Display default and constant values used by the CLI.
+
+    Does NOT show currently configured node values.
     """
     click.secho(CONSTANTS_STR, fg='green')
     click.secho("SIZE_PRESETS:", fg='green')

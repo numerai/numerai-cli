@@ -16,30 +16,16 @@ import pandas as pd
 from sklearn.ensemble import GradientBoostingRegressor
 from dateutil.relativedelta import relativedelta, FR
 
-
 TARGET_NAME = "target"
 PREDICTION_NAME = "signal"
 TRAINED_MODEL_PREFIX = './trained_model'
 
-# Define models here as (ID, model instance),
-# a model ID of None is submitted as your default model
-MODEL_CONFIGS = [
-    (None, GradientBoostingRegressor(subsample=0.1)),
-    # (YOUR MODEL ID, LinearRegression(n_jobs=10))
-    #  etc...
-]
+# Pull model id from "MODEL_ID" environment variable
+# defaults to None, change to a model id from
+MODEL_ID = os.getenv('MODEL_ID', None)
+MODEL = GradientBoostingRegressor(subsample=0.1)
 
-if os.getenv('NUMERAI_PUBLIC_ID') and os.getenv('NUMERAI_SECRET_KEY'):
-    napi = numerapi.SignalsAPI()
-
-else:
-    config = configparser.ConfigParser()
-    config.read('../.numerai/.keys')
-    # initialize API client
-    napi = numerapi.SignalsAPI(
-        public_id=config['numerai']['NUMERAI_PUBLIC_ID'],
-        secret_key=config['numerai']['NUMERAI_SECRET_KEY']
-    )
+napi = numerapi.SignalsAPI()
 
 
 def download_data(live_data_date):

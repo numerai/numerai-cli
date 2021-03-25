@@ -6,13 +6,11 @@ import pandas as pd
 from sklearn.linear_model import LinearRegression
 
 TRAINED_MODEL_PREFIX = './trained_model'
-# Define models here as (ID, model instance),
-# a model ID of None is submitted as your default model
-MODEL_CONFIGS = [
-    (None, LinearRegression()),
-    # (YOUR MODEL ID, LinearRegression(n_jobs=10))
-    #  etc...
-]
+
+# Pull model id from "MODEL_ID" environment variable
+# defaults to None, change to a model id from
+MODEL_ID = os.getenv('MODEL_ID', None)
+MODEL = LinearRegression()
 
 # initialize API client
 napi = numerapi.NumerAPI()

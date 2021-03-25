@@ -16,15 +16,18 @@ def is_win8():
     return False
 
 
-def is_win10_professional():
+def is_win10():
     if sys.platform == 'win32':
-        version = platform.win32_ver()[0]
+        return '10' in platform.win32_ver()[0]
+    return False
 
-        if version == '10':
-            # for windows 10 only, we need to know if it's pro vs home
-            import winreg
-            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Windows NT\CurrentVersion") as key:
-                return winreg.QueryValueEx(key, "EditionID")[0] == 'Professional'
+
+def is_win10_professional():
+    if is_win10():
+        # for windows 10 only, we need to know if it's pro vs home
+        import winreg
+        with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Windows NT\CurrentVersion") as key:
+            return winreg.QueryValueEx(key, "EditionID")[0] == 'Professional'
 
     return False
 
@@ -125,11 +128,11 @@ def root_cause(subprocess_result):
             f"to access them: {json.dumps(err_files, indent=2)}"
         )
 
-    # TODO: handle linux permissions error
-    # if b'' in err_msg:
-    #     raise exception_with_msg(
-    #         "https://docs.docker.com/engine/security/rootless/"
-    #     )
+    if b'PermissionError: [Errno 13] Permission denied: \'modules.json\'' in err_msg:
+        raise exception_with_msg(
+            "It looks like Docker daemon is running as root, please restart in rootless"
+            "mode: https://docs.docker.com/engine/security/rootless/"
+        )
 
     # these are non-errors that either shouldn't be handled or are handled elsewhere
     if b'Can\'t update submission after deadline' in err_msg:
