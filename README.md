@@ -33,8 +33,8 @@ If you have any problems, questions, comments, concerns, or general feedback, pl
     5.  Copy your secret public key and secret key somewhere safe
   
 
-2.  Pick a Cloud Provider and follow the directions (Currently we only support AWS):
-    - [Amazon Web Services](https://github.com/numerai/numerai-cli/wiki/Amazon-Web-Services)
+2.  Pick a Cloud Provider and follow the setup directions (Currently we only support AWS):
+    - [Amazon Web Services Setup Instructions](https://github.com/numerai/numerai-cli/wiki/Amazon-Web-Services)
     
 
 3.  Install Docker and Python for your Operating System (if you encounter errors or your

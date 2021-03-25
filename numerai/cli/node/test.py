@@ -162,8 +162,12 @@ def monitor_aws(node, config, num_lines, log_type, follow_tail, verbose):
             msg = f"Task status: {task['lastStatus']}."
 
             if task['lastStatus'] == "STOPPED":
-                click.secho(f"{msg} Checking for logs...", fg='yellow')
-                break
+                if len(streams) == 0:
+                    click.secho(f"{msg} No log file, did you deploy?", fg='yellow')
+                    exit(1)
+                else:
+                    click.secho(f"{msg} Checking for log events...", fg='green')
+                    break
 
             elif len(streams) == 0:
                 click.secho(
