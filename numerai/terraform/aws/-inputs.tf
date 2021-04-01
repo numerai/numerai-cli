@@ -10,13 +10,16 @@ variable "az_count" {
   default     = "1"
 }
 
-variable "app_name" {
-  description = "Name of app"
-  type        = string
-  default     = "numerai-submission"
+variable "nodes" {
+  description = "Names of nodes to deploy"
+  type        = map(object({
+    provider: string,
+    cpu: number,
+    memory: number,
+  }))
 }
 
-variable "app_port" {
+variable "node_container_port" {
   description = "Port exposed by the docker image to redirect traffic to"
   type        = number
   default     = 3000
@@ -26,16 +29,4 @@ variable "gateway_stage_path" {
   description = "The prefixed path for the api gateway"
   type        = string
   default     = "v1"
-}
-
-variable "fargate_cpu" {
-  description = "Fargate instance CPU units to provision (1 vCPU = 1024 CPU units)"
-  type        = number
-  default     = 1024
-}
-
-variable "fargate_memory" {
-  description = "Fargate instance memory to provision (in MiB)"
-  type        = number
-  default     = 8192
 }

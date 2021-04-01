@@ -3,153 +3,154 @@
 [![CircleCI](https://circleci.com/gh/numerai/numerai-cli.svg?style=svg)](https://circleci.com/gh/numerai/numerai-cli)
 [![PyPI](https://img.shields.io/pypi/v/numerai-cli.svg?color=brightgreen)](https://pypi.org/project/numerai-cli/)
 
-CLI to set up a Numerai Compute node in AWS (Amazon Web Services) and deploy your models to it. 
-This solution is architected to cost less than $5/mo on average (actual costs may vary).
-It has been tested and found working on MacOS/OSX, Windows 10, and Ubuntu 18.04, 
-but should theoretically work anywhere that Docker and Python 3 are available.
+Welcome to Numerai CLI, if you haven't heard of Numerai [see our docs](https://docs.numer.ai/tournament/learn)
+to learn more. Currently, this CLI configures a Numerai Prediction Node in Amazon Web Services 
+(AWS) that you can deploy your models to. This solution is architected to cost less than 
+$5/mo on average, but actual costs may vary. It has been tested and found working on 
+MacOS/OSX, Windows 8/10, and Ubuntu 18/20, but should theoretically work anywhere that
+Docker and Python 3 are available.
 
-## IMPORTANT
-If you have other questions or feedback, please join us on the 
-[RocketChat #compute Channel](https://community.numer.ai/channel/compute).
-Before messaging the Rocketchat channel or creating a Github issue, please read through the following:
-- [Github Wiki](https://github.com/numerai/numerai-cli/wiki)
-- [Github Issues](https://github.com/numerai/numerai-cli/issues)
-
-If you still cannot find a solution or answer, include the following information with your issue/message:
-
-- The entire error output (preferably as a text file)
-- The command you ran that caused the error
-- Version from running `pip3 show numerai-cli`
-- System Information from running
-    - Mac: `system_profiler SPSoftwareDataType && system_profiler SPHardwareDataType`
-    - Linux: `lsb_release -a && uname -a`
-    - Windows: `powershell -command "Get-ComputerInfo"`
-  
-If you do not include this information, we cannot help you.
+If you have any problems, questions, comments, concerns, or general feedback, please refer to the
+[Feedback and Bug Reporting Section](#feedback-and-bug-reporting) before posting anywhere.
 
 
 ## Contents
-- [Prerequisites](#prerequisites)
-- [Environment Setup](#environment-setup)
-- [Quickstart](#quickstart)
-- [Testing](#testing)
-- [Commands](#commands)
+- [Getting Started](#getting-started)
+- [Upgrading to 0.3.0](#upgrading-to-030)
+- [Node Configuration Tutorial](#node-configuration)
+- [List of Commands](#list-of-commands)
+- [Troubleshooting and Feedback](#troubleshooting-and-feedback)
 - [Uninstall](#uninstall)
 
 
-## Prerequisites
-1.  An [AWS (Amazon Web Services) Account](https://portal.aws.amazon.com/billing/signup)
-2.  AWS [Billing set up](https://console.aws.amazon.com/billing/home?#/paymentmethods)
-3.  AWS Access Keys (See [the wiki](https://github.com/numerai/numerai-cli/wiki/Prerequisites-Help) for detailed instructions)
-4.  [Numerai API Keys](https://numer.ai/account)
-5.  Python and Docker (see [Environment Setup](#environment-setup))
+## Getting Started
 
-Our friend Arbitrage created [this tutorial](https://www.youtube.com/watch?v=YFgXMpQszpM&feature=youtu.be)
-to help you get set up with your AWS/Numerai API Keys
-
-
-## Environment Setup
-
-For your convenience, we've included setup scripts in the `scripts` directory that will ensure the prerequisites are installed.
-You can download and run the setup script for your OS with one of the following commands:
-
-- Mac Terminal (cmd + space, type `terminal`, select `terminal.app`):
-    ```
-    curl https://raw.githubusercontent.com/numerai/numerai-cli/master/scripts/setup-mac.sh | bash
-    ```
-
-- Ubuntu Terminal (ctrl + alt + t):
-    ```
-    sudo apt update && sudo apt install -y libcurl4 curl && sudo curl https://raw.githubusercontent.com/numerai/numerai-cli/master/scripts/setup-ubu.sh | sudo bash
-    ```
-
-- Windows Command Prompt (windows key, type `cmd`, select Command Prompt):
-    ```
-    powershell -command "$Script = Invoke-WebRequest 'https://raw.githubusercontent.com/numerai/numerai-cli/master/scripts/setup-win10.ps1'; $ScriptBlock = [ScriptBlock]::Create($Script.Content); Invoke-Command -ScriptBlock $ScriptBlock"
-    ```
-If you run into issues running one of these scripts, please report immediately to [RocketChat Compute Channel](https://community.numer.ai/channel/compute).
-
-
-After the setup script confirms Python and Docker, install `numerai-cli` via:
-```
-pip3 install numerai-cli --user
-```
-NOTE: If you are using [python `venv`](https://docs.python.org/3/library/venv.html) then drop the `--user` option. If you don't know what that is, disregard this note
-
-
-## Quickstart
-
-If you know you have all the prerequisites and have your [AWS](#aws) and [Numerai](#numerai-api-key) API Keys at hand,
-you can run these commands to get the example application running in minutes:
-
-```
-mkdir example-numerai
-cd example-numerai
-
-numerai setup
-numerai docker copy-example
-numerai docker deploy
-```
-
-Your compute node is now setup and ready to run. It saves the webhook URL in `.numerai/submission_url.txt` that triggers your docker container. 
-You can configure [your Numerai account](https://numer.ai/account) to use this webhook by entering it in the "Compute" section.
-It will be called Saturday morning right after a new round opens, and if your job fails (one ore more models have not submitted successfully) 
-then it will be triggered again around 24 hours later.
-
-NOTE: The default example does _not_ make stake changes; you will still have to do that manually.
-Please refer to the [numerapi docs](https://numerapi.readthedocs.io/en/latest/api/numerapi.html#module-numerapi.numerapi)
-for the methods you must call to do this.
-
-## Testing
-
-- Test webhook URL (schedule a job in the cloud):   
-  `numerai compute test-webhook`
+1.  Sign up a Numerai Account, get your Numerai API Keys, and your first Model:
+    1.  Sign up at https://numer.ai/signup and log in to your new account
+    2.  Go to https://numer.ai/account > "Your API keys" section > click "Add"
+    3.  Name your key and check all boxes under "Scope this key will have"
+    4.  Enter your password and click "Confirm"
+    5.  Copy your secret public key and secret key somewhere safe
   
 
-- Check your job status:    
-  `numerai compute status`
-  
+2.  Pick a Cloud Provider and follow the setup directions (Currently we only support AWS):
+    - [Amazon Web Services Setup Instructions](https://github.com/numerai/numerai-cli/wiki/Amazon-Web-Services)
+    
 
-- View logs for "RUNNING" Job:  
-  `numerai compute logs`
-
-
-- You can test locally too:  
-  `numerai docker run`
-
-
-- NOTES:
-    - You can also view logs in the console for your [ECS Cluster](https://console.aws.amazon.com/ecs/home?#/clusters/numerai-submission-ecs-cluster/tasks)
-    and your [Container](https://console.aws.amazon.com/cloudwatch/home?#logStream:group=/fargate/service/numerai-submission)
-    - Scheduling a job does not immediately run the container.
-    This takes several minutes the first time it runs, with subsequent runs starting a lot faster.
+3.  Install Docker and Python for your Operating System (if you encounter errors or your
+    OS is not supported, please [read the troubleshooting wiki](
+    https://github.com/numerai/numerai-cli/wiki/Troubleshooting) to install Python and Docker):
+    - Mac Terminal (cmd + space, type `terminal`, select `terminal.app`):
+        ```
+        curl https://raw.githubusercontent.com/numerai/numerai-cli/master/scripts/setup-mac.sh | bash
+        ```
       
+    - Ubuntu 18/20 Terminal (ctrl + alt + t):
+        ```
+        sudo apt update && sudo apt install -y libcurl4 curl && sudo curl https://raw.githubusercontent.com/numerai/numerai-cli/master/scripts/setup-ubu.sh | sudo bash
+        ```
+    
+    - Windows 10 Command Prompt (windows key, type `cmd`, select Command Prompt):
+        ```
+        powershell -command "$Script = Invoke-WebRequest 'https://raw.githubusercontent.com/numerai/numerai-cli/master/scripts/setup-win10.ps1'; $ScriptBlock = [ScriptBlock]::Create($Script.Content); Invoke-Command -ScriptBlock $ScriptBlock"
+      ```
+4.  After the setup script confirms Python and Docker, install `numerai-cli` via:
+    ```
+    pip3 install --upgrade numerai-cli --user
+    ```
+    NOTES:
+    - This command will also work to update to new versions of the package in the future.
+    - If you are using python venv then drop the --user option. 
+      If you don't know what that is, disregard this note.
+      
+## Upgrading to 0.3.0
+CLI 0.3.0 uses a new configuration format that is incompatible with versions 0.1 and 0.2,
+but a command to migrate you configuration is provided for you:
+```
+numerai upgrade
+```
 
+## Node Configuration Tutorial
 
-## Commands
-To get descriptions of each command available, run one of these:
+If you know you have all the prerequisites and have your AWS and Numerai API Keys at hand,
+you can run these commands to get an example node running in minutes:
+
+```
+numerai setup
+numerai node config --example tournament-python3
+numerai node deploy
+numerai node test
+```
+
+Your compute node is now setup and ready to run. It saves important configuration 
+information in `$USER_HOME/.numerai/nodes.json` including the url for your Node Trigger.
+This trigger is registered with whichever model you specified during configuration.
+Each trigger will be called Saturday morning right after a new round opens, 
+and if the related job fails it will be triggered again around 24 hours later.
+
+NOTES:
+- The default example does _not_ make stake changes; you will still have to do that manually.
+  Please refer to the [numerapi docs](https://numerapi.readthedocs.io/en/latest/api/numerapi.html#module-numerapi.numerapi)
+  for the methods you must call to do this.
+- You can view resources and logs in the AWS Console (region us-east-1) for your
+  [ECS Cluster](https://console.aws.amazon.com/ecs/home?region=us-east-1#/clusters/numerai-submission-ecs-cluster/tasks)
+  and [other resources](https://console.aws.amazon.com/cloudwatch/home?region=us-east-1#logsV2:log-groups)
+- If you're getting
+
+NEXT: [read the Prediction Nodes wiki](https://github.com/numerai/numerai-cli/wiki/Prediction-Nodes)
+to learn about Numerai Examples and how to customize Prediction Nodes.
+
+## List of Commands
+Use the `--help` option on any command or sub-command to get a full description of it:
 ```
 numerai
 numerai --help
 numerai [command] --help
 numerai [command] [sub-command] --help
 ```
+Each command or sub-command takes its own options, for example if you want to copy the 
+numerai signals example and configure a node for a signals model with large memory 
+requirements you'd use something like this (replacing [MODEL NAME] with the relevant 
+signals model name):
+```
+numerai node -m [MODEL NAME] -s config -s mem-lg -e signals-python3
+```
+Here, the `node` command takes a model name with `-m` and a flag `-s` to detect if it's 
+a signals model or numerai model. The `config` sub-command also takes a `-s` option to
+specify the size of the node to configure.
 
+
+## Troubleshooting and Feedback
+Before messaging the Rocketchat channel or creating a Github issue, 
+please read through the following (especially the "Troubleshooting" section in the wiki):
+- [Github Wiki](https://github.com/numerai/numerai-cli/wiki)
+- [Github Issues](https://github.com/numerai/numerai-cli/issues)
+
+If you still cannot find a solution or answer, please join us on the 
+[RocketChat #compute Channel](https://community.numer.ai/channel/compute) 
+and include the following information with your issue/message:
+
+- The commands you ran that caused the error (even previous commands)
+- Version information from running:
+    - `pip3 show numerai-cli`
+    - `python -V`
+    - `docker -v`
+- System Information from running
+    - Mac: `system_profiler SPSoftwareDataType && system_profiler SPHardwareDataType`
+    - Linux: `lsb_release -a && uname -a`
+    - Windows: `powershell -command "Get-ComputerInfo"`
+  
+If you do not include this information, we cannot help you.
       
+
 ## Uninstall
-Destroy the AWS environment
 ```
-numerai destroy
+numerai uninstall
 ```
-
-And then uninstall the package:
-```
-pip3 uninstall numerai-cli
-```
-
-
 
 
 ## Contributions
 
 - Thanks to [uuazed](https://github.com/uuazed) for their work on [numerapi](https://github.com/uuazed/numerapi)
+- Thanks to [hellno](https://github.com/hellno) for starting the Signals [ticker map](https://github.com/hellno/numerai-signals-tickermap)
+- Thanks to tit_BTCQASH ([numerai profile](https://numer.ai/tit_btcqash) and [twitter profile](https://twitter.com/tit_BTCQASH)) for debugging the environment setup process on Windows 8

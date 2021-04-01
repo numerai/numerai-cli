@@ -1,1 +1,1 @@
-recursive-include numerai_compute *
+recursive-include numerai *

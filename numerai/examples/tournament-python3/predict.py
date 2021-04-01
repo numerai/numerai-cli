@@ -5,15 +5,12 @@ import numerapi
 import pandas as pd
 from sklearn.linear_model import LinearRegression
 
-
 TRAINED_MODEL_PREFIX = './trained_model'
-# Define models here as (ID, model instance),
-# a model ID of None is submitted as your default model
-MODEL_CONFIGS = [
-    (None, LinearRegression()),
-    # (YOUR MODEL ID, LinearRegression(n_jobs=10))
-    #  etc...
-]
+
+# Pull model id from "MODEL_ID" environment variable
+# defaults to None, change to a model id from
+MODEL_ID = os.getenv('MODEL_ID', None)
+MODEL = LinearRegression()
 
 # initialize API client
 napi = numerapi.NumerAPI()
@@ -34,7 +31,9 @@ def download_data():
 
 
 def train(train_data_path, model_id, model, force_training=False):
-    model_name = f'{TRAINED_MODEL_PREFIX}_{model_id or ""}'
+    model_name = TRAINED_MODEL_PREFIX
+    if model_id:
+        model_name += f"_{model_id}"
 
     # load a model if we have a trained model already and we aren't forcing a training session
     if os.path.exists(model_name) and not force_training:
@@ -48,11 +47,12 @@ def train(train_data_path, model_id, model, force_training=False):
     logging.info('extracting features and targets')
     train_features = train_data.iloc[:, 3:-1]   # get all rows and all columns from 4th to last-1
     train_targets = train_data.iloc[:, -1]      # get all rows and only last column
+    del train_data
 
     logging.info(f'training model')
     model.fit(X=train_features, y=train_targets)
 
-    logging.info('saving features')
+    logging.info('saving model')
     joblib.dump(model, model_name)
 
     return model
@@ -65,6 +65,7 @@ def predict(model, predict_data_path):
     logging.info('extracting features')
     predict_ids = predict_data.iloc[:, 0]           # get all rows and only first column
     predict_features = predict_data.iloc[:, 3:-1]   # get all rows and all columns from 4th to last-1
+    del predict_data
 
     logging.info(f'generating predictions')
     predictions = model.predict(predict_features)
@@ -74,7 +75,7 @@ def predict(model, predict_data_path):
     return predictions
 
 
-def submit(predictions, model_id=None):
+def submit(predictions, predict_output_path, model_id=None):
     logging.info('writing predictions to file')
     # numerai doesn't want the index, so don't write it to our file
     predictions.to_csv(predict_output_path, index=False)
@@ -85,10 +86,12 @@ def submit(predictions, model_id=None):
     napi.upload_predictions(predict_output_path, model_id=model_id)
 
 
-if __name__ == '__main__':
+def main():
     train_data_path, predict_data_path, predict_output_path = download_data()
+    trained_model = train(train_data_path, MODEL_ID, MODEL)
+    predictions = predict(trained_model, predict_data_path)
+    submit(predictions, predict_output_path, MODEL_ID)
 
-    for model_id, model_type in MODEL_CONFIGS:
-        trained_model = train(train_data_path, model_id, model_type)
-        predictions = predict(trained_model, predict_data_path)
-        submit(predictions, model_id)
+
+if __name__ == '__main__':
+    main()

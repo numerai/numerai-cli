@@ -16,30 +16,16 @@ import pandas as pd
 from sklearn.ensemble import GradientBoostingRegressor
 from dateutil.relativedelta import relativedelta, FR
 
-
 TARGET_NAME = "target"
 PREDICTION_NAME = "signal"
 TRAINED_MODEL_PREFIX = './trained_model'
 
-# Define models here as (ID, model instance),
-# a model ID of None is submitted as your default model
-MODEL_CONFIGS = [
-    (None, GradientBoostingRegressor(subsample=0.1)),
-    # (YOUR MODEL ID, LinearRegression(n_jobs=10))
-    #  etc...
-]
+# Pull model id from "MODEL_ID" environment variable
+# defaults to None, change to a model id from
+MODEL_ID = os.getenv('MODEL_ID', None)
+MODEL = GradientBoostingRegressor(subsample=0.1)
 
-if os.getenv('NUMERAI_PUBLIC_ID') and os.getenv('NUMERAI_SECRET_KEY'):
-    napi = numerapi.SignalsAPI()
-
-else:
-    config = configparser.ConfigParser()
-    config.read('../.numerai/.keys')
-    # initialize API client
-    napi = numerapi.SignalsAPI(
-        public_id=config['numerai']['NUMERAI_PUBLIC_ID'],
-        secret_key=config['numerai']['NUMERAI_SECRET_KEY']
-    )
+napi = numerapi.SignalsAPI()
 
 
 def download_data(live_data_date):
@@ -66,6 +52,7 @@ def download_data(live_data_date):
 
         full_data, feature_names = generate_rsi_features(full_data, num_days=num_days_lag)
         logging.info(f"Features for training:\n {feature_names}")
+        full_data.to_csv('full_data.csv')
 
     # add numerai targets and do train/test split
     train_data, test_data = add_targets_and_split(full_data)
@@ -110,6 +97,7 @@ def train(train_data, feature_names, model_id, model, force_training=False):
 
     logging.info('training model')
     model.fit(train_data[feature_names], train_data[TARGET_NAME])
+    del train_data
 
     logging.info('saving model')
     joblib.dump(model, model_name)
@@ -126,6 +114,9 @@ def predict(test_data, live_data, live_data_date, feature_names, model):
 
     # prepare and writeout example file
     diagnostic_df = pd.concat([test_data, live_data])
+    del test_data
+    del live_data
+
     diagnostic_df["friday_date"] = diagnostic_df.friday_date.fillna(
         live_data_date.strftime("%Y%m%d")
     ).astype(int)
@@ -158,10 +149,9 @@ def main():
     last_friday = datetime.now() + relativedelta(weekday=FR(-1))
     feature_names, train_data, test_data, live_data = download_data(last_friday)
 
-    for model_id, model_obj in MODEL_CONFIGS:
-        model = train(train_data, feature_names, model_id, model_obj)
-        predictions = predict(test_data, live_data, last_friday, feature_names, model)
-        submit(predictions, "example_signals.csv", model_id)
+    model = train(train_data, feature_names, MODEL_ID, MODEL)
+    predictions = predict(test_data, live_data, last_friday, feature_names, model)
+    submit(predictions, "example_signals.csv", MODEL_ID)
 
 
 if __name__ == "__main__":

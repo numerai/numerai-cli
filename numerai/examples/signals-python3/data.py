@@ -137,11 +137,10 @@ def add_targets_and_split(full_data):
         "signals_train_val_bbg.csv"
     )
     targets["date"] = pd.to_datetime(
-        targets["friday_date"],
-        format="%Y%m%d"
-    ).dt.strftime('%Y-%m-%d')
+        targets["friday_date"], format="%Y%m%d"
+    ).dt.strftime("%Y-%m-%d")
 
-    full_data.reset_index(inplace=True)
+    full_data.reset_index()
     full_data["date"] = full_data["date"].astype(str)
 
     # merge our feature data with Numerai targets
@@ -167,4 +166,3 @@ def add_targets_and_split(full_data):
     test_data = ml_data[ml_data["data_type"] == "validation"]
 
     return train_data, test_data
-
