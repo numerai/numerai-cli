@@ -11,7 +11,7 @@ MacOS/OSX, Windows 8/10, and Ubuntu 18/20, but should theoretically work anywher
 Docker and Python 3 are available.
 
 If you have any problems, questions, comments, concerns, or general feedback, please refer to the
-[Feedback and Bug Reporting Section](#feedback-and-bug-reporting) before posting anywhere.
+[Troubleshooting and Feedback](#troubleshooting-and-feedback) before posting anywhere.
 
 
 ## Contents
