@@ -1,8 +1,4 @@
-FROM mxnet/r-lang:latest
-# This example uses mxnet, which is a huge pain to install so we use the
-# mxnet base image. If you don't need mxnet, or you need a newer version of R,
-# then replace the FROM statement with the following:
-# FROM r-base:latest
+FROM r-base:latest
 
 ADD install_packages.R .
 
@@ -18,6 +14,9 @@ ENV NUMERAI_PUBLIC_ID=$NUMERAI_PUBLIC_ID
 
 ARG NUMERAI_SECRET_KEY
 ENV NUMERAI_SECRET_KEY=$NUMERAI_SECRET_KEY
+
+ARG MODEL_ID
+ENV MODEL_ID=$MODEL_ID
 
 # Replace this with the name of your script
 CMD [ "Rscript", "./main.R" ]
