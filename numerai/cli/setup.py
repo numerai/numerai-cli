@@ -44,7 +44,7 @@ def setup(provider, verbose):
     click.secho("initializing terraform to provision cloud infrastructure...")
     terraform("init -upgrade", verbose)
 
-    click.secho("✓ Numerai API Keys setup and working", fg='green')
-    click.secho(f"✓ {provider} API Keys setup and working", fg='green')
-    click.secho(f"✓ Terraform files copied to {CONFIG_PATH}", fg='green')
+    click.secho("Numerai API Keys setup and working", fg='green')
+    click.secho(f"{provider} API Keys setup and working", fg='green')
+    click.secho(f"Terraform files copied to {CONFIG_PATH}", fg='green')
     click.echo('succesfully initialized numerai-cli')

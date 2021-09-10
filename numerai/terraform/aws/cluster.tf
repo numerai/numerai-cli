@@ -16,9 +16,9 @@ resource "aws_ecs_task_definition" "node" {
 
   container_definitions = jsonencode([
     {
-      cpu: each.value.cpu,
+      cpu: parseint(each.value.cpu, 10),
       image: aws_ecr_repository.node[each.key].repository_url,
-      memory: each.value.memory,
+      memory: parseint(each.value.memory, 10),
       name: each.key,
       networkMode: "awsvpc",
       portMappings: [

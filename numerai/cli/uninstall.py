@@ -10,6 +10,7 @@ from numerai.cli.util.keys import \
     load_or_init_nodes, \
     get_numerai_keys
 from numerai.cli.util.docker import terraform
+from numerai.cli.util.debug import root_cause
 
 
 @click.command()
@@ -53,7 +54,10 @@ def uninstall():
 
             click.secho('cleaning up docker images...')
             subprocess.run('docker system prune -f -a --volumes', shell=True)
-            shutil.rmtree(CONFIG_PATH)
+            try:
+                shutil.rmtree(CONFIG_PATH)
+            except PermissionError as e:
+                root_cause(str(e))
 
     click.secho('uninstalling python package...')
     res = subprocess.run(

@@ -104,7 +104,7 @@ def test(ctx, local, command, verbose):
     else:
         click.secho("Submission uploaded correctly", fg='green')
 
-    click.secho("✓ Test complete, your model now submits automatically!", fg='green')
+    click.secho("Test complete, your model now submits automatically!", fg='green')
 
 
 def monitor(node, config, verbose, num_lines, log_type, follow_tail):

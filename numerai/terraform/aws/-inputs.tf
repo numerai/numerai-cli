@@ -11,12 +11,8 @@ variable "az_count" {
 }
 
 variable "nodes" {
-  description = "Names of nodes to deploy"
-  type        = map(object({
-    provider: string,
-    cpu: number,
-    memory: number,
-  }))
+  description = "Map of node names to their configurations"
+  type        = map(map(any))
 }
 
 variable "node_container_port" {
