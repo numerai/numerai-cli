@@ -18,7 +18,7 @@ resource "aws_lambda_function" "submission" {
   # source_code_hash = "${base64sha256(file("lambda_function_payload.zip"))}"
   source_code_hash = filebase64sha256("lambda.zip")
 
-  runtime    = "nodejs10.x"
+  runtime    = "nodejs14.x"
   depends_on = [
     aws_iam_role_policy_attachment.lambda_logs,
     aws_iam_role_policy_attachment.lambda_ecsTaskExecutionRole,
