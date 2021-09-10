@@ -14,11 +14,6 @@ EXAMPLE_PATH = os.path.join(PACKAGE_PATH, "..", "examples")
 
 EXAMPLES = os.listdir(EXAMPLE_PATH)
 
-TRIGGERS = [
-    'numerai',
-    'cron'
-]
-
 PROVIDER_AWS = "aws"
 # PROVIDER_GCP = "gcp"
 PROVIDERS = [
