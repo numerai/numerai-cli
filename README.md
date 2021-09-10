@@ -65,7 +65,8 @@ If you have any problems, questions, comments, concerns, or general feedback, pl
       
 ## Upgrading to 0.3.0
 CLI 0.3.0 uses a new configuration format that is incompatible with versions 0.1 and 0.2,
-but a command to migrate you configuration is provided for you:
+but a command to migrate you configuration is provided for you. Run this in the directory
+you ran `numerai setup` from the previous version:
 ```
 numerai upgrade
 ```
