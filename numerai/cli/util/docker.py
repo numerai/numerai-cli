@@ -18,7 +18,7 @@ def check_for_dockerfile(path):
         click.secho(
             f"No Dockerfile found in {path}, please ensure this node "
             f"was created from an example or follows the Prediction Node Architecture. "
-            f"Learn More:\nhttps://github.com/numerai/numerai-cli/wiki/Prediction-Node-Architecture",
+            f"Learn More:\nhttps://github.com/numerai/numerai-cli/wiki/Prediction-Nodes",
             fg='red'
         )
         exit(1)
@@ -26,7 +26,7 @@ def check_for_dockerfile(path):
         click.secho(
             f"DO NOT PUT THE DOCKERFILE IN YOUR HOME PATH, please ensure this node "
             f"was created from an example or follows the Prediction Node Architecture. "
-            f"Learn More:\nhttps://github.com/numerai/numerai-cli/wiki/Prediction-Node-Architecture",
+            f"Learn More:\nhttps://github.com/numerai/numerai-cli/wiki/Prediction-Nodes",
             fg='red'
         )
         exit(1)
