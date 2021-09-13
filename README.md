@@ -73,8 +73,10 @@ numerai upgrade
 ```
 
 #### Beyond
-Sometimes updates will require you to run `numerai setup` again to copy over changes to
-files in the `$HOME/.numerai` directory. 
+Some updates will make changes to configuration files used by Numerai CLI. These will
+require you to re-run some commands to upgrade your nodes to the newest versions:
+- `numerai setup` will copy over changes to files in the `$HOME/.numerai` directory
+- `numerai node config` will apply those changes to a node
 
 ## Node Configuration Tutorial
 
