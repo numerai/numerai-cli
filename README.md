@@ -64,6 +64,11 @@ If you have any problems, questions, comments, concerns, or general feedback, pl
       If you don't know what that is, disregard this note.
       
 ## Upgrading
+Upgrading numerai-cli will always require you to update the package itself using pip:
+```
+pip install --upgrade numerai-cli --user
+```
+
 #### 0.1/0.2 -> 0.3.0
 CLI 0.3.0 uses a new configuration format that is incompatible with versions 0.1 and 0.2,
 but a command to migrate you configuration is provided for you. Run this in the directory

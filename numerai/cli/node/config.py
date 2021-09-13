@@ -95,7 +95,7 @@ def config(ctx, verbose, provider, size, path, example, cron, register_webhook):
 
     # terraform output for AWS nodes
     click.echo(f'saving node configuration to {NODES_PATH}...')
-    res = terraform(f"output -json aws_nodes", verbose).stdout.decode('utf-8')
+    res = terraform(f"output -json aws_nodes", verbose).decode('utf-8')
     try:
         aws_nodes = json.loads(res)
     except json.JSONDecodeError:
