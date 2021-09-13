@@ -57,7 +57,7 @@ def uninstall():
             try:
                 shutil.rmtree(CONFIG_PATH)
             except PermissionError as e:
-                root_cause(str(e))
+                root_cause('', str(e))
 
     click.secho('uninstalling python package...')
     res = subprocess.run(

@@ -35,9 +35,7 @@ def is_win10_professional():
 # error checking for docker; sadly this is a mess,
 # especially b/c there's tons of ways to mess up your docker install
 # especially on windows :(
-def root_cause(subprocess_result):
-    std_out = subprocess_result.stdout
-    err_msg = subprocess_result.stderr
+def root_cause(std_out, err_msg):
     all = f'{std_out.decode("utf-8") }\n{err_msg.decode("utf-8") }'
     if b'is not recognized as an internal or external command' in err_msg:
         if sys.platform == 'win32':
