@@ -1,11 +1,18 @@
 FROM r-base:latest
 
-ADD install_packages.R .
+# install dev tools
+RUN apt-get update -y && apt-get install -y \
+    build-essential \
+    libcurl4-gnutls-dev \
+    libxml2-dev \
+    libssl-dev
+RUN R -e "install.packages('devtools', dependencies=TRUE)"
 
-# install R-packages
+# copy over install script and install R packages
+ADD install_packages.R .
 RUN Rscript ./install_packages.R
 
-# copy everything
+# copy everything else
 ADD . .
 
 # These arguments are passed in by the `numerai` tool
