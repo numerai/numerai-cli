@@ -89,25 +89,25 @@ def doctor():
             invalid_providers.append('aws')
 
     if env_setup_status != 0:
-        click.secho(f"✖ Environment setup incomplete:", fg='red')
+        click.secho(f"Environment setup incomplete:", fg='red')
         click.secho(env_setup_err, fg='red')
         click.secho(f"Ensure your OS is supported and read the Troubleshooting wiki: "
                     f"https://github.com/numerai/numerai-cli/wiki/Troubleshooting", fg='red')
     else:
-        click.secho("✓ Environment setup with Docker and Python", fg='green')
+        click.secho("Environment setup with Docker and Python", fg='green')
 
     if curr_ver < versions[0]:
-        click.secho(f"✖ numerai-cli needs an upgrade"
+        click.secho(f"numerai-cli needs an upgrade"
                     f"(run `pip3 install -U numerai-cli` to fix)", fg='red')
     else:
-        click.secho("✓ numerai-cli is up to date", fg='green')
+        click.secho("numerai-cli is up to date", fg='green')
 
     if len(invalid_providers):
-        click.secho(f"✖ Invalid provider keys: {invalid_providers}"
+        click.secho(f"Invalid provider keys: {invalid_providers}"
                     f"(run `numerai setup` to fix)", fg='red')
 
     else:
-        click.secho("✓ API Keys working", fg='green')
+        click.secho("API Keys working", fg='green')
 
     click.secho(
         "\nIf you need help troubleshooting or want to report a bug please read the" 

@@ -63,13 +63,25 @@ If you have any problems, questions, comments, concerns, or general feedback, pl
     - If you are using python venv then drop the --user option. 
       If you don't know what that is, disregard this note.
       
-## Upgrading to 0.3.0
+## Upgrading
+Upgrading numerai-cli will always require you to update the package itself using pip:
+```
+pip install --upgrade numerai-cli --user
+```
+
+#### 0.1/0.2 -> 0.3.0
 CLI 0.3.0 uses a new configuration format that is incompatible with versions 0.1 and 0.2,
 but a command to migrate you configuration is provided for you. Run this in the directory
 you ran `numerai setup` from the previous version:
 ```
 numerai upgrade
 ```
+
+#### Beyond
+Some updates will make changes to configuration files used by Numerai CLI. These will
+require you to re-run some commands to upgrade your nodes to the newest versions:
+- `numerai setup` will copy over changes to files in the `$HOME/.numerai` directory
+- `numerai node config` will apply those changes to a node
 
 ## Node Configuration Tutorial
 

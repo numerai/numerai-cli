@@ -18,7 +18,7 @@ resource "aws_lambda_function" "submission" {
   # source_code_hash = "${base64sha256(file("lambda_function_payload.zip"))}"
   source_code_hash = filebase64sha256("lambda.zip")
 
-  runtime    = "nodejs10.x"
+  runtime    = "nodejs14.x"
   depends_on = [
     aws_iam_role_policy_attachment.lambda_logs,
     aws_iam_role_policy_attachment.lambda_ecsTaskExecutionRole,
@@ -53,6 +53,42 @@ resource "aws_cloudwatch_log_group" "gateway" {
   name              = "/aws/apigateway/${local.node_prefix}"
   retention_in_days = 14
 }
+
+# cron triggers
+resource "aws_cloudwatch_event_rule" "cron_trigger" {
+  for_each = {
+    for name, config in var.nodes :
+      name => lookup(config, "cron", null)
+      if lookup(config, "cron", null) != null
+  }
+
+  name = "${each.key}-cron-trigger"
+  description = "Cron-based trigger for lambda ${aws_lambda_function.submission[each.key].arn}"
+  schedule_expression = "cron(${trim(each.value, "\"")})"
+}
+resource "aws_cloudwatch_event_target" "cron_target" {
+  for_each = {
+    for name, config in var.nodes :
+      name => lookup(config, "cron", null)
+      if lookup(config, "cron", null) != null
+  }
+
+  rule  = aws_cloudwatch_event_rule.cron_trigger[each.key].name
+  arn   = aws_lambda_function.submission[each.key].arn
+}
+resource "aws_lambda_permission" "cron_permission" {
+  for_each = {
+    for name, config in var.nodes :
+      name => lookup(config, "cron", null)
+      if lookup(config, "cron", null) != null
+  }
+  statement_id   = "AllowExecutionFromCloudWatch"
+  action         = "lambda:InvokeFunction"
+  function_name  = aws_lambda_function.submission[each.key].function_name
+  principal      = "events.amazonaws.com"
+  source_arn     = aws_cloudwatch_event_rule.cron_trigger[each.key].arn
+}
+
 
 ### API Gateway
 resource "aws_apigatewayv2_api" "submit" {

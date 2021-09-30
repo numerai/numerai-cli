@@ -17,16 +17,16 @@ def deploy(ctx, verbose):
 
     docker.check_for_dockerfile(node_config['path'])
 
-    click.echo('building container image...')
+    click.echo('building container image (this may take several minutes)...')
     docker.build(node_config, verbose)
 
     click.echo('logging into container registry...')
     docker.login(node_config, verbose)
 
-    click.echo('pushing image to registry...')
-    docker.push(node_config['docker_repo'])
+    click.echo('pushing image to registry (this may take several minutes)...')
+    docker.push(node_config['docker_repo'], verbose)
 
     click.echo('cleaning up local images...')
     docker.cleanup(node_config)
 
-    click.secho('✓ Prediction Node deployed. Next: test your node.', fg='green')
+    click.secho('Prediction Node deployed. Next: test your node.', fg='green')

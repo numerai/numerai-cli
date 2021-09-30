@@ -121,6 +121,6 @@ def upgrade(verbose):
                   env_vars=load_or_init_keys('aws'),
                   inputs={'node_config_file': 'nodes.json'})
 
-    click.secho('✓ Upgrade complete!', fg='green')
+    click.secho('Upgrade complete!', fg='green')
     click.secho('run `numerai node config --help` to learn how to '
                 'register this directory as a prediction node')

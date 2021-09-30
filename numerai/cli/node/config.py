@@ -30,8 +30,19 @@ from numerai.cli.util.keys import \
 @click.option(
     '--example', '-e', type=click.Choice(EXAMPLES),
     help=f'Specify an example to use for this node. Options are {EXAMPLES}.')
+@click.option(
+    '--cron', '-c', type=str,
+    help=f'A cron expression to trigger this node on a schedule '
+         f'(e.g. "30 18 ? * 7 *" to execute at 18:30 UTC every Saturday). '
+         f'This prevents your webhook from auto-registering. '
+         f'Check the AWS docs for more info about cron expressions: '
+         f'https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html')
+@click.option(
+    '--register-webhook', '-r', is_flag=True,
+    help=f'Forces your webhook to register with Numerai. '
+         f'Use in conjunction with options that prevent webhook auto-registering.')
 @click.pass_context
-def config(ctx, verbose, provider, size, path, example):
+def config(ctx, verbose, provider, size, path, example, cron, register_webhook):
     """
     Uses Terraform to create a full Numerai Compute cluster in AWS.
     Prompts for your AWS and Numerai API keys on first run, caches them in $HOME/.numerai.
@@ -56,15 +67,19 @@ def config(ctx, verbose, provider, size, path, example):
         if key not in nodes_config[node]
     })
     # update node as needed
+    node_conf = nodes_config[node]
     if provider:
-        nodes_config[node]['provider'] = provider
+        node_conf['provider'] = provider
     if size:
-        nodes_config[node]['cpu'] = SIZE_PRESETS[size][0]
-        nodes_config[node]['memory'] = SIZE_PRESETS[size][1]
+        node_conf['cpu'] = SIZE_PRESETS[size][0]
+        node_conf['memory'] = SIZE_PRESETS[size][1]
     if path:
-        nodes_config[node]['path'] = os.path.abspath(path)
+        node_conf['path'] = os.path.abspath(path)
     if model_id:
-        nodes_config[node]['model_id'] = model_id
+        node_conf['model_id'] = model_id
+    if cron:
+        node_conf['cron'] = cron
+    nodes_config[node] = node_conf
 
     # double check there is a dockerfile in the path we are about to configure
     check_for_dockerfile(nodes_config[node]['path'])
@@ -80,7 +95,7 @@ def config(ctx, verbose, provider, size, path, example):
 
     # terraform output for AWS nodes
     click.echo(f'saving node configuration to {NODES_PATH}...')
-    res = terraform(f"output -json aws_nodes", verbose).stdout.decode('utf-8')
+    res = terraform(f"output -json aws_nodes", verbose).decode('utf-8')
     try:
         aws_nodes = json.loads(res)
     except json.JSONDecodeError:
@@ -92,10 +107,15 @@ def config(ctx, verbose, provider, size, path, example):
     if verbose:
         click.secho(f'new config:\n{json.dumps(load_or_init_nodes(), indent=2)}')
 
-    napi = base_api.Api(*get_numerai_keys())
     webhook_url = nodes_config[node]['webhook_url']
-    click.echo(f'registering webhook {webhook_url} for model {model_id}...')
+    napi = base_api.Api(*get_numerai_keys())
+    if not cron or register_webhook:
+        click.echo(f'registering webhook {webhook_url} for model {model_id}...')
+        napi.set_submission_webhook(model_id, webhook_url)
 
-    napi.set_submission_webhook(model_id, webhook_url)
-    click.secho('✓ Prediction Node configured successfully. '
+    else:
+        click.echo(f'removing registered webhook for model {model_id}...')
+        napi.set_submission_webhook(model_id, None)
+
+    click.secho('Prediction Node configured successfully. '
                 'Next: deploy and test your node', fg='green')
