@@ -131,13 +131,23 @@ def terraform(tf_cmd, verbose, env_vars=None, inputs=None, version='0.14.3'):
 def build(node_config, verbose):
     numerai_keys = load_or_init_keys()['numerai']
 
+    node_path = node_config["path"]
+    curr_path = os.path.abspath('.')
+    if curr_path not in node_path:
+        raise RuntimeError(
+            f'Current directory invalid, you must run this command either from'
+            f' "{node_path}" or a parent directory of that path.'
+        )
+    path = node_path.replace(curr_path, '.')
+
     build_arg_str = ''
     for arg in numerai_keys:
         build_arg_str += f' --build-arg {arg}={numerai_keys[arg]}'
     build_arg_str += f' --build-arg MODEL_ID={node_config["model_id"]}'
+    build_arg_str += f' --build-arg SRC_PATH={path}'
 
     cmd = f'docker build -t {node_config["docker_repo"]}' \
-          f'{build_arg_str} {node_config["path"]}'
+          f'{build_arg_str} -f {path}/Dockerfile .'
 
     execute(cmd, verbose)
 
