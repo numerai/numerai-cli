@@ -1,9 +1,10 @@
 import time
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import boto3
 import click
+import requests
 from numerapi import base_api
 
 from numerai.cli.constants import *
@@ -46,20 +47,29 @@ def test(ctx, local, command, verbose):
         docker.run(node_config, verbose, command=command)
 
     api = base_api.Api(*get_numerai_keys())
+    trigger_id = None
     try:
-        click.secho("Checking if Numerai can Trigger your model...")
-        res = api.raw_query(
-            '''mutation ( $modelId: String! ) {
-                triggerModelWebhook( modelId: $modelId )
-            }''',
-            variables={'modelId': node_config['model_id'],},
-            authorization=True
-        )
-        trigger_id = res['data']['triggerModelWebhook']
+        if 'cron' in node_config:
+            click.secho("Attempting to manually trigger Cron node...")
+            res = requests.post(node_config['webhook_url'], json.dumps({}))
+            res.raise_for_status()
+
+
+        else:
+            click.secho("Checking if Numerai can Trigger your model...")
+            res = api.raw_query(
+                '''mutation ( $modelId: String! ) {
+                    triggerModelWebhook( modelId: $modelId )
+                }''',
+                variables={'modelId': node_config['model_id'],},
+                authorization=True
+            )
+            trigger_id = res['data']['triggerModelWebhook']
+            click.secho(f"Trigger ID assigned for this test: {trigger_id}", fg='green')
+
         if verbose:
             click.echo(f"response:\n{res}")
         click.secho(f"Webhook reachable...", fg='green')
-        click.secho(f"Trigger ID assigned for this test: {trigger_id}", fg='green')
 
     except ValueError as e:
         click.secho(f'there was a problem calling your webhook...', fg='red')
@@ -77,23 +87,39 @@ def test(ctx, local, command, verbose):
             submissions( modelId: $modelId ){
                 round{ number, tournament },
                 triggerId
+                insertedAt
             }
         }''',
         variables={'modelId': node_config['model_id']},
         authorization=True
     )
     tournament = TOURNAMENT_SIGNALS if is_signals else TOURNAMENT_NUMERAI
-    round = api.get_current_round(tournament)
-    submission_triggers = [
-        sub['triggerId']
-        for sub in res['data']['submissions']
-        if sub['round']['number'] == round
-    ]
-    if len(submission_triggers) == 0:
+    curr_round = api.get_current_round(tournament)
+    latest_subs = sorted(
+        filter(
+            lambda sub: sub['round']['number'] == curr_round,
+            res['data']['submissions']
+        ),
+        key=lambda sub: sub['insertedAt'],
+        reverse=True
+    )
+    if len(latest_subs) == 0:
         click.secho("No submission found for current round, test failed", fg='red')
         return
 
-    if trigger_id not in submission_triggers:
+    latest_sub = latest_subs[0]
+
+    if 'cron' in node_config:
+        latest_date = datetime.strptime(latest_sub['insertedAt'], "%Y-%m-%dT%H:%M:%SZ")
+        if latest_date < datetime.utcnow() - timedelta(minutes=5):
+            click.secho(
+                "No submission appeared in the last 5 minutes, be sure that your node"
+                " is submitting correctly, check the numerai-cli wiki for more"
+                " information on how to monitor parts of your node.",
+                fg='red'
+            )
+
+    if trigger_id != latest_sub['triggerId']:
         click.secho(
             "Your node did not submit the Trigger ID assigned during this test, "
             "please ensure your node uses numerapi >= 0.2.4 (ignore if using rlang)",
@@ -101,9 +127,7 @@ def test(ctx, local, command, verbose):
         )
         return
 
-    else:
-        click.secho("Submission uploaded correctly", fg='green')
-
+    click.secho("Submission uploaded correctly", fg='green')
     click.secho("Test complete, your model now submits automatically!", fg='green')
 
 
