@@ -53,7 +53,7 @@ def destroy(ctx, verbose):
         store_config(NODES_PATH, nodes_config)
         return
 
-    if 'model_id' in node_config:
+    if 'model_id' in node_config and 'webhook_url' in node_config:
         napi = base_api.Api(*get_numerai_keys())
         model_id = node_config['model_id']
         webhook_url = node_config['webhook_url']
