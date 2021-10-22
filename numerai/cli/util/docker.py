@@ -139,6 +139,7 @@ def build(node_config, verbose):
             f' "{node_path}" or a parent directory of that path.'
         )
     path = node_path.replace(curr_path, '.')
+    print(f'formatted node path {node_path} to {path}')
 
     build_arg_str = ''
     for arg in numerai_keys:
