@@ -92,15 +92,6 @@ def execute(command, verbose, censor_substr=None):
     return stdout, stderr
 
 
-def format_docker_path(path, verbose):
-    if sys.platform == 'Windows':
-        new_path = ('//' + path[0].lower() + path[2:]).replace('\\', '/')
-        if verbose:
-            click.secho(f"formatted path for docker toolbox: {path} -> {new_path}")
-        return new_path
-    return path
-
-
 def format_if_docker_toolbox(path, verbose):
     '''
     Helper function to format if the system is running docker toolbox + mingw.
@@ -147,9 +138,9 @@ def build(node_config, verbose):
             f'Current directory invalid, you must run this command either from'
             f' "{node_path}" or a parent directory of that path.'
         )
-    path = format_docker_path(node_path.replace(curr_path, '.'), verbose)
-    dockerfile_path = format_docker_path(f'{path}/Dockerfile', verbose)
-    print(f'formatted node path {node_path} to {path}')
+    path = node_path.replace(curr_path, '.').replace('\\', '/')
+    if verbose:
+        click.secho(f'Using relative path to node: {path}')
 
     build_arg_str = ''
     for arg in numerai_keys:
@@ -158,7 +149,7 @@ def build(node_config, verbose):
     build_arg_str += f' --build-arg SRC_PATH={path}'
 
     cmd = f'docker build -t {node_config["docker_repo"]}' \
-          f'{build_arg_str} -f {dockerfile_path} .'
+          f'{build_arg_str} -f {path}/Dockerfile .'
 
     execute(cmd, verbose)
 
