@@ -165,8 +165,14 @@ def login(node_config, verbose):
 
     else:
         raise ValueError(f"Unsupported provider: '{node_config['provider']}'")
+
+    if os.name == 'nt':
+        echo_cmd = f"echo | set /p='{password}'"
+    else:
+        echo_cmd = f"echo '{password}'"
+
     cmd = (
-        f"echo '{password}'"
+        echo_cmd +
         f" | docker login"
         f" -u {username}"
         f" --password-stdin"
