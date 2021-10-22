@@ -138,7 +138,8 @@ def build(node_config, verbose):
             f'Current directory invalid, you must run this command either from'
             f' "{node_path}" or a parent directory of that path.'
         )
-    path = node_path.replace(curr_path, '.')
+    path = format_if_docker_toolbox(node_path.replace(curr_path, '.'), verbose)
+    dockerfile_path = format_if_docker_toolbox(f'{path}/Dockerfile', verbose)
     print(f'formatted node path {node_path} to {path}')
 
     build_arg_str = ''
@@ -148,7 +149,7 @@ def build(node_config, verbose):
     build_arg_str += f' --build-arg SRC_PATH={path}'
 
     cmd = f'docker build -t {node_config["docker_repo"]}' \
-          f'{build_arg_str} -f {path}/Dockerfile .'
+          f'{build_arg_str} -f {dockerfile_path} .'
 
     execute(cmd, verbose)
 
