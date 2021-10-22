@@ -149,7 +149,7 @@ def config_provider_keys(cloud_provider):
         config_aws_keys()
 
 
-def sanitize_message(message):
+def sanitize_message(message, censor_substr=None):
     if message is None:
         return None
     all_keys = get_aws_keys() + get_numerai_keys()
@@ -159,5 +159,9 @@ def sanitize_message(message):
                 message = message.replace(key, f'...{key[-5:]}')
             except AttributeError:
                 continue
-
+    if censor_substr:
+        message = message.replace(
+            censor_substr,
+            f'...{censor_substr[-5:]}'
+        )
     return message
