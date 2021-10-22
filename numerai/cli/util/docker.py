@@ -48,9 +48,9 @@ def get_from_q(q, verbose, default=b'', prefix=''):
         return default
 
 
-def execute(command, verbose):
+def execute(command, verbose, censor_substr=None):
     if verbose:
-        click.echo('Running: ' + sanitize_message(command))
+        click.echo('Running: ' + sanitize_message(command, censor_substr))
 
     on_posix = 'posix' in sys.builtin_module_names
     proc = subprocess.Popen(
@@ -171,7 +171,7 @@ def login(node_config, verbose):
         f" {node_config['docker_repo']}"
     )
 
-    execute(cmd, verbose)
+    execute(cmd, verbose, censor_substr=password)
 
 
 def login_aws():
