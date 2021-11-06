@@ -20,7 +20,8 @@ def download_data():
     logging.info('downloading tournament data files')
     # create an API client and download current data
     file_path = napi.download_current_dataset()
-    file_path = file_path.split('.zip')[0]         # we only want the unzipped directory
+    # we only want the unzipped directory
+    file_path = file_path.split('.zip')[0]
     logging.info(f'output path: {file_path}')
 
     train_data_path = f'{file_path}/numerai_training_data.csv'
@@ -45,8 +46,10 @@ def train(train_data_path, model_id, model, force_training=False):
     train_data = pd.read_csv(train_data_path)
 
     logging.info('extracting features and targets')
-    train_features = train_data.iloc[:, 3:-1]   # get all rows and all columns from 4th to last-1
-    train_targets = train_data.iloc[:, -1]      # get all rows and only last column
+    # get all rows and all columns from 4th to last-1
+    train_features = train_data.iloc[:, 3:-1]
+    # get all rows and only last column
+    train_targets = train_data.iloc[:, -1]
     del train_data
 
     logging.info(f'training model')
@@ -63,8 +66,10 @@ def predict(model, predict_data_path):
     predict_data = pd.read_csv(predict_data_path)
 
     logging.info('extracting features')
-    predict_ids = predict_data.iloc[:, 0]           # get all rows and only first column
-    predict_features = predict_data.iloc[:, 3:-1]   # get all rows and all columns from 4th to last-1
+    # get all rows and only first column
+    predict_ids = predict_data.iloc[:, 0]
+    # get all rows and all columns from 4th to last-1
+    predict_features = predict_data.iloc[:, 3:-1]
     del predict_data
 
     logging.info(f'generating predictions')
@@ -80,7 +85,8 @@ def submit(predictions, predict_output_path, model_id=None):
     # numerai doesn't want the index, so don't write it to our file
     predictions.to_csv(predict_output_path, index=False)
 
-    # Numerai API uses Environment variables to find your keys: NUMERAI_PUBLIC_ID and NUMERAI_SECRET_KEY
+    # Numerai API uses Environment variables to find your keys:
+    # NUMERAI_PUBLIC_ID and NUMERAI_SECRET_KEY
     # these are set by docker via the numerai cli; see README for more info
     logging.info(f'submitting')
     napi.upload_predictions(predict_output_path, model_id=model_id)
