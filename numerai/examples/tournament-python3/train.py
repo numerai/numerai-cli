@@ -1,4 +1,4 @@
-""" An extra entry point specifically for training, Used when running locally """
+""" An extra entry point specifically for training. Used when running locally """
 
 import predict
 
