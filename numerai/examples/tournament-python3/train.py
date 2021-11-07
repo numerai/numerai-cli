@@ -1,3 +1,5 @@
+""" An extra entry point specifically for training, Used when running locally """
+
 import predict
 
 train_data_path, predict_data_path, predict_output_path = predict.download_data()

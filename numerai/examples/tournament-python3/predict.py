@@ -1,3 +1,5 @@
+""" Sample tournament model in python 3 """
+
 import os
 import logging
 import joblib
@@ -17,6 +19,8 @@ napi = numerapi.NumerAPI()
 
 
 def download_data():
+    """ Download the data files """
+
     logging.info('downloading tournament data files')
     # create an API client and download current data
     file_path = napi.download_current_dataset()
@@ -32,6 +36,8 @@ def download_data():
 
 
 def train(train_data_path, model_id, model, force_training=False):
+    """ Train the model """
+
     model_name = TRAINED_MODEL_PREFIX
     if model_id:
         model_name += f"_{model_id}"
@@ -62,6 +68,8 @@ def train(train_data_path, model_id, model, force_training=False):
 
 
 def predict(model, predict_data_path):
+    """ Predict the results based on the previously trained model """
+
     logging.info(f'reading prediction data')
     predict_data = pd.read_csv(predict_data_path)
 
@@ -81,6 +89,8 @@ def predict(model, predict_data_path):
 
 
 def submit(predictions, predict_output_path, model_id=None):
+    """ Submit a prediction """
+
     logging.info('writing predictions to file')
     # numerai doesn't want the index, so don't write it to our file
     predictions.to_csv(predict_output_path, index=False)
@@ -93,6 +103,8 @@ def submit(predictions, predict_output_path, model_id=None):
 
 
 def main():
+    """ Download, train, predict and submit for this model """
+
     train_data_path, predict_data_path, predict_output_path = download_data()
     trained_model = train(train_data_path, MODEL_ID, MODEL)
     predictions = predict(trained_model, predict_data_path)
