@@ -53,8 +53,10 @@ def train(train_data_path, model_id, model, force_training=False):
 
     logging.info('extracting features and targets')
     # get all rows and all columns from 4th to last-1
+    # pylint: disable=no-member
     train_features = train_data.iloc[:, 3:-1]
     # get all rows and only last column
+    # pylint: disable=no-member
     train_targets = train_data.iloc[:, -1]
     del train_data
 
@@ -75,8 +77,10 @@ def predict(model, predict_data_path):
 
     logging.info('extracting features')
     # get all rows and only first column
+    # pylint: disable=no-member
     predict_ids = predict_data.iloc[:, 0]
     # get all rows and all columns from 4th to last-1
+    # pylint: disable=no-member
     predict_features = predict_data.iloc[:, 3:-1]
     del predict_data
 
