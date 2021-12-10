@@ -23,7 +23,7 @@ ENV SRC_PATH=$SRC_PATH
 # The `ADD [source] [destination]` command will take a file from the source directory on your computer
 # and copy it over to the destination directory in the Docker container.
 ADD $SRC_PATH/requirements.txt .
-RUN pip install -r requirements.txt
+RUN pip install -r requirements.txt --no-cache-dir
 
 # Now, add everything in the source code directory.
 # (including your code, compiled files, serialized models, everything...)
