@@ -148,7 +148,7 @@ def build(node_config, verbose):
     build_arg_str += f' --build-arg MODEL_ID={node_config["model_id"]}'
     build_arg_str += f' --build-arg SRC_PATH={path}'
 
-    cmd = f'docker build -t {node_config["docker_repo"]}' \
+    cmd = f'docker build --platform=linux/amd64 -t {node_config["docker_repo"]}' \
           f'{build_arg_str} -f {path}/Dockerfile .'
 
     execute(cmd, verbose)
