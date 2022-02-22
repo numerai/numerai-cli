@@ -1,5 +1,5 @@
 # Provides us a working Python 3 environment.
-FROM python:3.7
+FROM python:3.9
 
 # These are docker arguments that `numerai node deploy/test` will always pass into docker.
 # They are then set in your environment so that numerapi can access them when uploading submissions.

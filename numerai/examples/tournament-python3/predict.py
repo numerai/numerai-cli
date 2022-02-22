@@ -1,3 +1,5 @@
+""" Sample tournament model in python 3 """
+
 import os
 import logging
 import joblib
@@ -17,11 +19,14 @@ napi = numerapi.NumerAPI()
 
 
 def download_data():
+    """ Download the data files """
+
     logging.info('downloading tournament data files')
     # create an API client and download current data
     file_path = napi.download_current_dataset()
-    file_path = file_path.split('.zip')[0]         # we only want the unzipped directory
-    logging.info(f'output path: {file_path}')
+    # we only want the unzipped directory
+    file_path = file_path.split('.zip')[0]
+    logging.info('output path: %s', file_path)
 
     train_data_path = f'{file_path}/numerai_training_data.csv'
     predict_data_path = f'{file_path}/numerai_tournament_data.csv'
@@ -31,6 +36,8 @@ def download_data():
 
 
 def train(train_data_path, model_id, model, force_training=False):
+    """ Train the model """
+
     model_name = TRAINED_MODEL_PREFIX
     if model_id:
         model_name += f"_{model_id}"
@@ -41,15 +48,19 @@ def train(train_data_path, model_id, model, force_training=False):
         model = joblib.load(model_name)
         return model
 
-    logging.info(f'reading training data')
+    logging.info('reading training data')
     train_data = pd.read_csv(train_data_path)
 
     logging.info('extracting features and targets')
-    train_features = train_data.iloc[:, 3:-1]   # get all rows and all columns from 4th to last-1
-    train_targets = train_data.iloc[:, -1]      # get all rows and only last column
+    # get all rows and all columns from 4th to last-1
+    # pylint: disable=no-member
+    train_features = train_data.iloc[:, 3:-1]
+    # get all rows and only last column
+    # pylint: disable=no-member
+    train_targets = train_data.iloc[:, -1]
     del train_data
 
-    logging.info(f'training model')
+    logging.info('training model')
     model.fit(X=train_features, y=train_targets)
 
     logging.info('saving model')
@@ -59,15 +70,21 @@ def train(train_data_path, model_id, model, force_training=False):
 
 
 def predict(model, predict_data_path):
-    logging.info(f'reading prediction data')
+    """ Predict the results based on the previously trained model """
+
+    logging.info('reading prediction data')
     predict_data = pd.read_csv(predict_data_path)
 
     logging.info('extracting features')
-    predict_ids = predict_data.iloc[:, 0]           # get all rows and only first column
-    predict_features = predict_data.iloc[:, 3:-1]   # get all rows and all columns from 4th to last-1
+    # get all rows and only first column
+    # pylint: disable=no-member
+    predict_ids = predict_data.iloc[:, 0]
+    # get all rows and all columns from 4th to last-1
+    # pylint: disable=no-member
+    predict_features = predict_data.iloc[:, 3:-1]
     del predict_data
 
-    logging.info(f'generating predictions')
+    logging.info('generating predictions')
     predictions = model.predict(predict_features)
     predictions = pd.DataFrame(predictions, columns=['prediction'])
     predictions.insert(0, "id", predict_ids)
@@ -76,17 +93,22 @@ def predict(model, predict_data_path):
 
 
 def submit(predictions, predict_output_path, model_id=None):
+    """ Submit a prediction """
+
     logging.info('writing predictions to file')
     # numerai doesn't want the index, so don't write it to our file
     predictions.to_csv(predict_output_path, index=False)
 
-    # Numerai API uses Environment variables to find your keys: NUMERAI_PUBLIC_ID and NUMERAI_SECRET_KEY
+    # Numerai API uses Environment variables to find your keys:
+    # NUMERAI_PUBLIC_ID and NUMERAI_SECRET_KEY
     # these are set by docker via the numerai cli; see README for more info
-    logging.info(f'submitting')
+    logging.info('submitting')
     napi.upload_predictions(predict_output_path, model_id=model_id)
 
 
 def main():
+    """ Download, train, predict and submit for this model """
+
     train_data_path, predict_data_path, predict_output_path = download_data()
     trained_model = train(train_data_path, MODEL_ID, MODEL)
     predictions = predict(trained_model, predict_data_path)
