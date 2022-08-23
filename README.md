@@ -96,7 +96,11 @@ numerai node test
 ```
 
 Your compute node is now setup and ready to run. It saves important configuration 
-information in `$USER_HOME/.numerai/nodes.json` including the url for your Node Trigger.
+information in `$USER_HOME/.numerai/nodes.json`. This directory is VERY IMPORTANT!
+If you lose this directory without destroying your nodes, it creates very serious 
+problems, so make sure you backup these files regularly.
+
+The `nodes.json` file also includes the url for your Node Trigger.
 This trigger is registered with whichever model you specified during configuration.
 Each trigger will be called Saturday morning right after a new round opens, 
 and if the related job fails it will be triggered again around 24 hours later.
@@ -108,7 +112,6 @@ NOTES:
 - You can view resources and logs in the AWS Console (region us-east-1) for your
   [ECS Cluster](https://console.aws.amazon.com/ecs/home?region=us-east-1#/clusters/numerai-submission-ecs-cluster/tasks)
   and [other resources](https://console.aws.amazon.com/cloudwatch/home?region=us-east-1#logsV2:log-groups)
-- If you're getting
 
 NEXT: [read the Prediction Nodes wiki](https://github.com/numerai/numerai-cli/wiki/Prediction-Nodes)
 to learn about Numerai Examples and how to customize Prediction Nodes.
