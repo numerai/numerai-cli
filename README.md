@@ -63,7 +63,7 @@ If you have any problems, questions, comments, concerns, or general feedback, pl
     - If you are using python venv then drop the --user option. 
       If you don't know what that is, disregard this note.
       
-## Upgrading
+## Upgrading and Updating
 Upgrading numerai-cli will always require you to update the package itself using pip:
 ```
 pip install --upgrade numerai-cli --user
@@ -95,10 +95,20 @@ numerai node deploy
 numerai node test
 ```
 
-Your compute node is now setup and ready to run. It saves important configuration 
-information in `$USER_HOME/.numerai/nodes.json`. This directory is VERY IMPORTANT!
-If you lose this directory without destroying your nodes, it creates very serious 
-problems, so make sure you backup these files regularly.
+Your compute node is now setup and ready to run!
+If you make changes to your code, simply deploy and test your node again
+
+```
+numerai node deploy
+numerai node test
+```
+
+It saves important configuration information in `$USER_HOME/.numerai/nodes.json`.
+This directory is VERY IMPORTANT! If you lose this directory without destroying your nodes,
+it creates very serious problems, so make sure you backup these files regularly.
+
+
+
 
 The `nodes.json` file also includes the url for your Node Trigger.
 This trigger is registered with whichever model you specified during configuration.
