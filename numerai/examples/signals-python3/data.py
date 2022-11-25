@@ -92,6 +92,7 @@ def generate_rsi_features(full_data, num_days):
     full_data["RSI"] = ticker_groups["price"].transform(
         lambda x: relative_strength_index(x)
     )
+    full_data.dropna(inplace=True)
 
     # group by era (date)
     logging.info('grouping by dates...')
@@ -102,7 +103,6 @@ def generate_rsi_features(full_data, num_days):
     full_data["RSI_quintile"] = date_groups["RSI"].transform(
         lambda group: pd.qcut(group, 5, labels=False, duplicates="drop")
     )
-    full_data.dropna(inplace=True)
 
     feat_quintile_lag, feat_rsi_diff, feat_rsi_diff_abs = get_rsi_feature_names(num_days)
 
