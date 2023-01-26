@@ -35,7 +35,7 @@
   echo "If you encounter issues, include this in your support request:"
   lsb_release -a
   uname -a
-  systemctl status docker
+  systemctl status docker --no-pager
   which docker
 } || {
   echo "Setup script failed, please include the following along with the error if you report this:"
