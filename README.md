@@ -139,7 +139,7 @@ please read through the following (especially the "Troubleshooting" section in t
 - [Github Issues](https://github.com/numerai/numerai-cli/issues)
 
 If you still cannot find a solution or answer, please join us on the 
-[RocketChat #compute Channel](https://community.numer.ai/channel/compute) 
+[RocketChat #support Channel](https://rocketchat.numer.ai/channel/support) 
 and include the following information with your issue/message:
 
 - The commands you ran that caused the error (even previous commands)
