@@ -3,12 +3,11 @@
 [![CircleCI](https://circleci.com/gh/numerai/numerai-cli.svg?style=svg)](https://circleci.com/gh/numerai/numerai-cli)
 [![PyPI](https://img.shields.io/pypi/v/numerai-cli.svg?color=brightgreen)](https://pypi.org/project/numerai-cli/)
 
-Welcome to Numerai CLI, if you haven't heard of Numerai [see our docs](https://docs.numer.ai/tournament/learn)
-to learn more. Currently, this CLI configures a Numerai Prediction Node in Amazon Web Services 
-(AWS) that you can deploy your models to. This solution is architected to cost less than 
-$5/mo on average, but actual costs may vary. It has been tested and found working on 
-MacOS/OSX, Windows 8/10, and Ubuntu 18/20, but should theoretically work anywhere that
-Docker and Python 3 are available.
+Welcome to the Numerai CLI for the [Numerai Tournament](https://docs.numer.ai/tournament/learn).
+This CLI runs on your local computer to configure a Numerai Prediction Node in the cloud.
+This solution is architected to cost less than $5/mo on average, but actual costs may vary.
+It has been tested and found working on MacOS/OSX, Windows 8/10, and Ubuntu 18/20,
+but should theoretically work anywhere that Docker and Python 3 are available.
 
 If you have any problems, questions, comments, concerns, or general feedback, please refer to the
 [Troubleshooting and Feedback](#troubleshooting-and-feedback) before posting anywhere.
@@ -16,10 +15,10 @@ If you have any problems, questions, comments, concerns, or general feedback, pl
 
 ## Contents
 - [Getting Started](#getting-started)
-- [Upgrading to 0.3.0](#upgrading-to-030)
 - [Node Configuration Tutorial](#node-configuration)
 - [List of Commands](#list-of-commands)
 - [Troubleshooting and Feedback](#troubleshooting-and-feedback)
+- [Upgrading to 0.3.0](#upgrading-to-030)
 - [Uninstall](#uninstall)
 
 
@@ -62,31 +61,12 @@ If you have any problems, questions, comments, concerns, or general feedback, pl
     - This command will also work to update to new versions of the package in the future.
     - If you are using python venv then drop the --user option. 
       If you don't know what that is, disregard this note.
-      
-## Upgrading and Updating
-Upgrading numerai-cli will always require you to update the package itself using pip:
-```
-pip install --upgrade numerai-cli --user
-```
-
-#### 0.1/0.2 -> 0.3.0
-CLI 0.3.0 uses a new configuration format that is incompatible with versions 0.1 and 0.2,
-but a command to migrate you configuration is provided for you. Run this in the directory
-you ran `numerai setup` from the previous version:
-```
-numerai upgrade
-```
-
-#### Beyond
-Some updates will make changes to configuration files used by Numerai CLI. These will
-require you to re-run some commands to upgrade your nodes to the newest versions:
-- `numerai setup` will copy over changes to files in the `$HOME/.numerai` directory
-- `numerai node config` will apply those changes to a node
+  
 
 ## Node Configuration Tutorial
 
 If you know you have all the prerequisites and have your AWS and Numerai API Keys at hand,
-you can run these commands to get an example node running in minutes:
+you can run these commands on your local computer to get an example node running in minutes:
 
 ```
 numerai setup
@@ -96,24 +76,30 @@ numerai node test
 ```
 
 Your compute node is now setup and ready to run!
-If you make changes to your code, simply deploy and test your node again
+
+**VERY IMPORTANT**
+These commands have stored configuration files in `$USER_HOME/.numerai/`.
+If you lose this directory without destroying your nodes,
+you will have to manually (and painfully) delete every cloud resource by hand,
+so make sure you backup these files regularly! 
+DO NOT USE THESE COMMANDS FROM A TEMPORARY INSTANCE!!!!
+
+
+The example node will train and predict in the cloud, but this is innefficient.
+It's usually best to train your model locally (ensuring that the trained model is 
+stored in the same folder as your code) and then deploy the trained model.
+When you make changes to your code or re-train your model, simply deploy and test your node again:
 
 ```
 numerai node deploy
 numerai node test
 ```
 
-It saves important configuration information in `$USER_HOME/.numerai/nodes.json`.
-This directory is VERY IMPORTANT! If you lose this directory without destroying your nodes,
-it creates very serious problems, so make sure you backup these files regularly.
-
-
-
-
 The `nodes.json` file also includes the url for your Node Trigger.
 This trigger is registered with whichever model you specified during configuration.
 Each trigger will be called Saturday morning right after a new round opens, 
 and if the related job fails it will be triggered again around 24 hours later.
+You can opt into compute for daily tournaments via the website.
 
 NOTES:
 - The default example does _not_ make stake changes; you will still have to do that manually.
@@ -167,6 +153,27 @@ and include the following information with your issue/message:
     - Windows: `powershell -command "Get-ComputerInfo"`
   
 If you do not include this information, we cannot help you.
+
+
+## Upgrading and Updating
+Upgrading numerai-cli will always require you to update the package itself using pip:
+```
+pip install --upgrade numerai-cli --user
+```
+
+#### 0.1/0.2 -> 0.3.0
+CLI 0.3.0 uses a new configuration format that is incompatible with versions 0.1 and 0.2,
+but a command to migrate you configuration is provided for you. Run this in the directory
+you ran `numerai setup` from the previous version:
+```
+numerai upgrade
+```
+
+#### Beyond
+Some updates will make changes to configuration files used by Numerai CLI. These will
+require you to re-run some commands to upgrade your nodes to the newest versions:
+- `numerai setup` will copy over changes to files in the `$HOME/.numerai` directory
+- `numerai node config` will apply those changes to a node
       
 
 ## Uninstall
