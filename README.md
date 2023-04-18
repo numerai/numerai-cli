@@ -75,7 +75,13 @@ numerai node deploy
 numerai node test
 ```
 
-Your compute node is now setup and ready to run!
+If you want to use larger instances to generate your predictions first run `numerai list-constants`
+to list the vCPU/mem presets available, then you can configure a node to use one of the presets via:
+```
+numerai node config -s mem-lg
+```
+
+Your compute node is now setup and ready to run! 
 
 **VERY IMPORTANT**
 These commands have stored configuration files in `$USER_HOME/.numerai/`.
@@ -85,7 +91,7 @@ so make sure you backup these files regularly!
 DO NOT USE THESE COMMANDS FROM A TEMPORARY INSTANCE!!!!
 
 
-The example node will train and predict in the cloud, but this is innefficient.
+The example node will train and predict in the cloud, but this is inefficient.
 It's usually best to train your model locally (ensuring that the trained model is 
 stored in the same folder as your code) and then deploy the trained model.
 When you make changes to your code or re-train your model, simply deploy and test your node again:
@@ -99,7 +105,8 @@ The `nodes.json` file also includes the url for your Node Trigger.
 This trigger is registered with whichever model you specified during configuration.
 Each trigger will be called Saturday morning right after a new round opens, 
 and if the related job fails it will be triggered again around 24 hours later.
-You can opt into compute for daily tournaments via the website.
+You can opt into compute for daily tournaments via the website (go to numer.ai/models,
+click the 3 dots next to your model, click "compute", and click the switch to opt in).
 
 NOTES:
 - The default example does _not_ make stake changes; you will still have to do that manually.
