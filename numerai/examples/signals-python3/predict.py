@@ -16,7 +16,7 @@ import pandas as pd
 from sklearn.ensemble import GradientBoostingRegressor
 from dateutil.relativedelta import relativedelta, FR
 
-TARGET_NAME = "target"
+TARGET_NAME = "target_4d"
 PREDICTION_NAME = "signal"
 TRAINED_MODEL_PREFIX = './trained_model'
 
