@@ -42,7 +42,7 @@ def test(ctx, local, command, verbose):
 
     if local:
         click.secho("starting local test; building container...")
-        docker.build(node_config, verbose)
+        docker.build(node_config, node, verbose)
         click.secho("running container...")
         docker.run(node_config, verbose, command=command)
 

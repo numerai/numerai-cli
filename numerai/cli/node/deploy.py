@@ -18,7 +18,7 @@ def deploy(ctx, verbose):
     docker.check_for_dockerfile(node_config['path'])
 
     click.echo('building container image (this may take several minutes)...')
-    docker.build(node_config, verbose)
+    docker.build(node_config, node, verbose)
 
     click.echo('logging into container registry...')
     docker.login(node_config, verbose)
