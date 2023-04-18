@@ -23,24 +23,30 @@ PROVIDERS = [
 
 LOG_TYPE_WEBHOOK = 'webhook'
 LOG_TYPE_CLUSTER = 'cluster'
-LOG_TYPES = [
-    LOG_TYPE_WEBHOOK,
-    LOG_TYPE_CLUSTER
-]
+LOG_TYPES = [LOG_TYPE_WEBHOOK, LOG_TYPE_CLUSTER]
 
 SIZE_PRESETS = {
-    "gen-sm": (1024, 4096),
-    "gen-md": (2048, 8192),
-    "gen-lg": (4096, 16384),
-
-    "cpu-xs": (512, 1024),
-    "cpu-sm": (1024, 2048),
-    "cpu-md": (2048, 4096),
-    "cpu-lg": (4096, 8192),
-
-    "mem-sm": (1024, 8192),
-    "mem-md": (2048, 16384),
-    "mem-lg": (4096, 30720),
+    # balanced cpu/mem
+    "gen-xs": (512, 1908),
+    "gen-sm": (1024, 3816),
+    "gen-md": (2048, 7630),
+    "gen-lg": (4096, 15260),
+    "gen-xl": (8192, 30520),
+    "gen-2xl": (16384, 61035),
+    # cpu heavy
+    "cpu-xs": (512, 954),
+    "cpu-sm": (1024, 1908),
+    "cpu-md": (2048, 3816),
+    "cpu-lg": (4096, 7630),
+    "cpu-xl": (8192, 15260),
+    "cpu-2xl": (16384, 30520),
+    # mem heavy
+    "mem-xs": (512, 3816),
+    "mem-sm": (1024, 7630),
+    "mem-md": (2048, 15260),
+    "mem-lg": (4096, 30520),
+    "mem-xl": (8192, 61035),
+    "mem-2xl": (16384, 114441),
 }
 
 DEFAULT_EXAMPLE = 'tournament-python3'
@@ -51,7 +57,7 @@ DEFAULT_SETTINGS = {
     'provider': DEFAULT_PROVIDER,
     'cpu': SIZE_PRESETS[DEFAULT_SIZE][0],
     'memory': SIZE_PRESETS[DEFAULT_SIZE][1],
-    'path': DEFAULT_PATH
+    'path': DEFAULT_PATH,
 }
 
 CONSTANTS_STR = f'''Default values (not your configured node values):
