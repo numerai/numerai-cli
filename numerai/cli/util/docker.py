@@ -128,7 +128,7 @@ def terraform(tf_cmd, verbose, env_vars=None, inputs=None, version='0.14.3'):
     return stdout
 
 
-def build(node_config, verbose):
+def build(node_config, node, verbose):
     numerai_keys = load_or_init_keys()['numerai']
 
     node_path = node_config["path"]
@@ -147,6 +147,7 @@ def build(node_config, verbose):
         build_arg_str += f' --build-arg {arg}={numerai_keys[arg]}'
     build_arg_str += f' --build-arg MODEL_ID={node_config["model_id"]}'
     build_arg_str += f' --build-arg SRC_PATH={path}'
+    build_arg_str += f' --build-arg NODE={node}'
 
     cmd = f'docker build --platform=linux/amd64 -t {node_config["docker_repo"]}' \
           f'{build_arg_str} -f {path}/Dockerfile .'

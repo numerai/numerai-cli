@@ -9,7 +9,7 @@ with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name='numerai-cli',
-    version='0.3.4',
+    version='0.3.5',
     description='A library for deploying Numer.ai Prediction Nodes.',
     url='https://github.com/numerai/numerai-cli',
     author='Numer.ai',
@@ -29,5 +29,5 @@ setup(
     ],
     entry_points={
         'console_scripts': ['numerai=numerai:main'],
-    }
+    },
 )
