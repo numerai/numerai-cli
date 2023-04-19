@@ -11,7 +11,8 @@ from numerai.cli.util.keys import \
     load_or_init_keys, \
     load_or_init_nodes, \
     config_numerai_keys, \
-    config_provider_keys
+    config_provider_keys, \
+    config_custom_keys
 
 
 @click.command()
@@ -51,10 +52,11 @@ def upgrade(verbose):
 
     # INIT KEYS AND NODES
     keys_config = load_or_init_keys()
-    if not os.path.exists(KEYS_PATH) or 'aws' not in keys_config or 'numerai' not in keys_config:
+    if not os.path.exists(KEYS_PATH) or 'aws' not in keys_config or 'numerai' not in keys_config or 'custom' not in keys_config:
         click.secho(f"Keys missing from {KEYS_PATH}, you must re-initialize your keys:")
         config_numerai_keys()
         config_provider_keys(PROVIDER_AWS)
+        config_custom_keys()
     nodes_config = load_or_init_nodes()
 
     # DELETE OLD CONFIG FILES
