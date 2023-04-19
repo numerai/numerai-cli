@@ -29,5 +29,5 @@ setup(
     ],
     entry_points={
         'console_scripts': ['numerai=numerai:main'],
-    }
+    },
 )
