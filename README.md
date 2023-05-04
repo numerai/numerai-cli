@@ -4,25 +4,34 @@
 [![PyPI](https://img.shields.io/pypi/v/numerai-cli.svg?color=brightgreen)](https://pypi.org/project/numerai-cli/)
 
 Welcome to the Numerai CLI for the [Numerai Tournament](https://docs.numer.ai/tournament/learn).
+This README is designed to have EVERYTHING you need to setup and maintain a Numerai Compute Heavy node.
+
 This CLI runs on your local computer to configure a Numerai Prediction Node in the cloud.
 This solution is architected to cost less than $5/mo on average, but actual costs may vary.
-It has been tested and found working on MacOS/OSX, Windows 8/10, and Ubuntu 18/20,
+It has been tested on MacOS/OSX, Windows 8/10, and Ubuntu 18/20,
 but should theoretically work anywhere that Docker and Python 3 are available.
-
-If you have any problems, questions, comments, concerns, or general feedback, please refer to the
-[Troubleshooting and Feedback](#troubleshooting-and-feedback) before posting anywhere.
 
 
 ## Contents
 - [Getting Started](#getting-started)
-- [Node Configuration Tutorial](#node-configuration)
-- [List of Commands](#list-of-commands)
+    - [List of Commands](#list-of-commands)
+    - [Upgrading](#upgrading)
+    - [Uninstalling](#upgrading)
 - [Troubleshooting and Feedback](#troubleshooting-and-feedback)
-- [Upgrading to 0.3.0](#upgrading-to-030)
-- [Uninstall](#uninstall)
+    - [Python](#python)
+    - [Docker](#docker)
+    - [Common Errors](#common-errors)
+- [Billing Alerts](#billing-alerts)
+- [Architecture](#architecture)
 
 
-## Getting Started
+# Getting Started
+
+To use this tool you need:
+- Numerai API keys
+- AWS API keys
+- Python
+- Docker
 
 1.  Sign up a Numerai Account, get your Numerai API Keys, and your first Model:
     1.  Sign up at https://numer.ai/signup and log in to your new account
@@ -32,13 +41,48 @@ If you have any problems, questions, comments, concerns, or general feedback, pl
     5.  Copy your secret public key and secret key somewhere safe
   
 
-2.  Pick a Cloud Provider and follow the setup directions (Currently we only support AWS):
-    - [Amazon Web Services Setup Instructions](https://github.com/numerai/numerai-cli/wiki/Amazon-Web-Services)
+2.  Create a payed AWS account with an IAM user and API keys:
+    1.  Create an [Amazon Web Services (AWS) Account](https://portal.aws.amazon.com/billing/signup)
+    2.  Make sure you are signed in to the [AWS Console](console.aws.amazon.com)
+    3.  Set up [AWS Billing](https://console.aws.amazon.com/billing/home?#/paymentmethods)
+    4.  Create a [new IAM Policy](https://console.aws.amazon.com/iam/home?region=us-east-1#/policies$new?step=edit):
+    5.  Select the "JSON" tab and overwrite the existing values with the following policy document:
+    ```
+    {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Sid": "VisualEditor0",
+                "Effect": "Allow",
+                "Action": [
+                    "apigateway:*",
+                    "logs:*",
+                    "s3:List*",
+                    "ecs:*",
+                    "lambda:*",
+                    "ecr:*",
+                    "ec2:*",
+                    "iam:*",
+                    "events:*"
+                ],
+                "Resource": "*"
+            }
+        ]
+    }
+    ```
+    NOTE: For experienced cloud users, it may seem unsafe to have `:*` next to resources. You may experiment with constricting these permissions at your own risk, but future versions of the CLI may not work if you do this.
+
+    6. Click "Next" at the bottom until you reach "Review Policy"
+    7. Name your policy (e.g. "compute-setup-policy") and remember this name, then hit "Create Policy"
+    8.  Give the user a name (like "numerai-compute") and select "Programmatic access"
+    9.  For permissions, click "Attach existing policies directly"
+    10.  Search for the Policy you just created and check the box next to it
+    11.  Continue through remaining pages and click "Create User"
+    12.  Record the "Access key ID" and "Secret access key" from the final step.
     
 
 3.  Install Docker and Python for your Operating System (if you encounter errors or your
-    OS is not supported, please [read the troubleshooting wiki](
-    https://github.com/numerai/numerai-cli/wiki/Troubleshooting) to install Python and Docker):
+    OS is not supported, please see [Troubleshooting and Feedback](#troubleshooting-and-feedback)):
     - Mac Terminal (cmd + space, type `terminal`, select `terminal.app`):
         ```
         curl https://raw.githubusercontent.com/numerai/numerai-cli/master/scripts/setup-mac.sh | bash
@@ -61,63 +105,41 @@ If you have any problems, questions, comments, concerns, or general feedback, pl
     - This command will also work to update to new versions of the package in the future.
     - If you are using python venv then drop the --user option. 
       If you don't know what that is, disregard this note.
-  
 
-## Node Configuration Tutorial
+5. Run these commands on your personal computer (not a temporary instance)
+   to get an example node running in minutes:
 
-If you know you have all the prerequisites and have your AWS and Numerai API Keys at hand,
-you can run these commands on your local computer to get an example node running in minutes:
+    ```
+    numerai setup
+    numerai node config --example tournament-python3
+    numerai node deploy
+    numerai node test
+    ```
 
-```
-numerai setup
-numerai node config --example tournament-python3
-numerai node deploy
-numerai node test
-```
+    If you want to use larger instances to generate your predictions first run `numerai list-constants`
+    to list the vCPU/mem presets available, then you can configure a node to use one of the presets via:
+    ```
+    numerai node config -s mem-lg
+    ```
 
-If you want to use larger instances to generate your predictions first run `numerai list-constants`
-to list the vCPU/mem presets available, then you can configure a node to use one of the presets via:
-```
-numerai node config -s mem-lg
-```
+    Your compute node is now setup and ready to run! When you make changes to your code or re-train your model,
+    simply deploy and test your node again:
 
-Your compute node is now setup and ready to run! 
+    ```
+    numerai node deploy
+    numerai node test
+    ```
 
-**VERY IMPORTANT**
-These commands have stored configuration files in `$USER_HOME/.numerai/`.
-If you lose this directory without destroying your nodes,
-you will have to manually (and painfully) delete every cloud resource by hand,
-so make sure you backup these files regularly! 
-DO NOT USE THESE COMMANDS FROM A TEMPORARY INSTANCE!!!!
-
-
-The example node will train and predict in the cloud, but this is inefficient.
-It's usually best to train your model locally (ensuring that the trained model is 
-stored in the same folder as your code) and then deploy the trained model.
-When you make changes to your code or re-train your model, simply deploy and test your node again:
-
-```
-numerai node deploy
-numerai node test
-```
-
-The `nodes.json` file also includes the url for your Node Trigger.
-This trigger is registered with whichever model you specified during configuration.
-Each trigger will be called Saturday morning right after a new round opens, 
-and if the related job fails it will be triggered again around 24 hours later.
-You can opt into compute for daily tournaments via the website (go to numer.ai/models,
-click the 3 dots next to your model, click "compute", and click the switch to opt in).
-
-NOTES:
-- The default example does _not_ make stake changes; you will still have to do that manually.
-  Please refer to the [numerapi docs](https://numerapi.readthedocs.io/en/latest/api/numerapi.html#module-numerapi.numerapi)
-  for the methods you must call to do this.
-- You can view resources and logs in the AWS Console (region us-east-1) for your
-  [ECS Cluster](https://console.aws.amazon.com/ecs/home?region=us-east-1#/clusters/numerai-submission-ecs-cluster/tasks)
-  and [other resources](https://console.aws.amazon.com/cloudwatch/home?region=us-east-1#logsV2:log-groups)
-
-NEXT: [read the Prediction Nodes wiki](https://github.com/numerai/numerai-cli/wiki/Prediction-Nodes)
-to learn about Numerai Examples and how to customize Prediction Nodes.
+    NOTES:
+    - These commands have stored configuration files in `$USER_HOME/.numerai/`. DO NOT LOSE THIS FILE!
+      or else you will have to manually delete every cloud resource by hand.
+    - The example node trains a model in the cloud, which is bad. You should train locally, pickle the
+      trained model, deploy your node, then unpickle your model to do the live predictions
+    - The default example does _not_ make stake changes; please refer to the [numerapi docs](https://numerapi.readthedocs.io/en/latest/api/numerapi.html#module-numerapi.numerapi)
+      for the methods you must call to do this.
+    - You can view resources and logs in the AWS Console (region us-east-1) for your
+      [ECS Cluster](https://console.aws.amazon.com/ecs/home?region=us-east-1#/clusters/numerai-submission-ecs-cluster/tasks)
+      and [other resources](https://console.aws.amazon.com/cloudwatch/home?region=us-east-1#logsV2:log-groups)
 
 ## List of Commands
 Use the `--help` option on any command or sub-command to get a full description of it:
@@ -139,11 +161,36 @@ a signals model or numerai model. The `config` sub-command also takes a `-s` opt
 specify the size of the node to configure.
 
 
-## Troubleshooting and Feedback
-Before messaging the Rocketchat channel or creating a Github issue, 
-please read through the following (especially the "Troubleshooting" section in the wiki):
-- [Github Wiki](https://github.com/numerai/numerai-cli/wiki)
-- [Github Issues](https://github.com/numerai/numerai-cli/issues)
+## Upgrading
+Upgrading numerai-cli will always require you to update the package itself using pip:
+```
+pip install --upgrade numerai-cli --user
+```
+
+#### Upgrading from 0.1/0.2 to 0.3.0
+CLI 0.3.0 uses a new configuration format that is incompatible with versions 0.1 and 0.2,
+but a command to migrate you configuration is provided for you. Run this in the directory
+you ran `numerai setup` from the previous version:
+```
+numerai upgrade
+```
+
+#### Beyond
+Some updates will make changes to configuration files used by Numerai CLI. These will
+require you to re-run some commands to upgrade your nodes to the newest versions:
+- `numerai setup` will copy over changes to files in the `$HOME/.numerai` directory
+- `numerai node config` will apply those changes to a node
+
+
+## Uninstalling
+```
+numerai uninstall
+```
+
+
+# Troubleshooting and Feedback
+Please review this entire section and check github issues before asking questions.
+If you've exhausted this document, then join us on Discord
 
 If you still cannot find a solution or answer, please join us on the 
 [RocketChat #support Channel](https://rocketchat.numer.ai/channel/support) 
@@ -158,35 +205,227 @@ and include the following information with your issue/message:
     - Mac: `system_profiler SPSoftwareDataType && system_profiler SPHardwareDataType`
     - Linux: `lsb_release -a && uname -a`
     - Windows: `powershell -command "Get-ComputerInfo"`
-  
-If you do not include this information, we cannot help you.
+
+## Python
+If the environment setup script fails to install Python3 for you, report the error to Numerai 
+and then install it manually with one of the following options:
+* [Download Python3 directly](https://www.python.org/downloads/)
+* install it from [your system's package manager](https://en.wikipedia.org/wiki/List_of_software_package_management_systems)
+* Use [conda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/) to install and manage python for you
 
 
-## Upgrading and Updating
-Upgrading numerai-cli will always require you to update the package itself using pip:
+## Docker
+If the environment setup script fails to install Docker for you, report the error to Numerai 
+then read the following to get a working installation on your machine. For PCs, you may need to [activate virtualization in your BIOS](https://superuser.com/questions/1382472/how-do-i-find-and-enable-the-virtualization-setting-on-windows-10) before installing. 
+
+### MacOS and Windows 10
+
+Just install [Docker Desktop](https://www.docker.com/products/docker-desktop) to get it running.
+You should also increase the RAM allocated to the VM:
+1. Open the Docker Desktop GUI then
+2. Click Gear in top right corner
+3. Select Resources > Advanced in left sidebar
+4. Use slider to allocate more memory (leave a few gigs for your OS and background applications, otherwise your computer might crash)
+
+### Linux
+
+Check here for instructions for your distro:
+https://docs.docker.com/engine/install/
+
+### Older PCs: Docker Toolbox
+If your machine is older and/or doesn't have Hyper-V enabled, then you will have to follow these steps to install docker toolbox on your machine:
+1. [Install Oracle VirtualBox](https://www.virtualbox.org/wiki/Downloads) for your Operating System
+2. Restart your computer
+3. [Install Docker Toolbox](https://github.com/docker/toolbox/releases)
+4. Restart your computer
+5. After it's installed, open the "Docker QuickStart Terminal" and run the following to increase its RAM:
 ```
-pip install --upgrade numerai-cli --user
+docker-machine rm default
+docker-machine create -d virtualbox --virtualbox-cpu-count=2 --virtualbox-memory=4096 --virtualbox-disk-size=50000 default
+docker-machine restart default
+```
+NOTE: your code must live somewhere under your User directory (ie. C:\Users\USER_NAME\ANY_FOLDER). This is a restriction of docker toolbox not sharing paths correctly otherwise.
+
+
+## Common Errors
+
+```
+Error:
+subprocess.CalledProcessError: Command 'docker run --rm -it -v /home/jason/tmp/.numerai:/opt/plan -w /opt/plan hashicorp/terraform:light init' returned non-zero exit status 127.
+
+
+Reason:
+Docker is not installed.
+
+Solutions:
+If you're certain that docker is installed, make sure that your user can execute docker, ie. try to run `docker ps`.
+If that's the issue, then depending on your system, you can do the following:
+
+- Windows/OSX
+    - Make sure the Docker Desktop is running and finished booting up.
+      It can take a few minutes to be completely ready.
+      When clicking on the docker tray icon, it should say "Docker Desktop is Running".
+    - If you're using Docker Toolbox on Windows, then make sure you've opened the "Docker Quickstart Terminal".
+
+- Linux
+    - Run `sudo usermod -aG docker $USER`
+    - Then reboot or logout/login for this to take effect.
 ```
 
-#### 0.1/0.2 -> 0.3.0
-CLI 0.3.0 uses a new configuration format that is incompatible with versions 0.1 and 0.2,
-but a command to migrate you configuration is provided for you. Run this in the directory
-you ran `numerai setup` from the previous version:
+
 ```
-numerai upgrade
+Error:
+docker: Error response from daemon: Drive has not been shared
+
+Solutions:
+- You need to [share your drive](https://docs.docker.com/docker-for-windows/#shared-drives).
 ```
 
-#### Beyond
-Some updates will make changes to configuration files used by Numerai CLI. These will
-require you to re-run some commands to upgrade your nodes to the newest versions:
-- `numerai setup` will copy over changes to files in the `$HOME/.numerai` directory
-- `numerai node config` will apply those changes to a node
+
+```
+Error:
+numerai: command not found
+
+Solutions:
+- osx/linux: Try and run `~/.local/bin/numerai`
+- Windows: `%LOCALAPPDATA%\Programs\Python\Python37-32\Scripts\numerai.exe`
+- Alternatively, exit then re-open your terminal/command prompt.
+```
+
+```
+Error: 
+error calling sts:GetCallerIdentity: InvalidClientTokenId: The security token included in the request is invalid.
+...
+Command 'docker run -e "AWS_ACCESS_KEY_ID=..." -e "AWS_SECRET_ACCESS_KEY=..." --rm -it -v /home/jason/tmp/.numerai:/opt/plan -w /opt/planhashicorp/terraform:light apply -auto-approve' returned non-zero exit status 1.
+
+Solutions:
+- Run `numerai configure` to re-write your API Keys
+```
+
+
+```
+Error:
+ERROR numerapi.base_api: Error received from your webhook server: {"tasks":[],"failures":[{"reason":"The requested CPU configuration is above your limit"}]}
+
+Solution:
+1. Go to the [Quota Dashboard for EC2](console.aws.amazon.com/servicequotas/home/services/ec2/quotas)
+2. Search for "On-Demand", this will list all instance types and their limits for your account.
+3. Click the bubble next to "Running On-Demand Standard (A, C, D, H, I, M, R, T, Z) instances"
+4. click "Request quota increase" in the top right
+5. Input a higher value than the currently applied quota and finish the request
+```
+**NOTES**
+- If after AWS increases your quota, you still get this error, try again 1-2 more times
+- You may have to complete a quota request for other types of instances too depending on how resource intensive your setup is
+
+
+
+# Billing Alerts
+There's no automated way to setup billing alerts, so you'll need to 
+[configure one manually](https://www.cloudberrylab.com/resources/blog/how-to-configure-billing-alerts-for-your-aws-account/).
+We estimate costs to be less than $5 per month unless your compute takes more than 12 hours a week, 
+but increasing the RAM/CPU will increase your costs.
       
 
-## Uninstall
+
+# Prediction Node Architecture
+
+A Prediction Node represents a cloud-based model that Numerai can trigger for predictions; it is designed to be reliable, resource efficient, and easy to configure and debug. Prediction Nodes use a few important components like a `Dockerfile`, a `Trigger`, a `Container`, and a `Compute Cluster`, all of which can be created using one of the following examples.
+
+## Python Example
 ```
-numerai uninstall
+numerai-python3
+├── Dockerfile
+├── .dockerignore
+├── predict.py
+├── requirements.txt
+└── train.py
 ```
+
+- `Dockerfile`: Used during `numerai node deploy` to build a Docker image that's used to run your code in the cloud. It copies all files in its directory, installs Python requirements for requirements.txt, and runs `python predict.py` by default.
+
+- `.dockerignore`: This file uses regex to match files that should not be included in the Docker image.
+
+- `train.py`: This is an extra entry point specifically for training, it's used when running `numerai node test --local --command "python train.py"`
+
+- `requirements.txt`: Defines python packages required to run the code.
+  
+- `predict.py`: Gets run by default locally and in the cloud when running `numerai test` without the `--command|-c` option.
+
+
+## RLang Example
+```
+numerai-rlang
+├── Dockerfile
+├── .dockerignore
+├── install_packages.R
+└── main.R
+```
+
+- `Dockerfile`: Used during `numerai node deploy` to build a Docker image that's used to run your code in the cloud. It copies all files in its directory, installs Rlang requirements from install_packages.R, and runs main.R by default.
+
+- `.dockerignore`: This file uses regex to match files that should not be included in the Docker image.
+
+- `install_packages.R`: Installs dependencies necessary for running the example.
+  
+- `main.R`: Ran by default locally and in the cloud and when running `numerai test` without the `--command|-c` option.
+
+
+### The Dockerfile
+This is the most important component of deploying a Prediction Node. It is a program (much like a bash script), that packages up your code as an `image`; this image contains everything your code needs to run in the cloud. The most typical case of a Dockerfile is demonstrated in the [Numerai Examples](#the-layouts-of-numerai-examples), if you're not sure how to use a Dockerfile, first copy an example with `numerai copy-example`, then read the documentation in the Dockerfile to learn the basics.
+
+These files are very flexible, the default Dockerfile will just copy everything in whatever directory it is in, but this can be customized if you'd like to share code between models. For example, if you have a python project setup like so:
+```
+numerai_models
+├── common
+├──── __init__.py
+├──── data.py
+├──── setup.py
+├── model_1
+├──── Dockerfile
+├──── .dockerignore
+├──── predict.py
+├──── requirements.txt
+└──── train.py
+```
+Where `common` is an installable python package you want to use in multiple models, you can add this line to model_1/Dockerfile: `RUN pip install ../common/`. Finally, run `numerai node deploy` from the `numerai_models` directory to install the package in the image, making it available to your model code.
+
+If you want to learn more about how to customize this file [checkout the Dockerfile reference] (https://docs.docker.com/engine/reference/builder/).
+
+
+### Cloud Components
+The CLI uses [Terraform](https://www.terraform.io/) to provision cloud resources. These cloud resources generally provide the following components on all cloud providers:
+
+- `Trigger`: A small function that schedules a "task" on your `Compute Cluster`. This "task" handles pulling the image that was created by the `Dockerfile` and running it as a `Container` on your `Compute Cluster`. This is handled by two resources:
+    - **[API Gateway](https://console.aws.amazon.com/apigateway/main/apis)**:
+      Hosts the webhook (HTTP endpoint) that Numerai calls to trigger your nodes.
+      After clicking the link and selecting the resource, use the left sidebar to access metrics and logging.
+    - **[Lambda](https://console.aws.amazon.com/lambda/home#/functions)**:
+      Schedules your compute job when you call your Webhook URL.
+      After clicking the link and selecting the resource, use the "Monitor" tab below the "Function Overview" section.
+
+- `Container`: The thing that actually contains and runs your code on a computer provisioned by the `Compute Cluster`. The `--size` (or `-s`) flag on the `numerai node config` sets the CPU and Memory limits for a `Container`.
+
+- `Compute Cluster`: A handler that accepts scheduled "tasks" and spins up and down computers to run `Containers`.
+
+
+
+## AWS Architecture
+We use 4 primary resources in AWS to run your compute Node. The links will take you to the AWS console where you can monitor any of these resources for a given node; just visit the link and select the resource with the same name as the node you want to monitor (further directions are given for each resource below).
+
+- 
+  
+- **[ECR (Elastic Container Repository)](https://console.aws.amazon.com/ecr/repositories)**:
+  Used for storing docker images. This is the location to which `numerai docker deploy` will push your image.
+  There is not much monitoring here, but you can view your images and when they were uploaded.
+  
+- **[ECS (Elastic Container Service)](https://console.aws.amazon.com/ecs/home#/clusters)**:
+  This is where your containers will actually run and where you'll want to look if your containers don't seem to be scheduled/running.
+  After clicking the link, you'll be able to scroll and monitor the top-level metrics of each cluster.
+  After selecting a specific cluster, you can use the various tabs to view different components of the cluster (tasks are the runnable jobs
+  that the Lambda schedules, instances are the computers the tasks run on, and metrics will show cluster-wide information)
+  
+If you do not include this information, we cannot help you.
 
 
 ## Contributions
