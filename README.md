@@ -22,8 +22,12 @@ but should theoretically work anywhere that Docker and Python 3 are available.
     - [Docker](#docker)
     - [Common Errors](#common-errors)
 - [Billing Alerts](#billing-alerts)
-- [Architecture](#architecture)
-
+- [Prediction Node Architecture](#prediction-node-architecture)
+    - [Python Example](#python-example)
+    - [RLang Example](#rlang-example)
+    - [The Dockerfile](#the-dockerfile)
+    - [Cloud Components](#cloud-components)
+- [Special Thanks](#special-thanks)
 
 # Getting Started
 
@@ -394,7 +398,7 @@ If you want to learn more about how to customize this file [checkout the Dockerf
 
 
 ### Cloud Components
-The CLI uses [Terraform](https://www.terraform.io/) to provision cloud resources. These cloud resources generally provide the following components on all cloud providers:
+The CLI uses [Terraform](https://www.terraform.io/) to provision cloud resources. Each component and the related cloud resource(s) are listed below. The links will take you to the AWS console where you can monitor any of these resources for a given node; just visit the link and select the resource with the same name as the node you want to monitor (further directions are given for each resource below).
 
 - `Trigger`: A small function that schedules a "task" on your `Compute Cluster`. This "task" handles pulling the image that was created by the `Dockerfile` and running it as a `Container` on your `Compute Cluster`. This is handled by two resources:
     - **[API Gateway](https://console.aws.amazon.com/apigateway/main/apis)**:
@@ -404,31 +408,20 @@ The CLI uses [Terraform](https://www.terraform.io/) to provision cloud resources
       Schedules your compute job when you call your Webhook URL.
       After clicking the link and selecting the resource, use the "Monitor" tab below the "Function Overview" section.
 
-- `Container`: The thing that actually contains and runs your code on a computer provisioned by the `Compute Cluster`. The `--size` (or `-s`) flag on the `numerai node config` sets the CPU and Memory limits for a `Container`.
+- `Container`: The thing that actually contains and runs your code on a computer provisioned by the `Compute Cluster`. The `--size` (or `-s`) flag on the `numerai node config` sets the CPU and Memory limits for a `Container`. This is stored in one place:
+    - **[ECR (Elastic Container Repository)](https://console.aws.amazon.com/ecr/repositories)**:
+      Used for storing docker images. This is the location to which `numerai docker deploy` will push your image.
+      There is not much monitoring here, but you can view your images and when they were uploaded.
 
-- `Compute Cluster`: A handler that accepts scheduled "tasks" and spins up and down computers to run `Containers`.
-
-
-
-## AWS Architecture
-We use 4 primary resources in AWS to run your compute Node. The links will take you to the AWS console where you can monitor any of these resources for a given node; just visit the link and select the resource with the same name as the node you want to monitor (further directions are given for each resource below).
-
-- 
-  
-- **[ECR (Elastic Container Repository)](https://console.aws.amazon.com/ecr/repositories)**:
-  Used for storing docker images. This is the location to which `numerai docker deploy` will push your image.
-  There is not much monitoring here, but you can view your images and when they were uploaded.
-  
-- **[ECS (Elastic Container Service)](https://console.aws.amazon.com/ecs/home#/clusters)**:
-  This is where your containers will actually run and where you'll want to look if your containers don't seem to be scheduled/running.
-  After clicking the link, you'll be able to scroll and monitor the top-level metrics of each cluster.
-  After selecting a specific cluster, you can use the various tabs to view different components of the cluster (tasks are the runnable jobs
-  that the Lambda schedules, instances are the computers the tasks run on, and metrics will show cluster-wide information)
-  
-If you do not include this information, we cannot help you.
+- `Compute Cluster`: A handler that accepts scheduled "tasks" and spins up and down computers to run `Containers`. This is handled by ECS:
+    - **[ECS (Elastic Container Service)](https://console.aws.amazon.com/ecs/home#/clusters)**:
+        This is where your containers will actually run and where you'll want to look if your containers don't seem to be scheduled/running.
+        After clicking the link, you'll be able to scroll and monitor the top-level metrics of each cluster.
+        After selecting a specific cluster, you can use the various tabs to view different components of the cluster (tasks are the runnable jobs
+        that the Lambda schedules, instances are the computers the tasks run on, and metrics will show cluster-wide information)
 
 
-## Contributions
+## Special Thanks
 
 - Thanks to [uuazed](https://github.com/uuazed) for their work on [numerapi](https://github.com/uuazed/numerapi)
 - Thanks to [hellno](https://github.com/hellno) for starting the Signals [ticker map](https://github.com/hellno/numerai-signals-tickermap)
