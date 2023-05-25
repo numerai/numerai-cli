@@ -35,7 +35,7 @@ module "aws" {
 module "azure" {
   count = length(local.azure_nodes) > 0 ? 1 : 0
   source = "./azure"
-  azure_region = var.az_resource_group_region
+  azure_location = var.az_resource_group_location
   #az_count = var.az_count
   nodes = local.azure_nodes
   node_container_port = var.node_container_port # Keep for now, 3000

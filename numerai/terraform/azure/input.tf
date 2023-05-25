@@ -1,7 +1,7 @@
 # Store all terraform variables in this file
-variable "az_resource_group_region" {
+variable "az_resource_group_location" {
   default     = "eastus"
-  description = "Default region of the Azure resource group."
+  description = "Default location of the Azure resource group."
 }
 
 # Put into locals
@@ -14,6 +14,7 @@ variable "az_resource_group_region" {
 variable "node_config_file" {
   description = "Path to the json file used to configure nodes"
   type        = string
+  default     = "abcabc" #TODO: remove for user input
 }
 
 variable "node_container_port" {
