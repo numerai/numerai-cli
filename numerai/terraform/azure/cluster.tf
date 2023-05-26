@@ -47,6 +47,13 @@ variable "memory_in_gb" {
   default     = 2
 }
 
+resource "random_string" "random" {
+  length  = 5
+  lower = true
+  upper = false
+  special = false
+}
+
 
 # Create a container group with single container
 ## TODO: interate container instance creation for_each nodes in var.nodes
@@ -60,15 +67,18 @@ resource "azurerm_container_group" "container" {
   restart_policy      = var.restart_policy
     
   container {
-    name   = "${var.container_name_prefix}-${random_string.container_name.result}"
+    name   = "${var.container_name_prefix}-${random_string.random.result}"
     image  = var.image
     cpu    = var.cpu_cores
     memory = var.memory_in_gb
 
-    #ports {
-    #  port     = var.port
-    #  protocol = "TCP"
-    #}
+    ports {
+      port     = var.node_container_port
+      protocol = "TCP"
+    }
+
+
+
   }
   
 }

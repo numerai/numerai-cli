@@ -12,7 +12,7 @@ import os
 #load_dotenv()
 
 # This function will be triggered by a GET or POST request (defined in function.json)
-def main(req: func.HttpRequest) -> func.HttpResponse:
+def main(predict: func.HttpRequest) -> func.HttpResponse:
     
     logging.info('Python HTTP trigger function processed a request.')
     
@@ -23,8 +23,8 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
     
     # Start the container instance
     response = client.container_groups.begin_start(
-        resource_group_name="azure-deploy-test",
-        container_group_name="azure-test",
+        resource_group_name=os.environ["AZURE_RG_NAME"],
+        container_group_name=os.environ["AZURE_CRG_NAME"],
         ).result()
     
     return func.HttpResponse(f"This HTTP triggered function executed successfully.",status_code=200)

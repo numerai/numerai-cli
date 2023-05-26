@@ -4,17 +4,16 @@
 # TODO: Create system assigned identity for the function trigger
 data "azurerm_subscription" "current" {}
 
-#data "azurerm_role_definition" "contributor" {
-#  name = "Contributor"
-#}
+data "azurerm_role_definition" "contributor" {
+  name = "Contributor"
+}
 
 # Assign "Contributor" role to the function app
-# [ERROR:May 26] unable to acquire access token 
-#resource "azurerm_role_assignment" "function_app" {
-#  scope              = data.azurerm_subscription.current.id
-#  role_definition_id = "${data.azurerm_subscription.current.id}${data.azurerm_role_definition.contributor.id}"
-#  principal_id       = azurerm_linux_function_app.function_app.identity[0].principal_id
-#}
+resource "azurerm_role_assignment" "function_app" {
+  scope              = data.azurerm_subscription.current.id
+  role_definition_id = "${data.azurerm_subscription.current.id}${data.azurerm_role_definition.contributor.id}"
+  principal_id       = azurerm_linux_function_app.function_app.identity[0].principal_id
+}
 
 
 # Define the service plan for the function app
@@ -38,7 +37,7 @@ resource "azurerm_storage_account" "function_app" {
 
 
 resource "azurerm_linux_function_app" "function_app" {
-  name                = "${local.node_prefix}-function-app"
+  name                = "${local.node_prefix}-func-app"
   resource_group_name = azurerm_resource_group.rg.name
   location            = azurerm_resource_group.rg.location
   service_plan_id            = azurerm_service_plan.function_app.id
@@ -51,6 +50,13 @@ resource "azurerm_linux_function_app" "function_app" {
       python_version = "3.10"
     }
   }
+  
+  # Add environment variables for azure_webhook.py use
+  #environment_variables {
+  #    AZURE_SUBSCRIPTION_ID="${data.azurerm_subscription.current.id}"
+  #    AZURE_RG_NAME="${azurerm_resource_group.rg.name}"
+  #    AZURE_CRG_NAME="${azurerm_container_group.container.name}"
+  #}
 
   identity {
     type = "SystemAssigned"
@@ -59,7 +65,7 @@ resource "azurerm_linux_function_app" "function_app" {
 
 
 resource "azurerm_function_app_function" "function" {
-  name            = "${local.node_prefix}-function-app-function"
+  name            = "${local.node_prefix}-function"
   function_app_id = azurerm_linux_function_app.function_app.id
   language        = "Python"
   
@@ -82,7 +88,7 @@ resource "azurerm_function_app_function" "function" {
           "get",
           "post",
         ]
-        "name" = "req"
+        "name" = "predict"
         "type" = "httpTrigger"
       },
       {
@@ -93,3 +99,19 @@ resource "azurerm_function_app_function" "function" {
     ]
   })
 }
+
+# Add additional logging 
+resource "azurerm_application_insights" "app_insights" {
+  name                = "tf-test-appinsights"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  application_type    = "web"
+}
+
+#output "instrumentation_key" {
+#  value = azurerm_application_insights.app_insights.instrumentation_key
+#}
+
+#output "app_id" {
+#  value = azurerm_application_insights.app_insights.app_id
+#}
