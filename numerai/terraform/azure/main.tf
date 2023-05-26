@@ -28,6 +28,8 @@ provider "azurerm" {
 #  description = "Generate random pet name to be appended as resource group name"
 #}
 
+
+
 #"Resource group for the submission node"
 resource "azurerm_resource_group" "rg" {
   location = var.az_resource_group_location

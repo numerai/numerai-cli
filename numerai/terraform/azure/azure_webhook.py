@@ -1,4 +1,5 @@
 # TODO: to be edited, check how to install req, and get external env variables from TF
+# https://www.youtube.com/watch?v=P-tZ28RhYE4&ab_channel=TomHa
 
 import azure.functions as func
 import logging

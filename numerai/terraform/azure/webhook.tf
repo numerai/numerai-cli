@@ -64,8 +64,8 @@ resource "azurerm_function_app_function" "function" {
   language        = "Python"
   
   file {
-    name    = "trigger_function.py"
-    content = file("trigger_function.py")
+    name    = "azure_webhook.py"
+    content = file("azure_webhook.py")
   }
 
   test_data = jsonencode({
