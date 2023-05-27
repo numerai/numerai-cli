@@ -1,16 +1,17 @@
 # Azure Function App
 # https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/function_app_function
 
-# TODO: Create system assigned identity for the function trigger
+# Access existing Azure subscription under current IAM role
 data "azurerm_subscription" "current" {}
 
 data "azurerm_role_definition" "contributor" {
   name = "Contributor"
 }
 
-# Assign "Contributor" role to the function app
+# Assign "Contributor" role of the Azure Resource Group to the function app
 resource "azurerm_role_assignment" "function_app" {
-  scope              = data.azurerm_subscription.current.id
+  #scope              = data.azurerm_subscription.current.id 
+  scope               = azurerm_resource_group.rg.id # Limit scope to the current resource group
   role_definition_id = "${data.azurerm_subscription.current.id}${data.azurerm_role_definition.contributor.id}"
   principal_id       = azurerm_linux_function_app.function_app.identity[0].principal_id
 }
@@ -22,7 +23,7 @@ resource "azurerm_service_plan" "function_app" {
   resource_group_name = azurerm_resource_group.rg.name
   location            = azurerm_resource_group.rg.location
   os_type             = "Linux"
-  sku_name            = "Y1"
+  sku_name            = "Y1" #Function consumption plan: https://learn.microsoft.com/en-us/azure/azure-functions/functions-scale
 }
 
 resource "azurerm_storage_account" "function_app" {
@@ -52,11 +53,12 @@ resource "azurerm_linux_function_app" "function_app" {
   }
   
   # Add environment variables for azure_webhook.py use
-  #environment_variables {
-  #    AZURE_SUBSCRIPTION_ID="${data.azurerm_subscription.current.id}"
-  #    AZURE_RG_NAME="${azurerm_resource_group.rg.name}"
-  #    AZURE_CRG_NAME="${azurerm_container_group.container.name}"
-  #}
+  # https://learn.microsoft.com/en-us/azure/app-service/reference-app-settings?tabs=kudu%2Cdotnet
+  app_settings = {
+    "AZURE_SUBSCRIPTION_ID" = "${data.azurerm_subscription.current.id}"
+    "AZURE_RESOURCE_GRP_NAME" = "${azurerm_resource_group.rg.name}"
+    "AZURE_CONTAINER_GRP_NAME" = "${azurerm_container_group.container.name}"
+  }
 
   identity {
     type = "SystemAssigned"
@@ -70,8 +72,11 @@ resource "azurerm_function_app_function" "function" {
   language        = "Python"
   
   file {
-    name    = "azure_webhook.py"
-    content = file("azure_webhook.py")
+    #name    = "azure_webhook.py"
+    #content = file("azure_webhook.py")
+
+    name    = "azure_function.zip"
+    content = file("azure_function.zip")
   }
 
   test_data = jsonencode({
@@ -100,12 +105,20 @@ resource "azurerm_function_app_function" "function" {
   })
 }
 
-# Add additional logging 
+# Application insights to log function usage and errors
 resource "azurerm_application_insights" "app_insights" {
   name                = "tf-test-appinsights"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
-  application_type    = "web"
+  application_type    = "other"
+}
+
+resource "azurerm_log_analytics_workspace" "function_app" {
+  name                = "tf-test-log-analytics"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  sku                 = "PerGB2018"
+  retention_in_days   = 30
 }
 
 #output "instrumentation_key" {

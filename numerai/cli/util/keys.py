@@ -7,6 +7,9 @@ import boto3
 import click
 import numerapi
 
+from azure.identity import DefaultAzureCredential
+
+
 from numerai.cli.constants import *
 from numerai.cli.constants import KEYS_PATH
 from numerai.cli.util.debug import exception_with_msg
@@ -110,6 +113,15 @@ def get_aws_keys():
     except KeyError:
         return None, None
 
+# Added for azure key check
+def get_azure_keys():
+    keys = load_or_init_keys()
+    try:
+        return keys['azure']['AWS_ACCESS_KEY_ID'],\
+               keys['azure']['AWS_SECRET_ACCESS_KEY']
+    except KeyError:
+        return None, None
+
 
 def config_aws_keys():
     aws_public, aws_secret = get_aws_keys()
@@ -121,6 +133,19 @@ def config_aws_keys():
     keys_config.setdefault('aws', {})
     keys_config['aws']['AWS_ACCESS_KEY_ID'] = aws_public
     keys_config['aws']['AWS_SECRET_ACCESS_KEY'] = aws_secret
+    store_config(KEYS_PATH, keys_config)
+
+# TODO: add azure keys configuration function
+def config_azure_keys():
+    azure_public, azure_secret = get_azure_keys()
+    azure_public = prompt_for_key('AZURE_ACCESS_KEY_ID', azure_public)
+    azure_secret = prompt_for_key('AZURE_SECRET_ACCESS_KEY', azure_secret)
+    check_aws_validity(azure_public, azure_secret)
+    
+    keys_config = load_or_init_keys()
+    keys_config.setdefault('azure', {})
+    keys_config['azure']['AZURE_ACCESS_KEY_ID'] = azure_public
+    keys_config['azure']['AZURE_SECRET_ACCESS_KEY'] = azure_secret
     store_config(KEYS_PATH, keys_config)
 
 
@@ -143,10 +168,17 @@ def check_aws_validity(key_id, secret):
             f"https://github.com/numerai/numerai-cli/wiki/Amazon-Web-Services)."
         )
 
+# TODO: add azure keys checks with azure-cli
+def check_aws_validity(key_id, secret):
+    
+    pass
+
 
 def config_provider_keys(cloud_provider):
     if cloud_provider == PROVIDER_AWS:
         config_aws_keys()
+    elif cloud_provider == PROVIDER_AZURE:
+        config_azure_keys()
 
 
 def sanitize_message(message, censor_substr=None):

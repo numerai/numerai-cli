@@ -15,9 +15,11 @@ EXAMPLE_PATH = os.path.join(PACKAGE_PATH, "..", "examples")
 EXAMPLES = os.listdir(EXAMPLE_PATH)
 
 PROVIDER_AWS = "aws"
+PROVIDER_AZURE = "azure"
 # PROVIDER_GCP = "gcp"
 PROVIDERS = [
     PROVIDER_AWS,
+    PROVIDER_AZURE
     # PROVIDER_GCP
 ]
 
