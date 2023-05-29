@@ -237,3 +237,5 @@ def cleanup_aws(docker_repo):
         imageIds=imageIds)
 
     return resp['imageIds']
+
+# TODO: cleanup_

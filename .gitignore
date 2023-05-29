@@ -108,6 +108,7 @@ venv.bak/
 */node_modules
 .terraform*
 terraform.tfstate
+.tfplan
 
 .idea/
 .DS_STORE
