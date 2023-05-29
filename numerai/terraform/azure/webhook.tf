@@ -90,11 +90,3 @@ resource "azurerm_log_analytics_workspace" "function_app" {
   sku                 = "PerGB2018"
   retention_in_days   = 30
 }
-
-#output "instrumentation_key" {
-#  value = azurerm_application_insights.app_insights.instrumentation_key
-#}
-
-#output "app_id" {
-#  value = azurerm_application_insights.app_insights.app_id
-#}
