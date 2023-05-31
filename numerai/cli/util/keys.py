@@ -7,7 +7,9 @@ import boto3
 import click
 import numerapi
 
-from azure.identity import DefaultAzureCredential
+
+from azure.identity import ClientSecretCredential  #DefaultAzureCredential
+from azure.mgmt.subscription import SubscriptionClient
 
 
 from numerai.cli.constants import *
@@ -113,14 +115,15 @@ def get_aws_keys():
     except KeyError:
         return None, None
 
-# Added for azure key check
 def get_azure_keys():
     keys = load_or_init_keys()
     try:
-        return keys['azure']['AWS_ACCESS_KEY_ID'],\
-               keys['azure']['AWS_SECRET_ACCESS_KEY']
+        return keys['azure']['AZURE_CLIENT_ID'],\
+               keys['azure']['AZURE_TENANT_ID'],\
+               keys['azure']['AZURE_CLIENT_SECRET']
+               
     except KeyError:
-        return None, None
+        return None, None, None
 
 
 def config_aws_keys():
@@ -135,17 +138,19 @@ def config_aws_keys():
     keys_config['aws']['AWS_SECRET_ACCESS_KEY'] = aws_secret
     store_config(KEYS_PATH, keys_config)
 
-# TODO: add azure keys configuration function
+
 def config_azure_keys():
-    azure_public, azure_secret = get_azure_keys()
-    azure_public = prompt_for_key('AZURE_ACCESS_KEY_ID', azure_public)
-    azure_secret = prompt_for_key('AZURE_SECRET_ACCESS_KEY', azure_secret)
-    check_aws_validity(azure_public, azure_secret)
+    azure_client, azure_tenant , azure_secret = get_azure_keys()
+    azure_client = prompt_for_key('AZURE_CLIENT_ID', azure_client)
+    azure_tenant = prompt_for_key('AZURE_TENANT_ID', azure_tenant)
+    azure_secret = prompt_for_key('AZURE_CLIENT_SECRET', azure_secret)
+    check_azure_validity(azure_client, azure_tenant, azure_secret)
     
     keys_config = load_or_init_keys()
     keys_config.setdefault('azure', {})
-    keys_config['azure']['AZURE_ACCESS_KEY_ID'] = azure_public
-    keys_config['azure']['AZURE_SECRET_ACCESS_KEY'] = azure_secret
+    keys_config['azure']['AZURE_CLIENT_ID'] = azure_client
+    keys_config['azure']['AZURE_TENANT_ID'] = azure_tenant
+    keys_config['azure']['AZURE_CLIENT_SECRET'] = azure_secret
     store_config(KEYS_PATH, keys_config)
 
 
@@ -169,9 +174,36 @@ def check_aws_validity(key_id, secret):
         )
 
 # TODO: add azure keys checks with azure-cli
-def check_aws_validity(key_id, secret):
-    
-    pass
+def check_azure_validity(client_id, tenant_id, secret):
+    try:
+        credentials = ClientSecretCredential(client_id=client_id, 
+                                             tenant_id=tenant_id,
+                                             client_secret=secret)
+        sub_client = SubscriptionClient(credentials)
+        subs = [sub.as_dict() for sub in sub_client.subscriptions.list()]
+        if len(subs)<1:
+            raise exception_with_msg(
+                f"Your Azure Client ID, Tenant ID and Client Secret is OK. "+\
+                f"But the Azure Subscription IAM is NOT set up correctly "+\
+                f"Make sure to follow the instructions in the wiki page: "+\
+                f"<INSERT_LINK>"
+                )
+        
+        
+    except Exception as e:
+            error_msg=f"Make sure you follow the instructions in the wiki page: "+\
+                      f"<INSERT_LINK> to set up the Client ID, Tenant ID and Client Secret correctly."
+            if 'AADSTS700016' in str(e):
+                raise exception_with_msg(
+                    f"Invalid Client ID. "+error_msg
+                    )
+            elif 'double check your tenant name' in str(e):
+                raise exception_with_msg(
+                    f"Invalid Tenant ID. "+error_msg
+                    )
+            elif 'Invalid client secret' in str(e):
+                raise exception_with_msg(
+                    f"Invalid Client Secret. "+error_msg)
 
 
 def config_provider_keys(cloud_provider):
@@ -184,7 +216,7 @@ def config_provider_keys(cloud_provider):
 def sanitize_message(message, censor_substr=None):
     if message is None:
         return None
-    all_keys = get_aws_keys() + get_numerai_keys()
+    all_keys = get_aws_keys() + get_numerai_keys() + get_azure_keys()
     for key in all_keys:
         if key:
             try:

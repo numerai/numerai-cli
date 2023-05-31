@@ -117,6 +117,7 @@ def upgrade(verbose):
 
     if click.confirm("It's recommended you destroy your current Compute Node. Continue?"):
         click.secho("Removing old cloud infrastructure...", fg='yellow')
+        # Remarks: suppose older numerai-cli version only support aws, will add Azure support if encounter issues
         terraform('destroy -auto-approve', verbose,
                   env_vars=load_or_init_keys('aws'),
                   inputs={'node_config_file': 'nodes.json'})

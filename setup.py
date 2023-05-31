@@ -26,6 +26,8 @@ setup(
         "numerapi>=2.4.5",
         "colorama",
         "requests",
+        'azure-identity',
+        'azure-mgmt-subscription'
     ],
     entry_points={
         'console_scripts': ['numerai=numerai:main'],

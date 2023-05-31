@@ -65,6 +65,7 @@ DEFAULT_SETTINGS = {
 }
 
 CONSTANTS_STR = f'''Default values (not your configured node values):
+# (TEMPORARY) Installed the correct Azure testing verison!!!
 
 ---Tournament Numbers---
 TOURNAMENT_NUMERAI: {TOURNAMENT_NUMERAI}

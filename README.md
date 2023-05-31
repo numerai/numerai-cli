@@ -13,21 +13,28 @@ but should theoretically work anywhere that Docker and Python 3 are available.
 
 
 ## Contents
+- [numerai-cli](#numerai-cli)
+  - [Contents](#contents)
 - [Getting Started](#getting-started)
-    - [List of Commands](#list-of-commands)
-    - [Upgrading](#upgrading)
-    - [Uninstalling](#upgrading)
+  - [List of Commands](#list-of-commands)
+  - [Upgrading](#upgrading)
+      - [Upgrading from 0.1/0.2 to 0.3.0](#upgrading-from-0102-to-030)
+      - [Beyond](#beyond)
+  - [Uninstalling](#uninstalling)
 - [Troubleshooting and Feedback](#troubleshooting-and-feedback)
-    - [Python](#python)
-    - [Docker](#docker)
-    - [Common Errors](#common-errors)
+  - [Python](#python)
+  - [Docker](#docker)
+    - [MacOS and Windows 10](#macos-and-windows-10)
+    - [Linux](#linux)
+    - [Older PCs: Docker Toolbox](#older-pcs-docker-toolbox)
+  - [Common Errors](#common-errors)
 - [Billing Alerts](#billing-alerts)
 - [Prediction Node Architecture](#prediction-node-architecture)
-    - [Python Example](#python-example)
-    - [RLang Example](#rlang-example)
+  - [Python Example](#python-example)
+  - [RLang Example](#rlang-example)
     - [The Dockerfile](#the-dockerfile)
     - [Cloud Components](#cloud-components)
-- [Special Thanks](#special-thanks)
+  - [Special Thanks](#special-thanks)
 
 # Getting Started
 

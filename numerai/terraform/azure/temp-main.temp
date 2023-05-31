@@ -1,0 +1,32 @@
+# https://learn.microsoft.com/en-us/azure/developer/terraform/create-resource-group?tabs=azure-cli
+
+# Commentted out the provider and terraform block as it is in the main.tf file
+terraform {
+  required_version = ">= 0.12"  #">=0.12"
+
+  required_providers {
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = ">=3.57"
+    }
+  }
+}
+
+# TODO:
+# Currently authentication is done via az cli, 
+# Need to use the environment variables from Python script directly
+provider "azurerm" {
+    #subscription_id = "your sub id"  
+    #client_id       = "your client id"  
+    #client_secret   = "your client secret"  
+    #tenant_id       = "your tenant id"  
+  features {
+  #  resource_group {
+  #    prevent_deletion_if_contains_resources = false
+  #  }
+  }
+  # tells Terraform to use a managed identity 
+  # use_msi = true
+}
+
+

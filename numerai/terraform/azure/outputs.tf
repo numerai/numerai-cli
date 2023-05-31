@@ -7,7 +7,7 @@ output "outputs" {
     docker_repo = var.image_url
     webhook_url = "https://${azurerm_linux_function_app.function_app.name}.azurewebsites.net/api/azure_trigger"
     webhook_log_group = azurerm_application_insights.app_insights.name
-
+    # cluster_log_group = azurerm_application_insights.app_insights.name
   }
   #value = azurerm_resource_group.rg.name
   

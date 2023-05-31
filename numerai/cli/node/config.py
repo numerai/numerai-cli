@@ -88,6 +88,7 @@ def config(ctx, verbose, provider, size, path, example, cron, register_webhook):
     # terraform apply
     provider_keys = get_provider_keys(node)
     click.secho(f'running terraform to provision cloud infrastructure...')
+    # TODO: check if keys necessary for Azure can be loaded successfully
     terraform(f'apply -auto-approve', verbose,
               env_vars=provider_keys,
               inputs={'node_config_file': 'nodes.json'})

@@ -48,6 +48,11 @@ resource "random_string" "random" {
   special = false
 }
 
+# Resource group for the submission node
+resource "azurerm_resource_group" "rg" {
+  location = var.az_rg_location
+  name = "${local.node_prefix}-resource-grp"
+}
 
 # Create a container group with single container
 ## TODO: interate container instance creation for_each nodes in var.nodes
