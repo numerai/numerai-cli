@@ -22,7 +22,7 @@ variable "container_name_prefix" {
   default     = "aci"
 }
 
-# To be replaced by each node's repository name 
+# To be replaced by each node's repository URL 
 variable "image_url" {
   type        = string
   description = "Container image to deploy. Should be of the form repoName/imagename:tag for images stored in public Docker Hub, or a fully qualified URL for other registries. Images from private registries require additional registry credentials."
@@ -54,11 +54,30 @@ resource "azurerm_resource_group" "rg" {
   name = "${local.node_prefix}-resource-grp"
 }
 
+variable "registry_sku" {
+  type        = string
+  description = "The sku option of Azure Container Registry"
+  default     = "Basic"
+  validation {
+    condition     = contains(["Basic", "Standard", "Premium"], var.registry_sku)
+    error_message = "The registry_sku must be one of the following: Basic, Standard, Premium."
+  }
+}
+
+# Add support for container registry
+resource "azurerm_container_registry" "registry" {
+  name                = "${local.node_prefix}-container-registry"
+  resource_group_name = azurerm_resource_group.rg.name
+  location            = azurerm_resource_group.rg.location
+  sku                 = var.registry_sku
+  admin_enabled       = true
+}
+
 # Create a container group with single container
 ## TODO: interate container instance creation for_each nodes in var.nodes
 resource "azurerm_container_group" "container" {
   #for_each = { for name, config in var.nodes : name => config }
-  name                = "${local.node_prefix}-azure-container-group"
+  name                = "${local.node_prefix}-container-group"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
   ip_address_type     = "Public"

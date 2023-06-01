@@ -44,8 +44,8 @@ from numerai.cli.util.keys import \
 @click.pass_context
 def config(ctx, verbose, provider, size, path, example, cron, register_webhook):
     """
-    Uses Terraform to create a full Numerai Compute cluster in AWS.
-    Prompts for your AWS and Numerai API keys on first run, caches them in $HOME/.numerai.
+    Uses Terraform to create a full Numerai Compute cluster in your desired provider.
+    Prompts for your cloud provider and Numerai API keys on first run, caches them in $HOME/.numerai.
 
     At the end of running, this will output a config file 'nodes.json'.
     """
@@ -88,7 +88,7 @@ def config(ctx, verbose, provider, size, path, example, cron, register_webhook):
     # terraform apply
     provider_keys = get_provider_keys(node)
     click.secho(f'running terraform to provision cloud infrastructure...')
-    # TODO: check if keys necessary for Azure can be loaded successfully
+    # TODO: check if keys for Azure can be loaded successfully
     terraform(f'apply -auto-approve', verbose,
               env_vars=provider_keys,
               inputs={'node_config_file': 'nodes.json'})
