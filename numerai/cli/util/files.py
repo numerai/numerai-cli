@@ -68,7 +68,6 @@ def copy_files(src, dst, force=False, verbose=True):
                 click.secho(f"copying file {dst_file}", fg='yellow')
             shutil.copy(src_file, dst_file)
 
-
 def copy_example(example, dest, verbose):
     example_dir = os.path.join(EXAMPLE_PATH, example)
     dst_dir = dest if dest is not None else example

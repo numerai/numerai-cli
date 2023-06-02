@@ -53,7 +53,11 @@ def config(ctx, verbose, provider, size, path, example, cron, register_webhook):
     model = ctx.obj['model']
     node = model['name']
     model_id = model['id']
-
+    
+    click.secho(f'Input provider "{provider}"...')
+    click.secho(f'Input verbose "{verbose}"...')
+    click.secho(f'Input size "{size}"...')
+    
     if example is not None:
         path = copy_example(example, path, verbose)
 
@@ -68,6 +72,8 @@ def config(ctx, verbose, provider, size, path, example, cron, register_webhook):
     })
     # update node as needed
     node_conf = nodes_config[node]
+    #click.secho(f'Provider: "{provider}"...')    
+    click.secho(f'Current node config: "{node_conf}"...')
     if provider:
         node_conf['provider'] = provider
     if size:
@@ -87,6 +93,7 @@ def config(ctx, verbose, provider, size, path, example, cron, register_webhook):
 
     # terraform apply
     provider_keys = get_provider_keys(node)
+    #click.secho(f'Loaded provider keys {provider_keys}...')
     click.secho(f'running terraform to provision cloud infrastructure...')
     # TODO: check if keys for Azure can be loaded successfully
     terraform(f'apply -auto-approve', verbose,
@@ -96,14 +103,19 @@ def config(ctx, verbose, provider, size, path, example, cron, register_webhook):
 
     # terraform output for AWS nodes
     click.echo(f'saving node configuration to {NODES_PATH}...')
-    res = terraform(f"output -json aws_nodes", verbose).decode('utf-8')
+    if provider == 'aws':
+        res = terraform(f"output -json aws_nodes", verbose).decode('utf-8')
+    elif provider == 'azure':
+        res = terraform(f"output -json azure_nodes", verbose).decode('utf-8') 
+        
     try:
-        aws_nodes = json.loads(res)
+        nodes = json.loads(res)
     except json.JSONDecodeError:
         click.secho("failed to save node configuration, pleas retry.", fg='red')
         return
-    for node_name, data in aws_nodes.items():
+    for node_name, data in nodes.items():
         nodes_config[node_name].update(data)
+
     store_config(NODES_PATH, nodes_config)
     if verbose:
         click.secho(f'new config:\n{json.dumps(load_or_init_nodes(), indent=2)}')

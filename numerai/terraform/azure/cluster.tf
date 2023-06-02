@@ -1,4 +1,13 @@
 # Container Instance
+
+# Resource group for the submission node
+resource "azurerm_resource_group" "rg" {
+  for_each = { for name, config in var.nodes : name => config }
+  name     = "${each.key}-resource-grp"
+  location = var.az_rg_location
+  #name = "${local.node_prefix}-resource-grp"
+}
+
 variable "restart_policy" {
   type        = string
   description = "The behavior of Azure runtime if container has stopped."
@@ -48,12 +57,6 @@ resource "random_string" "random" {
   special = false
 }
 
-# Resource group for the submission node
-resource "azurerm_resource_group" "rg" {
-  location = var.az_rg_location
-  name = "${local.node_prefix}-resource-grp"
-}
-
 variable "registry_sku" {
   type        = string
   description = "The sku option of Azure Container Registry"
@@ -65,21 +68,23 @@ variable "registry_sku" {
 }
 
 # Add support for container registry
+# Does not support non alphanumeric characters in the name
 resource "azurerm_container_registry" "registry" {
-  name                = "${local.node_prefix}-container-registry"
-  resource_group_name = azurerm_resource_group.rg.name
-  location            = azurerm_resource_group.rg.location
+  for_each = { for name, config in var.nodes : name => config }
+  name                = "NumeraiSubmissionContainerRegistry"
+  resource_group_name = azurerm_resource_group.rg[each.key].name
+  location            = azurerm_resource_group.rg[each.key].location
   sku                 = var.registry_sku
   admin_enabled       = true
 }
 
 # Create a container group with single container
-## TODO: interate container instance creation for_each nodes in var.nodes
+# name rules: https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/resource-name-rules#microsoftcontainerinstance
 resource "azurerm_container_group" "container" {
-  #for_each = { for name, config in var.nodes : name => config }
-  name                = "${local.node_prefix}-container-group"
-  location            = azurerm_resource_group.rg.location
-  resource_group_name = azurerm_resource_group.rg.name
+  for_each = { for name, config in var.nodes : name => config }
+  name                = "${local.node_prefix}-container-${random_string.random.result}"
+  location            = azurerm_resource_group.rg[each.key].location
+  resource_group_name = azurerm_resource_group.rg[each.key].name
   ip_address_type     = "Public"
   os_type             = "Linux"
   restart_policy      = var.restart_policy
@@ -87,16 +92,17 @@ resource "azurerm_container_group" "container" {
    diagnostics {
     log_analytics {
       log_type = "ContainerInsights"
-      workspace_id = azurerm_log_analytics_workspace.function_app.workspace_id
-      workspace_key = azurerm_log_analytics_workspace.function_app.primary_shared_key
+      workspace_id = azurerm_log_analytics_workspace.function_app[each.key].workspace_id
+      workspace_key = azurerm_log_analytics_workspace.function_app[each.key].primary_shared_key
     }
    }
     
   container {
-    name   = "${var.container_name_prefix}-${random_string.random.result}"
-    image  = var.image_url
-    cpu    = var.cpu_cores
-    memory = var.memory_in_gb
+    #name   = "${var.container_name_prefix}-submission-node" #random_string.random.result
+    name   = "submission-node"
+    image  = var.image_url #TODO: add support for container registry's URL and credentials
+    cpu    = each.value.cpu/1024#var.cpu_cores
+    memory = each.value.memory/1024#var.memory_in_gb
 
     ports {
       port     = var.node_container_port

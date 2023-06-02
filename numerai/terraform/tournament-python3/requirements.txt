@@ -1,0 +1,5 @@
+numerapi==2.14.0
+pandas==1.3.3
+pyarrow==7.0.0
+scikit-learn==1.0.1
+joblib==1.2.0

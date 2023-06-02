@@ -1,4 +1,4 @@
 
 locals {
-  node_prefix = "test-numerai-submission"
+  node_prefix = "numerai"
 }
