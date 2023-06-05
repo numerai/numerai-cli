@@ -40,8 +40,8 @@ jobs:
       - uses: actions/checkout@v2
       - run: |
           cd numerai/examples/tournament-python3 \
-          && docker build -t example-python   
-            --build-arg NUMERAI_PUBLIC_ID=test  
+          && docker build -t example-python \
+            --build-arg NUMERAI_PUBLIC_ID=test \
             --build-arg NUMERAI_SECRET_KEY=test .
 
   pypi-release:
