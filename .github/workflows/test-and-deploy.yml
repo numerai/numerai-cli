@@ -2,9 +2,9 @@ name: Test & Deploy Numerai CLI
 
 on:
   workflow_dispatch:
-  # push:
-  #   branches:
-  #     - master
+  push:
+    # branches:
+    #   - master
 
 concurrency: deploy-numerai-cli-${{ github.ref }}
 
