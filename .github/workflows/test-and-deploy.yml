@@ -58,5 +58,5 @@ jobs:
       - run: |
           python -m twine upload \
             -u __token__ \
-            -p ${{ secrets.PYPY_API_KEY }} \
+            -p ${{ secrets.PYPI_API_KEY }} \
             --skip-existing dist/*
