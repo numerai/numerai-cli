@@ -52,7 +52,7 @@ jobs:
       - run: pip install twine
       - run: python setup.py sdist bdist_wheel
       - run: |
-        python -m twine upload \
-          -u __token__ \
-          -p ${{ secrets.SuperSecret }} \
-          --skip-existing dist/*
+          python -m twine upload \
+            -u __token__ \
+            -p ${{ secrets.SuperSecret }} \
+            --skip-existing dist/*
