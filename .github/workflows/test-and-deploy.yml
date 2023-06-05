@@ -1,0 +1,62 @@
+name: Test & Deploy Numerai CLI
+
+on:
+  workflow_dispatch:
+  push:
+    # branches:
+    #   - master
+
+concurrency: deploy-numerai-cli-${{ github.ref }}
+
+jobs:
+  build-python36:
+    name: Build Python 3.6
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.6.15"
+      - run: pip install .
+      - run: numerai copy-example
+      - run: test -e tournament-python3/predict.py
+
+  build-python37:
+    name: Build Python 3.7
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.7.9"
+      - run: pip install .
+      - run: numerai copy-example
+      - run: test -e tournament-python3/predict.py
+
+  build-docker:
+    name: Build Docker
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - run: |
+          cd numerai/examples/tournament-python3 \
+          && docker build -t example-python \
+            --build-arg NUMERAI_PUBLIC_ID=test \
+            --build-arg NUMERAI_SECRET_KEY=test .
+
+  pypi-release:
+    name: PyPI Release
+    runs-on: ubuntu-20.04
+    needs: [build-python36, build-python37, build-docker]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.7.9"
+      - run: pip install twine wheel
+      - run: python setup.py sdist bdist_wheel
+      - run: |
+          python -m twine upload \
+            -u __token__ \
+            -p ${{ secrets.PYPI_API_KEY }} \
+            --skip-existing dist/*
