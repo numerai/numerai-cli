@@ -48,6 +48,19 @@ def load_or_init_nodes(node=None):
         )
         exit(1)
 
+def copy_file(src_file, dst_path, force=False, verbose=True):
+    if not os.path.exists(dst_path):
+        if verbose:
+            click.secho(f"creating directory {dst_path}", fg='yellow')
+        os.mkdir(dst_path)
+    dst_file = os.path.join(dst_path, os.path.basename(src_file))
+    if os.path.exists(dst_file) and not force:
+        if not click.confirm(f'{dst_file} already exists. Overwrite?'):
+            return
+    if verbose:
+        click.secho(f"copying file {dst_file}", fg='yellow')
+        shutil.copy(src_file, dst_path)
+
 
 def copy_files(src, dst, force=False, verbose=True):
     if not os.path.exists(dst):
@@ -87,3 +100,11 @@ def copy_example(example, dest, verbose):
             f.write(".git\n")
             f.write("venv\n")
     return dst_dir
+
+def copy_node_config_to_provider_tf_dir():
+    nodes = load_or_init_nodes()
+    for node in nodes:
+        if node['provider'] == 'aws':
+            copy_files('nodes.json','aws/nodes.json',force=True)
+        elif node['provider'] == 'azure':
+            copy_files('nodes.json','azure/nodes.json',force=True)

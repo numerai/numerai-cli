@@ -8,7 +8,8 @@ from numerai.cli.util.docker import terraform, check_for_dockerfile
 from numerai.cli.util.files import \
     load_or_init_nodes, \
     store_config, \
-    copy_example
+    copy_example, \
+    copy_file
 from numerai.cli.util.keys import \
     get_provider_keys, \
     get_numerai_keys
@@ -55,7 +56,6 @@ def config(ctx, verbose, provider, size, path, example, cron, register_webhook):
     model_id = model['id']
     
     click.secho(f'Input provider "{provider}"...')
-    click.secho(f'Input verbose "{verbose}"...')
     click.secho(f'Input size "{size}"...')
     
     if example is not None:
@@ -91,27 +91,34 @@ def config(ctx, verbose, provider, size, path, example, cron, register_webhook):
     check_for_dockerfile(nodes_config[node]['path'])
     store_config(NODES_PATH, nodes_config)
 
-    # terraform apply
+    # terraform apply: create cloud resources
     provider_keys = get_provider_keys(node)
     #click.secho(f'Loaded provider keys {provider_keys}...')
     click.secho(f'running terraform to provision cloud infrastructure...')
-    # TODO: check if keys for Azure can be loaded successfully
-    terraform(f'apply -auto-approve', verbose,
-              env_vars=provider_keys,
-              inputs={'node_config_file': 'nodes.json'})
+    
+    
+    # Added: copy nodes.json to provider's tf directory
+    copy_file(NODES_PATH,f'{CONFIG_PATH}/{provider}/',force=True,verbose=True)
+    
+    # TODO: nodes.json is not read in each provider properly
+    terraform(f'apply -auto-approve', verbose, provider,
+            env_vars=provider_keys,
+            #inputs={'node_config_file': nodes_config})
+            inputs={'node_config_file': 'nodes.json'})
     click.secho('cloud resources created successfully', fg='green')
-
-    # terraform output for AWS nodes
+    
+    # terraform output for node config
     click.echo(f'saving node configuration to {NODES_PATH}...')
+    
     if provider == 'aws':
-        res = terraform(f"output -json aws_nodes", verbose).decode('utf-8')
+        res = terraform(f"output -json aws_nodes", verbose, provider).decode('utf-8')       
     elif provider == 'azure':
-        res = terraform(f"output -json azure_nodes", verbose).decode('utf-8') 
-        
+        res = terraform(f"output -json azure_nodes", verbose, provider).decode('utf-8') 
+         
     try:
         nodes = json.loads(res)
     except json.JSONDecodeError:
-        click.secho("failed to save node configuration, pleas retry.", fg='red')
+        click.secho("failed to save node configuration, please retry.", fg='red')
         return
     for node_name, data in nodes.items():
         nodes_config[node_name].update(data)

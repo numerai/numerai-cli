@@ -105,20 +105,25 @@ def format_if_docker_toolbox(path, verbose):
         return new_path
     return path
 
-
-def build_tf_cmd(tf_cmd, env_vars, inputs, version, verbose):
+# Added variable to take in different providers
+def build_tf_cmd(tf_cmd, provider, env_vars, inputs, version, verbose):
     cmd = f"docker run"
     if env_vars:
         cmd += ' '.join([f' -e "{key}={val}"' for key, val in env_vars.items()])
     cmd += f' --rm -it -v {format_if_docker_toolbox(CONFIG_PATH, verbose)}:/opt/plan'
-    cmd += f' -w /opt/plan hashicorp/terraform:{version} {tf_cmd}'
+    cmd += f' -w /opt/plan hashicorp/terraform:{version}'
+    # Added provider to pick the correct provider directory before tf command
+    if provider:
+        cmd += ' '.join([f' -chdir={provider}'])
+    cmd += f' {tf_cmd}'
     if inputs:
         cmd += ' '.join([f' -var="{key}={val}"' for key, val in inputs.items()])
     return cmd
 
-
-def terraform(tf_cmd, verbose, env_vars=None, inputs=None, version='0.14.3'):
-    cmd = build_tf_cmd(tf_cmd, env_vars, inputs, version, verbose)
+# Added variable to take in different providers
+def terraform(tf_cmd, verbose, provider, env_vars=None, inputs=None, version='0.14.3'):
+    cmd = build_tf_cmd(tf_cmd, provider, env_vars, inputs, version, verbose)
+    print(cmd)
     stdout, stderr = execute(cmd, verbose)
     # if user accidently deleted a resource, refresh terraform and try again
     if b'ResourceNotFoundException' in stdout or b'NoSuchEntity' in stdout:
@@ -238,4 +243,4 @@ def cleanup_aws(docker_repo):
 
     return resp['imageIds']
 
-# TODO: cleanup_
+# TODO: add support for docker push to Azure Container Repository Registry

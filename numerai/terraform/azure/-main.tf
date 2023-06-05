@@ -10,7 +10,6 @@ terraform {
   }
 }
 
-# ISSUE: need to have multiple provider keys! else will have error during "numerai node config"
 # Provider not recommended to be defined within a module -> else cannot use count/for_each on module block
 # https://developer.hashicorp.com/terraform/language/modules/develop/providers
 # Specify the provider and access details
@@ -18,7 +17,7 @@ terraform {
 #  region  = var.region
 #}
 
-# Added for Azure compatibility
+# Added for Azure compatibility, ID and keys set in environment variables
 provider "azurerm" {
   #subscription_id = #"ARM_SUBSCRIPTION_ID"
   #client_id       = #"ARM_CLIENT_ID"
@@ -33,12 +32,11 @@ provider "azurerm" {
 # Parse the node_config_file and create dictionaries of nodes, by providers
 locals {
   nodes = jsondecode(file(var.node_config_file))
-  aws_nodes = {
-    for node, config in local.nodes:
-    node => config if config.provider == "aws"
-  }
+  #aws_nodes = {
+  #  for node, config in local.nodes:
+  #  node => config if config.provider == "aws"
+  #}
 
-  # eses: parse the node_config_file and create a dictionary of azure nodes
   azure_nodes = {
     for node, config in local.nodes:
     node => config if config.provider == "azure"

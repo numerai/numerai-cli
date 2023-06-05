@@ -5,7 +5,6 @@ resource "azurerm_resource_group" "rg" {
   for_each = { for name, config in var.nodes : name => config }
   name     = "${each.key}-resource-grp"
   location = var.az_rg_location
-  #name = "${local.node_prefix}-resource-grp"
 }
 
 variable "restart_policy" {
@@ -78,6 +77,15 @@ resource "azurerm_container_registry" "registry" {
   admin_enabled       = true
 }
 
+resource "azurerm_log_analytics_workspace" "container_instance" {
+  for_each     = { for name, config in var.nodes : name => config }
+  name                = "container-instance-log-analytics"
+  location            = azurerm_resource_group.rg[each.key].location
+  resource_group_name = azurerm_resource_group.rg[each.key].name
+  sku                 = "PerGB2018"
+  retention_in_days   = 30
+}
+
 # Create a container group with single container
 # name rules: https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/resource-name-rules#microsoftcontainerinstance
 resource "azurerm_container_group" "container" {
@@ -92,15 +100,16 @@ resource "azurerm_container_group" "container" {
    diagnostics {
     log_analytics {
       log_type = "ContainerInsights"
-      workspace_id = azurerm_log_analytics_workspace.function_app[each.key].workspace_id
-      workspace_key = azurerm_log_analytics_workspace.function_app[each.key].primary_shared_key
+      workspace_id = azurerm_log_analytics_workspace.container_instance[each.key].workspace_id
+      workspace_key = azurerm_log_analytics_workspace.container_instance[each.key].primary_shared_key
     }
    }
     
   container {
     #name   = "${var.container_name_prefix}-submission-node" #random_string.random.result
     name   = "submission-node"
-    image  = var.image_url #TODO: add support for container registry's URL and credentials
+    #image  = var.image_url #TODO: add support for container registry's URL and credentials
+    image  = "${azurerm_container_registry.registry[each.key].login_server}/${each.key}" #TODO: add support for container registry's URL and credentials
     cpu    = each.value.cpu/1024#var.cpu_cores
     memory = each.value.memory/1024#var.memory_in_gb
 
@@ -108,7 +117,13 @@ resource "azurerm_container_group" "container" {
       port     = var.node_container_port
       protocol = "TCP"
     }
-
   }
-  
+
+  image_registry_credential {
+    username = azurerm_container_registry.registry[each.key].admin_username
+    password = azurerm_container_registry.registry[each.key].admin_password
+    server = azurerm_container_registry.registry[each.key].login_server
+  }
+
+
 }

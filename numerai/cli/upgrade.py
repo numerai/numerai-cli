@@ -14,6 +14,8 @@ from numerai.cli.util.keys import \
     config_provider_keys
 
 
+# TODO: to add support for upgrade from 0.3 -> 0.4 Azure provider version
+
 @click.command()
 @click.option('--verbose', '-v', is_flag=True)
 def upgrade(verbose):

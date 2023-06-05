@@ -5,10 +5,11 @@ output "outputs" {
 #webhook_url = azurerm_linux_function_app.function_app.outbound_ip_addresses
   value={for node, config in var.nodes:
   node => {
-    docker_repo = var.image_url
+    #docker_repo = var.image_url
+    docker_repo = azurerm_container_group.container[node].container[0].image
     webhook_url = "https://${azurerm_linux_function_app.function_app[node].name}.azurewebsites.net/api/azure_trigger"
     webhook_log_group = azurerm_application_insights.app_insights[node].name
-    # cluster_log_group = azurerm_application_insights.app_insights.name
+    cluster_log_group = azurerm_log_analytics_workspace.container_instance[node].name
     }
   }
   #value = azurerm_resource_group.rg.name

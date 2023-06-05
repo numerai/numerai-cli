@@ -9,7 +9,9 @@ PACKAGE_PATH = os.path.dirname(__file__)
 CONFIG_PATH = os.path.join(str(Path.home()), '.numerai')
 KEYS_PATH = os.path.join(CONFIG_PATH, '.keys')
 NODES_PATH = os.path.join(CONFIG_PATH, 'nodes.json')
+# Splitting to different TF directory in subdirectory
 TERRAFORM_PATH = os.path.join(PACKAGE_PATH, "..", "terraform")
+#TERRAFORM_PATH_AZURE = os.path.join(PACKAGE_PATH, "..", "terraform_azure")
 EXAMPLE_PATH = os.path.join(PACKAGE_PATH, "..", "examples")
 
 EXAMPLES = os.listdir(EXAMPLE_PATH)
@@ -65,7 +67,7 @@ DEFAULT_SETTINGS = {
 }
 
 CONSTANTS_STR = f'''Default values (not your configured node values):
-# (TEMPORARY) Installed the correct Azure testing verison!!!
+# (TEMPORARY) Installed the Azure testing verison!!!
 
 ---Tournament Numbers---
 TOURNAMENT_NUMERAI: {TOURNAMENT_NUMERAI}

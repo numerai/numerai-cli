@@ -55,7 +55,7 @@ resource "azurerm_linux_function_app" "function_app" {
   storage_account_name       = azurerm_storage_account.function_app[each.key].name
   storage_account_access_key = azurerm_storage_account.function_app[each.key].primary_access_key
 
-  zip_deploy_file = "azure/azure_trigger.zip"
+  zip_deploy_file = "azure_trigger.zip"
   
   site_config {
     application_stack {
@@ -87,18 +87,17 @@ resource "azurerm_linux_function_app" "function_app" {
 resource "azurerm_application_insights" "app_insights" {
   for_each     = { for name, config in var.nodes : name => config }
   name                = "trigger-func-app-application-insights"
-  #name               = "func-app-application-insights"
   location            = azurerm_resource_group.rg[each.key].location
   resource_group_name = azurerm_resource_group.rg[each.key].name
   application_type    = "other"
 }
 
-resource "azurerm_log_analytics_workspace" "function_app" {
-  for_each     = { for name, config in var.nodes : name => config }
-  name                = "trigger-func-app-log-analytics"
-  #name                = "func-app-log-analytics"
-  location            = azurerm_resource_group.rg[each.key].location
-  resource_group_name = azurerm_resource_group.rg[each.key].name
-  sku                 = "PerGB2018"
-  retention_in_days   = 30
-}
+#resource "azurerm_log_analytics_workspace" "function_app" {
+#  for_each     = { for name, config in var.nodes : name => config }
+#  name                = "trigger-func-app-log-analytics"
+#  #name                = "func-app-log-analytics"
+#  location            = azurerm_resource_group.rg[each.key].location
+#  resource_group_name = azurerm_resource_group.rg[each.key].name
+#  sku                 = "PerGB2018"
+#  retention_in_days   = 30
+#}

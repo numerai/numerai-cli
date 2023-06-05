@@ -40,9 +40,9 @@ def setup(provider, verbose):
     click.secho("copying terraform files...")
     copy_files(TERRAFORM_PATH, CONFIG_PATH, force=True, verbose=True)
 
-    # terraform init
+    # terraform init, added provider to init at the correct provider tf directory
     click.secho("initializing terraform to provision cloud infrastructure...")
-    terraform("init -upgrade", verbose)
+    terraform("init -upgrade", verbose, provider)
 
     click.secho("Numerai API Keys setup and working", fg='green')
     click.secho(f"{provider} API Keys setup and working", fg='green')
