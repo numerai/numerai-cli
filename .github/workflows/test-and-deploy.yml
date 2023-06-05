@@ -3,8 +3,6 @@ name: Test & Deploy Numerai CLI
 on:
   workflow_dispatch:
   push:
-    branches:
-      - master
 
 concurrency: deploy-numerai-cli-${{ github.ref }}
 
@@ -47,6 +45,7 @@ jobs:
   pypi-release:
     name: PyPI Release
     runs-on: ubuntu-20.04
+    if: github.ref == 'refs/heads/master'
     needs: [build-python36, build-python37, build-docker]
     steps:
       - uses: actions/checkout@v2
