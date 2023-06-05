@@ -11,6 +11,7 @@ concurrency: deploy-numerai-cli-${{ github.ref }}
 jobs:
   build-python36:
     name: Build Python 3.6
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v4
@@ -22,6 +23,7 @@ jobs:
 
   build-python37:
     name: Build Python 3.7
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v4
@@ -33,6 +35,7 @@ jobs:
 
   build-docker:
     name: Build Docker
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
       - run: |
@@ -43,6 +46,7 @@ jobs:
 
   pypi-release:
     name: PyPI Release
+    runs-on: ubuntu-20.04
     needs: [build-python36, build-python37, build-docker]
     steps:
       - uses: actions/checkout@v2
