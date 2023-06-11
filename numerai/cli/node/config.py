@@ -5,6 +5,10 @@ from numerapi import base_api
 
 from numerai.cli.constants import *
 from numerai.cli.util.docker import terraform, check_for_dockerfile
+          
+# For Azure use                      
+from numerai.cli.util import docker    
+
 from numerai.cli.util.files import \
     load_or_init_nodes, \
     store_config, \
@@ -57,6 +61,7 @@ def config(ctx, verbose, provider, size, path, example, cron, register_webhook):
     
     click.secho(f'Input provider "{provider}"...')
     click.secho(f'Input size "{size}"...')
+    click.secho(f'Input node name "{node}"...')
     
     if example is not None:
         path = copy_example(example, path, verbose)
@@ -90,38 +95,74 @@ def config(ctx, verbose, provider, size, path, example, cron, register_webhook):
     # double check there is a dockerfile in the path we are about to configure
     check_for_dockerfile(nodes_config[node]['path'])
     store_config(NODES_PATH, nodes_config)
+    
+    # Added after tf directory restructure: copy nodes.json to providers' tf directory
+    copy_file(NODES_PATH,f'{CONFIG_PATH}/{provider}/',force=True,verbose=True)
+
 
     # terraform apply: create cloud resources
     provider_keys = get_provider_keys(node)
-    #click.secho(f'Loaded provider keys {provider_keys}...')
     click.secho(f'running terraform to provision cloud infrastructure...')
     
-    
-    # Added: copy nodes.json to provider's tf directory
-    copy_file(NODES_PATH,f'{CONFIG_PATH}/{provider}/',force=True,verbose=True)
-    
-    # TODO: nodes.json is not read in each provider properly
-    terraform(f'apply -auto-approve', verbose, provider,
+    # Azure only: Need to deploy Azure Container Registry and push a dummy image, before deploying the rest of the resources
+    if provider == 'azure':
+        #click.secho('creating Azure Container Registry first and pushing an image as placeholder', fg='yellow')
+        terraform(f'apply -auto-approve -target="azurerm_container_registry.registry"', verbose, provider,
+                  env_vars=provider_keys,
+                  inputs={'node_name': node})
+        
+        # Append the  created registry name
+        res = terraform(f"output -json acr_repo_details", verbose, provider).decode('utf-8')
+        node_conf_added = json.loads(res) # Convert string back to dictionary
+        node_conf.update(node_conf_added)
+        node_conf['docker_repo'] = f'{node_conf["acr_login_server"]}/{node}'
+        click.secho(f'Updated node_config:{node_conf_added}, updating node_conf', fg='yellow')
+        
+        docker.login(node_conf,verbose)
+        docker.pull('hello-world:linux', verbose)
+        
+        docker.tag('hello-world:linux',node_conf['docker_repo'], verbose)
+        docker.push(node_conf['docker_repo'], verbose)
+        #click.secho(f'node_config is: {node_conf}, saved once again', fg='yellow')
+        
+        nodes_config[node] = node_conf
+        store_config(NODES_PATH, nodes_config)    
+        copy_file(NODES_PATH,f'{CONFIG_PATH}/{provider}/',force=True,verbose=True)
+
+    if provider == 'aws':
+        terraform(f'apply -auto-approve', verbose, provider,
             env_vars=provider_keys,
-            #inputs={'node_config_file': nodes_config})
             inputs={'node_config_file': 'nodes.json'})
-    click.secho('cloud resources created successfully', fg='green')
-    
+    elif provider == 'azure':
+        terraform(f'apply -auto-approve', verbose, provider,
+            env_vars=provider_keys,
+            inputs={'node_config_file': 'nodes.json',
+                    'node_name': node})
+    click.secho('cloud resources created successfully', fg='green') 
+
     # terraform output for node config
     click.echo(f'saving node configuration to {NODES_PATH}...')
     
+    # both should be nodes.json
     if provider == 'aws':
-        res = terraform(f"output -json aws_nodes", verbose, provider).decode('utf-8')       
+        res = terraform(f"output -json nodes", verbose, provider).decode('utf-8')
+        try:
+            nodes = json.loads(res)
+        except json.JSONDecodeError:
+            click.secho("failed to save node configuration, please retry.", fg='red')
+            return
+        for node_name, data in nodes.items():
+            nodes_config[node_name].update(data)
+               
     elif provider == 'azure':
-        res = terraform(f"output -json azure_nodes", verbose, provider).decode('utf-8') 
-         
-    try:
-        nodes = json.loads(res)
-    except json.JSONDecodeError:
-        click.secho("failed to save node configuration, please retry.", fg='red')
-        return
-    for node_name, data in nodes.items():
-        nodes_config[node_name].update(data)
+        res = terraform(f"output -json node_config", verbose, provider).decode('utf-8') 
+        try:
+            node_conf_added = json.loads(res)
+        except json.JSONDecodeError:
+            click.secho("failed to save node configuration, please retry.", fg='red')
+            return
+        node_conf.update(node_conf_added)
+        nodes_config[node]=node_conf
 
     store_config(NODES_PATH, nodes_config)
     if verbose:

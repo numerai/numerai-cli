@@ -18,13 +18,16 @@ def deploy(ctx, verbose):
     docker.check_for_dockerfile(node_config['path'])
 
     click.echo('building container image (this may take several minutes)...')
-    docker.build(node_config, node, verbose)
+    docker.build(node_config, node, verbose, provider=node_config['provider'])
 
     click.echo('logging into container registry...')
     docker.login(node_config, verbose)
 
     click.echo('pushing image to registry (this may take several minutes)...')
-    docker.push(node_config['docker_repo'], verbose)
+    if node_config['provider'] == 'aws':
+        docker.push(node_config['docker_repo'], verbose)
+    elif node_config['provider'] == 'azure':
+        docker.push(node_config['image_url'], verbose)
 
     click.echo('cleaning up local images...')
     docker.cleanup(node_config)

@@ -142,7 +142,7 @@ def config_aws_keys():
 
 def config_azure_keys():
     azure_subs_id, azure_client, azure_tenant , azure_secret = get_azure_keys()
-    azure_subs_id = prompt_for_key('Azure Subscription ID [ARM_SUBSCRIPTION_ID]', azure_client)
+    azure_subs_id = prompt_for_key('Azure Subscription ID [ARM_SUBSCRIPTION_ID]', azure_subs_id)
     azure_client = prompt_for_key('Azure Client ID [ARM_CLIENT_ID]', azure_client)
     azure_tenant = prompt_for_key('Azure Tenant ID [ARM_TENANT_ID]', azure_tenant)
     azure_secret = prompt_for_key('Azure Client Secret [ARM_CLIENT_SECRET]', azure_secret)
@@ -187,14 +187,8 @@ def check_azure_validity(subs_id, client_id, tenant_id, secret):
         sub_client = SubscriptionClient(credentials)
         subs = [sub.as_dict() for sub in sub_client.subscriptions.list()]
         all_subs_ids=[subs_details['subscription_id'] for subs_details in subs]
-        
         if subs_id not in all_subs_ids:
-            raise exception_with_msg(
-                f"Your Azure Client ID, Tenant ID and Client Secret is OK. "+\
-                f"Your Azure Subscription IAM is NOT set up correctly. "+\
-                f"Make sure to follow the instructions in the wiki page: "+\
-                f"<INSERT_LINK>"
-                )   
+            raise Exception('Invalid Subscription ID')
         
     except Exception as e:
             error_msg=f"Make sure you follow the instructions in the wiki page: "+\
@@ -210,6 +204,13 @@ def check_azure_validity(subs_id, client_id, tenant_id, secret):
             elif 'Invalid client secret' in str(e):
                 raise exception_with_msg(
                     f"Invalid Client Secret. "+error_msg)
+            elif 'Invalid Subscription ID' in str(e):
+                raise exception_with_msg(
+                    f"Azure Subscription ID is invalid, or IAM is NOT set up correctly. "+\
+                    f"Your Azure Client ID, Tenant ID and Client Secret are valid. "+\
+                    f"Make sure to follow the instructions in the wiki page: "+\
+                    f"<INSERT_LINK>"
+                    )
 
 
 def config_provider_keys(cloud_provider):

@@ -9,7 +9,10 @@ import click
 
 from numerai.cli.constants import *
 from numerai.cli.util.debug import root_cause
-from numerai.cli.util.keys import sanitize_message, get_aws_keys, load_or_init_keys
+from numerai.cli.util.keys import sanitize_message, get_aws_keys, load_or_init_keys , get_azure_keys
+from azure.mgmt.containerregistry import ContainerRegistryManagementClient
+from azure.identity import ClientSecretCredential 
+
 
 
 def check_for_dockerfile(path):
@@ -123,7 +126,6 @@ def build_tf_cmd(tf_cmd, provider, env_vars, inputs, version, verbose):
 # Added variable to take in different providers
 def terraform(tf_cmd, verbose, provider, env_vars=None, inputs=None, version='0.14.3'):
     cmd = build_tf_cmd(tf_cmd, provider, env_vars, inputs, version, verbose)
-    print(cmd)
     stdout, stderr = execute(cmd, verbose)
     # if user accidently deleted a resource, refresh terraform and try again
     if b'ResourceNotFoundException' in stdout or b'NoSuchEntity' in stdout:
@@ -155,8 +157,7 @@ def build(node_config, node, verbose):
     build_arg_str += f' --build-arg NODE={node}'
 
     cmd = f'docker build --platform=linux/amd64 -t {node_config["docker_repo"]}' \
-          f'{build_arg_str} -f {path}/Dockerfile .'
-
+        f'{build_arg_str} -f {path}/Dockerfile .'
     execute(cmd, verbose)
 
 
@@ -168,7 +169,9 @@ def run(node_config, verbose, command=''):
 def login(node_config, verbose):
     if node_config['provider'] == PROVIDER_AWS:
         username, password = login_aws()
-
+    elif node_config['provider'] == PROVIDER_AZURE:
+        username, password = login_azure(node_config['resource_group_name'], 
+                                         node_config['registry_name'])
     else:
         raise ValueError(f"Unsupported provider: '{node_config['provider']}'")
 
@@ -203,10 +206,30 @@ def login_aws():
     return username, password
 
 
+def login_azure(resource_group_name,registry_name):
+    azure_subs_id, azure_client, azure_tenant , azure_secret = get_azure_keys()
+    credentials = ClientSecretCredential(client_id=azure_client, 
+                                        tenant_id=azure_tenant,
+                                        client_secret=azure_secret)
+    username_password = ContainerRegistryManagementClient(credentials, azure_subs_id)\
+                                                        .registries\
+                                                        .list_credentials(resource_group_name, registry_name)
+    username = username_password.username
+    password = username_password.passwords[0].value
+    return username, password
+
+
 def push(docker_repo, verbose):
     cmd = f'docker push {docker_repo}'
     execute(cmd, verbose=verbose)
 
+def pull(docker_image, verbose):
+    cmd = f'docker pull {docker_image}'
+    execute(cmd, verbose=verbose)
+    
+def tag(original_image, new_image_tag, verbose):
+    cmd = f'docker tag {original_image} {new_image_tag}'
+    execute(cmd, verbose=verbose)
 
 def cleanup(node_config):
     provider = node_config['provider']
@@ -243,4 +266,4 @@ def cleanup_aws(docker_repo):
 
     return resp['imageIds']
 
-# TODO: add support for docker push to Azure Container Repository Registry
+# TODO: add cleanup for Azure?

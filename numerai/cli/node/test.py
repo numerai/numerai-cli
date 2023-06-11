@@ -42,9 +42,11 @@ def test(ctx, local, command, verbose):
 
     if local:
         click.secho("starting local test; building container...")
-        docker.build(node_config, node, verbose)
+        docker.build(node_config, node, verbose, provider=node_config['provider'])
+        #click.secho("Build successful", fg='green')
         click.secho("running container...")
-        docker.run(node_config, verbose, command=command)
+        docker.run(node_config, verbose, 
+                   provider=node_config['provider'], command=command)
 
     api = base_api.Api(*get_numerai_keys())
     trigger_id = None

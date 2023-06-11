@@ -27,7 +27,8 @@ setup(
         "colorama",
         "requests",
         'azure-identity',
-        'azure-mgmt-subscription'
+        'azure-mgmt-subscription',
+        'azure-mgmt-containerregistry'
     ],
     entry_points={
         'console_scripts': ['numerai=numerai:main'],
