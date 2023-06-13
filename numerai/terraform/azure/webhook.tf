@@ -53,7 +53,7 @@ resource "azurerm_linux_function_app" "function_app" {
   
   site_config {
     application_stack {
-      python_version = "3.9"
+      python_version = "3.10"
     }
 
     application_insights_key   = azurerm_application_insights.app_insights.instrumentation_key
@@ -67,7 +67,7 @@ resource "azurerm_linux_function_app" "function_app" {
     "AZURE_SUBSCRIPTION_ID" = data.azurerm_subscription.current.subscription_id
     "AZURE_RESOURCE_GRP_NAME" = azurerm_resource_group.rg.name
     "AZURE_CONTAINER_GRP_NAME" = azurerm_container_group.container.name
-
+    "AzureWebJobsFeatureFlags" = "EnableWorkerIndexing"
   }
 
   identity {

@@ -9,7 +9,7 @@ from numerai.cli.util import files, docker
 @click.option('--verbose', '-v', is_flag=True)
 @click.pass_context
 def deploy(ctx, verbose):
-    """Builds and pushes your docker image to the AWS ECR repo"""
+    """Builds and pushes your docker image to the AWS ECR / Azure ACR repo"""
     ctx.ensure_object(dict)
     model = ctx.obj['model']
     node = model['name']
@@ -24,10 +24,7 @@ def deploy(ctx, verbose):
     docker.login(node_config, verbose)
 
     click.echo('pushing image to registry (this may take several minutes)...')
-    if node_config['provider'] == 'aws':
-        docker.push(node_config['docker_repo'], verbose)
-    elif node_config['provider'] == 'azure':
-        docker.push(node_config['image_url'], verbose)
+    docker.push(node_config['docker_repo'], verbose)
 
     click.echo('cleaning up local images...')
     docker.cleanup(node_config)

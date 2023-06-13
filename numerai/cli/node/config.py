@@ -13,7 +13,9 @@ from numerai.cli.util.files import \
     load_or_init_nodes, \
     store_config, \
     copy_example, \
-    copy_file
+    copy_file, \
+    maybe_create, \
+    load_config
 from numerai.cli.util.keys import \
     get_provider_keys, \
     get_numerai_keys
@@ -104,14 +106,21 @@ def config(ctx, verbose, provider, size, path, example, cron, register_webhook):
     provider_keys = get_provider_keys(node)
     click.secho(f'running terraform to provision cloud infrastructure...')
     
-    # Azure only: Need to deploy Azure Container Registry and push a dummy image, before deploying the rest of the resources
+    # Azure only: Need to create a master Azure Container Registry and push a dummy placeholder image, before deploying the rest of the resources
     if provider == 'azure':
+        #docker_registry_conf=load_or_init_repo(provider)
+        
+        #if docker_registry_conf == {}:
+        #    terraform(f'-chdir={provider}/init_acr apply -auto-approve ', verbose, provider,
+        #    env_vars=provider_keys,
+        #    inputs={'node_name': node})
+            
         #click.secho('creating Azure Container Registry first and pushing an image as placeholder', fg='yellow')
         terraform(f'apply -auto-approve -target="azurerm_container_registry.registry"', verbose, provider,
                   env_vars=provider_keys,
                   inputs={'node_name': node})
         
-        # Append the  created registry name
+        # Append the created registry name
         res = terraform(f"output -json acr_repo_details", verbose, provider).decode('utf-8')
         node_conf_added = json.loads(res) # Convert string back to dictionary
         node_conf.update(node_conf_added)
@@ -180,3 +189,22 @@ def config(ctx, verbose, provider, size, path, example, cron, register_webhook):
 
     click.secho('Prediction Node configured successfully. '
                 'Next: deploy and test your node', fg='green')
+    
+    
+## WIP: add a repo config file to store the docker image registry details
+def load_or_init_repo(provider=None, verbose=False):
+    maybe_create(REGISTRY_PATH)
+    cfg = load_config(REGISTRY_PATH)
+    try:
+        if provider == 'azure':
+            return cfg[provider]
+        else:
+            click.secho(
+            'Provider not supported. Currently only support Azure', fg='red'
+            )
+            exit(1)
+    except KeyError:
+        click.secho(f"Need to create a central docker image registry for provider: {provider}", fg='yellow')
+        #cfg[provider]=create_repo(verbose, provider)
+        return cfg
+    

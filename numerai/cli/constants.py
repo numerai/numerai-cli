@@ -9,6 +9,8 @@ PACKAGE_PATH = os.path.dirname(__file__)
 CONFIG_PATH = os.path.join(str(Path.home()), '.numerai')
 KEYS_PATH = os.path.join(CONFIG_PATH, '.keys')
 NODES_PATH = os.path.join(CONFIG_PATH, 'nodes.json')
+# Registry info, currently only for Azure
+REGISTRY_PATH = os.path.join(CONFIG_PATH, 'registry.json')
 # Splitting to different TF directory in subdirectory
 TERRAFORM_PATH = os.path.join(PACKAGE_PATH, "..", "terraform")
 #TERRAFORM_PATH_AZURE = os.path.join(PACKAGE_PATH, "..", "terraform_azure")
@@ -77,6 +79,7 @@ TOURNAMENT_SIGNALS: {TOURNAMENT_SIGNALS}
 PACKAGE_PATH: {PACKAGE_PATH}
 CONFIG_PATH: {CONFIG_PATH}
 KEYS_PATH: {KEYS_PATH}
+REGISTRY_PATH: {REGISTRY_PATH}
 NODES_PATH: {NODES_PATH}
 TERRAFORM_PATH: {TERRAFORM_PATH}
 EXAMPLE_PATH: {EXAMPLE_PATH}
