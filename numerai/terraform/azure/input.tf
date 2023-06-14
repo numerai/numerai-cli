@@ -9,7 +9,7 @@ variable "az_resource_group_location" {
 variable "node_config_file" {
   description = "Path to the json file used to configure nodes"
   type        = string
-  default     = "nodes.json" #TODO: remove to load the .numerai config files
+  default     = "nodes.json" #TODO: remove after all tests complete
 }
 
 variable "node_container_port" {
@@ -34,21 +34,3 @@ locals {
   }
 
 }
-
-#variable "docker_repo" {
-#  description = "Container image URL for the node"
-#  type        = string
-#  default     = "" 
-#}
-
-#variable "cpu_cores" {
-#  type        = number
-#  description = "The number of CPU cores to allocate to the container."
-#  default     = 1
-#}
-
-#variable "memory_in_gb" {
-#  type        = number
-#  description = "The amount of memory to allocate to the container in gigabytes."
-#  default     = 2
-#}

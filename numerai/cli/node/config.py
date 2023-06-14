@@ -108,24 +108,27 @@ def config(ctx, verbose, provider, size, path, example, cron, register_webhook):
     
     # Azure only: Need to create a master Azure Container Registry and push a dummy placeholder image, before deploying the rest of the resources
     if provider == 'azure':
-        #docker_registry_conf=load_or_init_repo(provider)
+        provider_registry_conf=load_or_init_registry_config(provider,verbose)
         
-        #if docker_registry_conf == {}:
-        #    terraform(f'-chdir={provider}/init_acr apply -auto-approve ', verbose, provider,
-        #    env_vars=provider_keys,
-        #    inputs={'node_name': node})
-            
+        # Create Azure Container Registry if it doesn't exist
+        if provider_registry_conf == {}:
+            provider_registry_conf = create_registry(provider, provider_keys, verbose=False)
+        
+        click.secho(f'Appending provider_registry_conf:{provider_registry_conf}, to node_conf', fg='yellow')
+        node_conf.update(provider_registry_conf)
+        # Create a placeholder image and push it to the registry
+        node_conf['docker_repo'] = f'{node_conf["acr_login_server"]}/{node}'
         #click.secho('creating Azure Container Registry first and pushing an image as placeholder', fg='yellow')
-        terraform(f'apply -auto-approve -target="azurerm_container_registry.registry"', verbose, provider,
-                  env_vars=provider_keys,
-                  inputs={'node_name': node})
+        #terraform(f'apply -auto-approve -target="azurerm_container_registry.registry"', verbose, provider,
+        #          env_vars=provider_keys,
+        #          inputs={'node_name': node})
         
         # Append the created registry name
-        res = terraform(f"output -json acr_repo_details", verbose, provider).decode('utf-8')
-        node_conf_added = json.loads(res) # Convert string back to dictionary
-        node_conf.update(node_conf_added)
-        node_conf['docker_repo'] = f'{node_conf["acr_login_server"]}/{node}'
-        click.secho(f'Updated node_config:{node_conf_added}, updating node_conf', fg='yellow')
+        #res = terraform(f"output -json acr_repo_details", verbose, provider).decode('utf-8')
+        #node_conf_added = json.loads(res) # Convert string back to dictionary
+        #node_conf.update(node_conf_added)
+        #node_conf['docker_repo'] = f'{node_conf["acr_login_server"]}/{node}'
+        #click.secho(f'Updated node_config:{node_conf_added}, updating node_conf', fg='yellow')
         
         docker.login(node_conf,verbose)
         docker.pull('hello-world:linux', verbose)
@@ -192,19 +195,49 @@ def config(ctx, verbose, provider, size, path, example, cron, register_webhook):
     
     
 ## WIP: add a repo config file to store the docker image registry details
-def load_or_init_repo(provider=None, verbose=False):
+
+def load_or_init_registry_config(provider=None, verbose=False):
+    """Load or initialize the registry config file, 
+    The registry config file stores the container registry 
+    details for each provider
+
+    Args:
+        provider (str, optional): Specify the provider's registry_config to load. Defaults to None.
+        verbose (bool, optional): Verbose flag. Defaults to False. 
+
+    Returns:
+        dict: all provider <> registry config if provider is None, else return the specific provider's registry config
+    """
     maybe_create(REGISTRY_PATH)
     cfg = load_config(REGISTRY_PATH)
     try:
-        if provider == 'azure':
-            return cfg[provider]
+        if provider==None:
+            return cfg
+        elif provider == 'azure':
+            # Return the specific registry if it exists
+            return cfg[provider] 
         else:
             click.secho(
             'Provider not supported. Currently only support Azure', fg='red'
             )
             exit(1)
     except KeyError:
-        click.secho(f"Need to create a central docker image registry for provider: {provider}", fg='yellow')
-        #cfg[provider]=create_repo(verbose, provider)
-        return cfg
+        click.secho(f"Return an empty container registry for provider: {provider}", fg='yellow')
+        cfg[provider]={}
+        store_config(REGISTRY_PATH, cfg)
+        return cfg[provider]
+
+# TODO: add support for other container registry, to be configured by -registry setting
+def create_registry(provider, provider_keys, registry=None, verbose=False):
+    terraform(f"-chdir=container_registry/azure init -upgrade", verbose, provider)
+    terraform(f'-chdir=container_registry/azure apply -auto-approve ', verbose, provider,
+                env_vars=provider_keys)
+    res = terraform(f'-chdir=container_registry/azure output -json acr_repo_details', verbose, provider).decode('utf-8')
+    provider_registry_conf=json.loads(res)
     
+    click.secho(f'Created new provider_registry_conf:{provider_registry_conf}, updating {REGISTRY_PATH}', fg='yellow')
+    all_registry_conf=load_or_init_registry_config()
+    all_registry_conf[provider]=provider_registry_conf
+    store_config(REGISTRY_PATH, all_registry_conf)
+    return provider_registry_conf
+            

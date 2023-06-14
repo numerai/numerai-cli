@@ -10,6 +10,11 @@ from numerai.cli.node.destroy import destroy
 from numerai.cli.node.test import test, status
 from numerai.cli.util.keys import get_numerai_keys
 
+# Setting azure's logging level "ERROR" to avoid spamming the terminal
+import logging
+logger = logging.getLogger('azure')
+logger.setLevel(logging.ERROR)
+
 
 @click.group()
 @click.option(

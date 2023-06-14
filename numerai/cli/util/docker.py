@@ -11,6 +11,7 @@ from numerai.cli.constants import *
 from numerai.cli.util.debug import root_cause
 from numerai.cli.util.keys import sanitize_message, get_aws_keys, load_or_init_keys , get_azure_keys
 from azure.mgmt.containerregistry import ContainerRegistryManagementClient
+from azure.containerregistry import ContainerRegistryClient, ArtifactManifestOrder
 from azure.identity import ClientSecretCredential 
 
 
@@ -116,7 +117,7 @@ def build_tf_cmd(tf_cmd, provider, env_vars, inputs, version, verbose):
     cmd += f' --rm -it -v {format_if_docker_toolbox(CONFIG_PATH, verbose)}:/opt/plan'
     cmd += f' -w /opt/plan hashicorp/terraform:{version}'
     # Added provider to pick the correct provider directory before tf command
-    if provider:
+    if provider and "-chdir=" not in tf_cmd :
         cmd += ' '.join([f' -chdir={provider}'])
     cmd += f' {tf_cmd}'
     if inputs:
@@ -170,7 +171,7 @@ def login(node_config, verbose):
     if node_config['provider'] == PROVIDER_AWS:
         username, password = login_aws()
     elif node_config['provider'] == PROVIDER_AZURE:
-        username, password = login_azure(node_config['resource_group_name'], 
+        username, password = login_azure(node_config['registry_rg_name'], 
                                          node_config['registry_name'])
     else:
         raise ValueError(f"Unsupported provider: '{node_config['provider']}'")
@@ -235,7 +236,8 @@ def cleanup(node_config):
     provider = node_config['provider']
     if provider == PROVIDER_AWS:
         imageIds = cleanup_aws(node_config['docker_repo'])
-
+    elif provider == PROVIDER_AZURE:
+        imageIds = cleanup_azure(node_config)
     else:
         raise ValueError(f"Unsupported provider: '{provider}'")
 
@@ -266,4 +268,31 @@ def cleanup_aws(docker_repo):
 
     return resp['imageIds']
 
-# TODO: add cleanup for Azure?
+def cleanup_azure(node_config):
+    _, azure_client, azure_tenant , azure_secret = get_azure_keys()
+    credentials = ClientSecretCredential(client_id=azure_client, 
+                                         tenant_id=azure_tenant,
+                                         client_secret=azure_secret)
+    acr_client=ContainerRegistryClient(node_config['acr_login_server'],
+                                        credentials)
+    docker_repo=node_config['docker_repo']
+    node_repo_name=[repo_name for repo_name in acr_client.list_repository_names() \
+                              if repo_name==docker_repo.split("/")[-1]][0]
+    
+    # get all manifests, ordered by last update time
+    manifest_list=[repo_detail for repo_detail in \
+                   acr_client.list_manifest_properties(node_repo_name,
+                                                       order_by=ArtifactManifestOrder.LAST_UPDATED_ON_DESCENDING)]
+    # Remove all but the latest manifest
+    removed_manifests=[]
+    for manifest in manifest_list[1:]:
+        acr_client.update_manifest_properties(
+                            node_repo_name,
+                            manifest.digest,
+                            can_write=True,
+                            can_delete=True
+                            )
+        removed_manifests.append(manifest.digest)
+        acr_client.delete_manifest(node_repo_name, 
+                                   manifest.digest)
+    return removed_manifests

@@ -18,7 +18,7 @@ def deploy(ctx, verbose):
     docker.check_for_dockerfile(node_config['path'])
 
     click.echo('building container image (this may take several minutes)...')
-    docker.build(node_config, node, verbose, provider=node_config['provider'])
+    docker.build(node_config, node, verbose)
 
     click.echo('logging into container registry...')
     docker.login(node_config, verbose)
@@ -26,6 +26,7 @@ def deploy(ctx, verbose):
     click.echo('pushing image to registry (this may take several minutes)...')
     docker.push(node_config['docker_repo'], verbose)
 
+    #eses-wk: this should be cleaning the remote images stored in the registry?
     click.echo('cleaning up local images...')
     docker.cleanup(node_config)
 

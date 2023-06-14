@@ -5,13 +5,12 @@ output "node_config" {
   value={
     #docker_repo = var.image_url
     #docker_repo = "${azurerm_container_registry.registry.login_server}/${var.model_name}"
-    resource_group_name = azurerm_resource_group.rg.name
-    registry_name = azurerm_container_registry.registry.name
-    acr_login_server = azurerm_container_registry.registry.login_server
-    
+    #resource_group_name = azurerm_resource_group.rg.name
+    #registry_name = azurerm_container_registry.registry.name
+    #acr_login_server = azurerm_container_registry.registry.login_server
     # docker_repo=, will be added during "node config", defining here will cause error in ACR creation
-    #docker_repo = local.node_config[var.node_name].docker_repo
     #webhook_url = "https://${azurerm_linux_function_app.function_app.name}.azurewebsites.net/api/azure_trigger" 
+    docker_repo = local.node_config[var.node_name].docker_repo
     webhook_url = "https://${azurerm_linux_function_app.function_app.name}.azurewebsites.net/api/orchestrators/start_submission"
     webhook_log_group = azurerm_application_insights.app_insights.name
     cluster_log_group = azurerm_log_analytics_workspace.container_instance.name
@@ -28,13 +27,6 @@ output "node_config" {
   #}
 }
 
-output "acr_repo_details" {
-  value={
-    resource_group_name = azurerm_resource_group.rg.name
-    registry_name = azurerm_container_registry.registry.name
-    acr_login_server = azurerm_container_registry.registry.login_server
-  }
-}
 
 #output "acr_repo_details" {
 #  value={
