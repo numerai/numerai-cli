@@ -29,7 +29,8 @@ setup(
         "azure-identity",
         "azure-mgmt-subscription",
         "azure-mgmt-containerregistry",
-        "azure-containerregistry"
+        "azure-containerregistry",
+        "azure.monitor.query"
     ],
     entry_points={
         'console_scripts': ['numerai=numerai:main'],

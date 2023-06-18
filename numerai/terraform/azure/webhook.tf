@@ -82,16 +82,17 @@ resource "azurerm_application_insights" "app_insights" {
   name                = "func-app-application-insights"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
+  workspace_id        = azurerm_log_analytics_workspace.function_app.id
   application_type    = "other"
 }
 
-#resource "azurerm_log_analytics_workspace" "function_app" {
-#  name                = "func-app-log-analytics"
-#  location            = azurerm_resource_group.rg.location
-#  resource_group_name = azurerm_resource_group.rg.name
-#  sku                 = "PerGB2018"
-#  retention_in_days   = 30
-#}
+resource "azurerm_log_analytics_workspace" "function_app" {
+  name                = "func-app-log-analytics"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  sku                 = "PerGB2018"
+  retention_in_days   = 30
+}
 
 #output "instrumentation_key" {
 #  value = azurerm_application_insights.app_insights.instrumentation_key

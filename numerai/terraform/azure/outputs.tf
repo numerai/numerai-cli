@@ -10,10 +10,11 @@ output "node_config" {
     #acr_login_server = azurerm_container_registry.registry.login_server
     # docker_repo=, will be added during "node config", defining here will cause error in ACR creation
     #webhook_url = "https://${azurerm_linux_function_app.function_app.name}.azurewebsites.net/api/azure_trigger" 
+    #webhook_log_group = azurerm_application_insights.app_insights.name
     docker_repo = local.node_config[var.node_name].docker_repo
     webhook_url = "https://${azurerm_linux_function_app.function_app.name}.azurewebsites.net/api/orchestrators/start_submission"
-    webhook_log_group = azurerm_application_insights.app_insights.name
-    cluster_log_group = azurerm_log_analytics_workspace.container_instance.name
+    webhook_log_group = azurerm_log_analytics_workspace.function_app.workspace_id
+    cluster_log_group = azurerm_log_analytics_workspace.container_instance.workspace_id
   }
 
   #value = {for node, config in var.nodes:

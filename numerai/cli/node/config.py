@@ -110,15 +110,22 @@ def config(ctx, verbose, provider, size, path, example, cron, register_webhook):
     if provider == 'azure':
         provider_registry_conf=load_or_init_registry_config(provider,verbose)
         
+        # TODO: Add function to check if registry config is valid, if not valid, create and replace with new registry config
+        
+        #click.secho(f'Current registry config: {provider_registry_conf}, creating a new registry', fg='green')
+        
         # Create Azure Container Registry if it doesn't exist
         if provider_registry_conf == {}:
+            click.secho(f'No container registry for provider: {provider}, creating a new registry', fg='yellow')
             provider_registry_conf = create_registry(provider, provider_keys, verbose=False)
         
         click.secho(f'Appending provider_registry_conf:{provider_registry_conf}, to node_conf', fg='yellow')
         node_conf.update(provider_registry_conf)
         # Create a placeholder image and push it to the registry
         node_conf['docker_repo'] = f'{node_conf["acr_login_server"]}/{node}'
-        #click.secho('creating Azure Container Registry first and pushing an image as placeholder', fg='yellow')
+        
+        
+        #click.secho('creating Azure Container Registry first and pushing an image as placeholder', fg='yellow')    
         #terraform(f'apply -auto-approve -target="azurerm_container_registry.registry"', verbose, provider,
         #          env_vars=provider_keys,
         #          inputs={'node_name': node})
@@ -217,9 +224,7 @@ def load_or_init_registry_config(provider=None, verbose=False):
             # Return the specific registry if it exists
             return cfg[provider] 
         else:
-            click.secho(
-            'Provider not supported. Currently only support Azure', fg='red'
-            )
+            click.secho(f"Unsupported provider: '{cfg[provider]}'", fg='red')
             exit(1)
     except KeyError:
         click.secho(f"Return an empty container registry for provider: {provider}", fg='yellow')
