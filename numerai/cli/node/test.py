@@ -14,8 +14,11 @@ from numerai.cli.util.files import load_or_init_nodes
 from numerai.cli.util.keys import get_aws_keys, get_numerai_keys, get_azure_keys
 
 from azure.identity import ClientSecretCredential
-from azure.monitor.query import LogsQueryClient, LogsQueryStatus, MetricsQueryClient
-from azure.core.exceptions import HttpResponseError
+from azure.mgmt.storage import StorageManagementClient
+from azure.core.credentials import AzureNamedKeyCredential
+from azure.data.tables import TableServiceClient, TableClient 
+#from azure.monitor.query import LogsQueryClient, LogsQueryStatus, MetricsQueryClient
+#from azure.core.exceptions import HttpResponseError
 from datetime import datetime, timedelta, timezone
 import pandas as pd
 import json
@@ -50,11 +53,10 @@ def test(ctx, local, command, verbose):
 
     if local:
         click.secho("starting local test; building container...")
-        docker.build(node_config, node, verbose, provider=node_config['provider'])
-        #click.secho("Build successful", fg='green')
+        docker.build(node_config, node, verbose)
+
         click.secho("running container...")
-        docker.run(node_config, verbose, 
-                   provider=node_config['provider'], command=command)
+        docker.run(node_config, verbose,command=command)
 
     api = base_api.Api(*get_numerai_keys())
     trigger_id = None
@@ -63,7 +65,6 @@ def test(ctx, local, command, verbose):
             click.secho("Attempting to manually trigger Cron node...")
             res = requests.post(node_config['webhook_url'], json.dumps({}))
             res.raise_for_status()
-
 
         else:
             click.secho("Checking if Numerai can Trigger your model...")
@@ -96,7 +97,6 @@ def test(ctx, local, command, verbose):
             monitor(node, node_config, True, 20, LOG_TYPE_WEBHOOK, False)
         return
     
-    #exit(0)
     click.secho("checking task status...")
     if node_config['provider'] == 'aws':
         monitor(node, node_config, verbose, 15, LOG_TYPE_CLUSTER, follow_tail=True)
@@ -142,13 +142,10 @@ def test(ctx, local, command, verbose):
                 fg='red'
             )
             
-    click.secho(f"[DEBUG] webhook triggerId: {latest_sub['triggerId']}", fg='yellow')
-    click.secho(f"[DEBUG] latest_submission triggerId: {latest_sub['triggerId']}", fg='yellow')
-
-    if trigger_id != latest_sub['triggerId']:
+    if trigger_id != latest_sub['triggerId'] and node_config['provider'] == 'aws':
         click.secho(
             "Your node did not submit the Trigger ID assigned during this test, "
-            "please ensure your node uses numerapi >= 0.2.4 (ignore if using rlang, Azure)",
+            "please ensure your node uses numerapi >= 0.2.4 (ignore if using rlang)",
             fg='red'
         )
         return
@@ -165,7 +162,7 @@ def monitor(node, config, verbose, num_lines, log_type, follow_tail):
     if config['provider'] == PROVIDER_AWS:
         monitor_aws(node, config, num_lines, log_type, follow_tail, verbose)
     elif config['provider'] == PROVIDER_AZURE:
-        monitor_azure(node, config, num_lines, log_type, follow_tail, verbose)
+        monitor_azure(node, config, verbose)
     else:
         click.secho(f"Unsupported provider: '{config['provider']}'", fg='red')
         return
@@ -338,8 +335,126 @@ def print_logs(logs_client, family, name, limit=None, next_token=None):
 
     return events['nextForwardToken'], len(events['events'])
 
-# TODO: Container Instance Log group is broken, yet monitoring the Trigger Function alone works
-def monitor_azure(node, config, num_lines, log_type, follow_tail, verbose):
+def monitor_azure(node, config, verbose):
+    """
+    Monitor the logs of a node on Azure to see if the submission is completed
+    """
+    
+    # Go get the log for all webhook calls started in the last 1 minutes
+    monitor_start_time=datetime.now(timezone.utc)-timedelta(minutes=1)
+    
+    azure_subs_id, azure_client, azure_tenant , azure_secret = get_azure_keys()
+    credentials = ClientSecretCredential(client_id=azure_client, 
+                                        tenant_id=azure_tenant,
+                                        client_secret=azure_secret)
+    # Get Azure Storage account key, using resource group name and trigger function's storage account name
+    
+    resource_group_name=config['resource_group_name']
+    storage_account_name=config['webhook_storage_account_name']
+    storage_client=StorageManagementClient(credential=credentials, 
+                                        subscription_id=azure_subs_id)
+    storage_keys=storage_client.storage_accounts.list_keys(resource_group_name=resource_group_name,
+                                                        account_name=storage_account_name)
+    if len([keys for keys in storage_keys.keys])==0:
+        print(f"Webhook's storage account key not found, check storage account name: {storage_account_name}")
+        exit(1)
+        
+    # Now we have the storage account's access keys
+    storage_key=[keys for keys in storage_keys.keys][0]
+    access_key = storage_key.value
+    endpoint_suffix = 'core.windows.net'
+    account_name = storage_account_name
+    endpoint = f"{account_name}.table.{endpoint_suffix}"
+    connection_string = f"DefaultEndpointsProtocol=https;AccountName={account_name};AccountKey={access_key};EndpointSuffix={endpoint_suffix}"
+    
+    # Get the table that store the run history for the webhook from the Azure storage account
+    table_credential = AzureNamedKeyCredential(storage_account_name, access_key)
+    table_service_client=TableServiceClient(endpoint=endpoint, credential=table_credential)
+    table_name=[table.name for table in table_service_client.list_tables() if 'History' in table.name][0]
+
+    # Query the webhook's History table and get records (entities)
+    table_client=TableClient.from_connection_string(connection_string, table_name)
+    
+    # Continue to query the table until the webhook's run is done (log printed) or 15 minutes have passed
+    time_lapse=datetime.now(timezone.utc)-monitor_start_time
+    monitoring_done = False
+    shown_log_row_key=list()
+    while time_lapse<=timedelta(minutes=15) and monitoring_done==False:
+        if len(shown_log_row_key) == 0 and verbose:
+            click.secho(f"No log events yet, still waiting...\r", fg='yellow')
+        else:
+            click.secho(f"Waiting for submission run to finish...\r", fg='yellow',)
+        monitoring_done, shown_log_row_key = azure_refresh_and_print_log(table_client, monitor_start_time, shown_log_row_key)
+        time.sleep(15)
+        # Update time lapse
+        time_lapse=datetime.now(timezone.utc)-monitor_start_time
+    if time_lapse >= timedelta(minutes=15):
+        click.secho(
+            f"Monitor timeout after 15 minutes, container run status cannot be determined. Recommended to check ran status directly on Azure Portal", fg='red')
+        exit(1)
+    
+    
+def azure_refresh_and_print_log(table_client, monitor_start_time, shown_log_row_key=list()):
+    """
+    Refresh the log table and print the new log entries
+    """
+    monitoring_done=False
+    log_list=[entity for entity in table_client.list_entities()]
+    if len(log_list)==0:
+        return monitoring_done, shown_log_row_key
+    log_df=pd.DataFrame(log_list)
+    relevant_cols=['RowKey','EventType','_Timestamp', 
+                'Name', 'OrchestrationInstance', 'Result', 
+                'OrchestrationStatus']
+    if len([col for col in relevant_cols if col in log_df.columns])<len(relevant_cols):
+        return monitoring_done, shown_log_row_key
+    log_df=log_df[relevant_cols].dropna(subset=['EventType'])
+    log_df=log_df[log_df['_Timestamp']>monitor_start_time]
+    execution_log=log_df[log_df['EventType'].str.contains('Execution')]
+
+    # Remove logs that have been shown before
+    log_df=log_df[log_df['RowKey'].isin(shown_log_row_key)==False].reset_index()
+
+    if len(log_df)>0:
+        for i in range(len(log_df)):
+            shown_log_row_key.append(log_df.loc[i,'RowKey'])
+  
+            if log_df.loc[i,'EventType']=='ExecutionStarted':
+                az_func_name1=log_df.loc[i,'Name']
+                click.secho(f"Azure Trigger Function: '{az_func_name1}' started", fg='green')
+                #execute_st=log_df.loc[i,'_Timestamp']
+            elif log_df.loc[i,'EventType']=='ExecutionCompleted':
+                az_func_name1=execution_log.loc[execution_log['EventType']=='ExecutionStarted','Name'].values[0]
+                execute_st=execution_log.loc[execution_log['EventType']=='ExecutionStarted','_Timestamp'].values[-1]
+                execute_et=execution_log.loc[execution_log['EventType']=='ExecutionCompleted','_Timestamp'].values[-1]
+                time_taken=execute_et-execute_st
+                click.secho(f"Azure Trigger Function: '{az_func_name1}' ended", fg='green')
+                click.secho(f"'{az_func_name1}' time taken: {time_taken.astype('timedelta64[s]').astype('float')/60:.2f} mins")
+                click.secho(f"'{az_func_name1}' result: {log_df.loc[i,'Result']}")
+                monitoring_done=True       
+            """
+            elif log_df.loc[i,'EventType']=='TaskScheduled':
+                #click.echo(f"Container Run time taken: {float(log_df.loc[i,'DurationMs'])/1000/60:.2f} mins")
+                #print(f"--------------Azure Trigger Function started: {log_df.loc[i,'Name']}--------------")
+                az_func_name2=log_df.loc[i,'Name']
+                print(f"Azure Trigger Function: '{az_func_name2}' started")
+                task_st=log_df.loc[i,'_Timestamp']
+            elif log_df.loc[i,'EventType']=='TaskCompleted':
+                #click.echo(f"Container Run time taken: {float(log_df.loc[i,'DurationMs'])/1000/60:.2f} mins")
+                container_run_finished = True 
+                #print(f'Time taken: {(log_df.loc[i,"_Timestamp"]-task_st).total_seconds()/60:.2f} mins')
+                #print(f"Result: {log_df.loc[i,'Result']}")
+                print(f"Azure Trigger Function: '{az_func_name2}' ended")
+                print(f"'{az_func_name2}' - time taken: {(log_df.loc[i,'_Timestamp']-task_st).total_seconds()/60:.2f} mins")
+                print(f"'{az_func_name2}' - result: {log_df.loc[i,'Result']}")       
+            """
+    return monitoring_done, shown_log_row_key
+    
+    
+"""
+# Azure Log Analytics is not informative, cannot get the webhook trigger's detailed log
+# Container Instance's Log group is broken
+def monitor_azure_OLD(node, config, num_lines, log_type, follow_tail, verbose):
     azure_subs_id, azure_client, azure_tenant , azure_secret = get_azure_keys()
     credentials = ClientSecretCredential(client_id=azure_client, 
                                         tenant_id=azure_tenant,
@@ -368,10 +483,10 @@ def monitor_azure(node, config, num_lines, log_type, follow_tail, verbose):
         )
         #exit(1)
 
-def monitor_azure_trigger(client, workspace_id, monitor_start_time, shown_log_id):
+def monitor_azure_trigger_OLD(client, workspace_id, monitor_start_time, shown_log_id):
     # Get the lastest 10 log entries from the AppRequests table
-    query = """AppRequests | take 10
-    | order by TimeGenerated desc"""
+    query = '''AppRequests | take 10
+    | order by TimeGenerated desc'''
     
     # Get the log entries starting from the 1 minute before of triggering the monitor function
     log_query_start_time = monitor_start_time-timedelta(minutes=2)
@@ -425,25 +540,7 @@ def monitor_azure_trigger(client, workspace_id, monitor_start_time, shown_log_id
                 container_run_finished = True 
                 
     return shown_log_id , container_run_finished
-    
-
-
-def monitor_azure_NOT_USED(status_query_url, start_time=time.time()):
-    res = requests.get(url = status_query_url)
-    # extracting data in json format
-    response = res.json()
-    if response['runtimeStatus']=='Running':
-        click.secho(f'Task is running, waiting for it to finish...', fg='yellow')
-        time.sleep(10)
-        click.secho(f'Time taken: {(time.time()-start_time)/60} minutes', fg='yellow')
-        monitor_azure(status_query_url, start_time)
-    elif response['runtimeStatus']=='Completed':
-        click.secho(f'Task success!', fg='green')
-    else:
-        click.secho(f'Task failed, check your task status results. '
-                     'Task status URL: {status_query_url}'
-                    , fg='red')
-    
+"""    
 
 @click.command()
 @click.option('--verbose', '-v', is_flag=True)

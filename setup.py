@@ -30,7 +30,9 @@ setup(
         "azure-mgmt-subscription",
         "azure-mgmt-containerregistry",
         "azure-containerregistry",
-        "azure.monitor.query"
+        "azure-data-tables",
+        "azure-mgmt-storage"
+        #"azure.monitor.query"
     ],
     entry_points={
         'console_scripts': ['numerai=numerai:main'],

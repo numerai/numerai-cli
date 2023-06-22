@@ -10,8 +10,10 @@ from numerai.cli.util.debug import is_win8, is_win10
 from numerai.cli.util.keys import \
     check_aws_validity, \
     check_numerai_validity, \
+    check_azure_validity, \
     get_numerai_keys, \
-    get_aws_keys
+    get_aws_keys, \
+    get_azure_keys
 
 
 @click.command()
@@ -87,6 +89,11 @@ def doctor():
             check_aws_validity(*get_aws_keys())
         except:
             invalid_providers.append('aws')
+    if 'azure' in used_providers:
+        try:
+            check_azure_validity(*get_azure_keys())
+        except:
+            invalid_providers.append('azure')
 
     if env_setup_status != 0:
         click.secho(f"Environment setup incomplete:", fg='red')

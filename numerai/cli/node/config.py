@@ -90,7 +90,7 @@ def config(ctx, verbose, provider, size, path, example, cron, register_webhook):
         node_conf['path'] = os.path.abspath(path)
     if model_id:
         node_conf['model_id'] = model_id
-    if cron:
+    if cron and provider == 'aws':
         node_conf['cron'] = cron
     nodes_config[node] = node_conf
 
@@ -112,31 +112,18 @@ def config(ctx, verbose, provider, size, path, example, cron, register_webhook):
         
         # TODO: Add function to check if registry config is valid, if not valid, create and replace with new registry config
         
-        #click.secho(f'Current registry config: {provider_registry_conf}, creating a new registry', fg='green')
+        # click.secho(f'Current registry config: {provider_registry_conf}, creating a new registry', fg='green')
         
         # Create Azure Container Registry if it doesn't exist
         if provider_registry_conf == {}:
             click.secho(f'No container registry for provider: {provider}, creating a new registry', fg='yellow')
-            provider_registry_conf = create_registry(provider, provider_keys, verbose=False)
+            provider_registry_conf = create_azure_registry(provider, provider_keys, verbose=False)
         
         click.secho(f'Appending provider_registry_conf:{provider_registry_conf}, to node_conf', fg='yellow')
         node_conf.update(provider_registry_conf)
         # Create a placeholder image and push it to the registry
         node_conf['docker_repo'] = f'{node_conf["acr_login_server"]}/{node}'
-        
-        
-        #click.secho('creating Azure Container Registry first and pushing an image as placeholder', fg='yellow')    
-        #terraform(f'apply -auto-approve -target="azurerm_container_registry.registry"', verbose, provider,
-        #          env_vars=provider_keys,
-        #          inputs={'node_name': node})
-        
-        # Append the created registry name
-        #res = terraform(f"output -json acr_repo_details", verbose, provider).decode('utf-8')
-        #node_conf_added = json.loads(res) # Convert string back to dictionary
-        #node_conf.update(node_conf_added)
-        #node_conf['docker_repo'] = f'{node_conf["acr_login_server"]}/{node}'
-        #click.secho(f'Updated node_config:{node_conf_added}, updating node_conf', fg='yellow')
-        
+               
         docker.login(node_conf,verbose)
         docker.pull('hello-world:linux', verbose)
         
@@ -156,25 +143,26 @@ def config(ctx, verbose, provider, size, path, example, cron, register_webhook):
         terraform(f'apply -auto-approve', verbose, provider,
             env_vars=provider_keys,
             inputs={'node_config_file': 'nodes.json',
-                    'node_name': node})
+                    #'node_name': node
+                    })
     click.secho('cloud resources created successfully', fg='green') 
 
     # terraform output for node config
     click.echo(f'saving node configuration to {NODES_PATH}...')
     
     # both should be nodes.json
-    if provider == 'aws':
-        res = terraform(f"output -json nodes", verbose, provider).decode('utf-8')
-        try:
-            nodes = json.loads(res)
-        except json.JSONDecodeError:
-            click.secho("failed to save node configuration, please retry.", fg='red')
-            return
-        for node_name, data in nodes.items():
-            nodes_config[node_name].update(data)
+    #if provider == 'aws':
+    res = terraform(f"output -json nodes", verbose, provider).decode('utf-8')
+    try:
+        nodes = json.loads(res)
+    except json.JSONDecodeError:
+        click.secho("failed to save node configuration, please retry.", fg='red')
+        return
+    for node_name, data in nodes.items():
+        nodes_config[node_name].update(data)
                
-    elif provider == 'azure':
-        res = terraform(f"output -json node_config", verbose, provider).decode('utf-8') 
+    """elif provider == 'azure':
+        res = terraform(f"output -json nodes", verbose, provider).decode('utf-8') 
         try:
             node_conf_added = json.loads(res)
         except json.JSONDecodeError:
@@ -182,7 +170,8 @@ def config(ctx, verbose, provider, size, path, example, cron, register_webhook):
             return
         node_conf.update(node_conf_added)
         nodes_config[node]=node_conf
-
+    """
+    
     store_config(NODES_PATH, nodes_config)
     if verbose:
         click.secho(f'new config:\n{json.dumps(load_or_init_nodes(), indent=2)}')
@@ -202,7 +191,6 @@ def config(ctx, verbose, provider, size, path, example, cron, register_webhook):
     
     
 ## WIP: add a repo config file to store the docker image registry details
-
 def load_or_init_registry_config(provider=None, verbose=False):
     """Load or initialize the registry config file, 
     The registry config file stores the container registry 
@@ -233,7 +221,7 @@ def load_or_init_registry_config(provider=None, verbose=False):
         return cfg[provider]
 
 # TODO: add support for other container registry, to be configured by -registry setting
-def create_registry(provider, provider_keys, registry=None, verbose=False):
+def create_azure_registry(provider, provider_keys, registry=None, verbose=False):
     terraform(f"-chdir=container_registry/azure init -upgrade", verbose, provider)
     terraform(f'-chdir=container_registry/azure apply -auto-approve ', verbose, provider,
                 env_vars=provider_keys)
