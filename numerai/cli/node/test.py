@@ -356,7 +356,7 @@ def monitor_azure(node, config, verbose):
     storage_keys=storage_client.storage_accounts.list_keys(resource_group_name=resource_group_name,
                                                         account_name=storage_account_name)
     if len([keys for keys in storage_keys.keys])==0:
-        print(f"Webhook's storage account key not found, check storage account name: {storage_account_name}")
+        click.secho(f"Webhook's storage account key not found, check storage account name: {storage_account_name}", fg='red')
         exit(1)
         
     # Now we have the storage account's access keys
@@ -404,11 +404,10 @@ def azure_refresh_and_print_log(table_client, monitor_start_time, shown_log_row_
         return monitoring_done, shown_log_row_key
     log_df=pd.DataFrame(log_list)
     relevant_cols=['RowKey','EventType','_Timestamp', 
-                'Name', 'OrchestrationInstance', 'Result', 
-                'OrchestrationStatus']
-    if len([col for col in relevant_cols if col in log_df.columns])<len(relevant_cols):
-        return monitoring_done, shown_log_row_key
-    log_df=log_df[relevant_cols].dropna(subset=['EventType'])
+                   'Name', 'OrchestrationInstance', 'Result', 
+                   'OrchestrationStatus']
+    available_cols=[col for col in relevant_cols if col in log_df.columns]
+    log_df=log_df[available_cols].dropna(subset=['EventType'])
     log_df=log_df[log_df['_Timestamp']>monitor_start_time]
     execution_log=log_df[log_df['EventType'].str.contains('Execution')]
 

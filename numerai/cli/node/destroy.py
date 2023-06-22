@@ -72,7 +72,7 @@ def destroy(ctx, verbose):
             #provider_registry_conf=load_or_init_registry_config(provider,verbose)
             # Load and delete registry config
             all_registry_conf=load_or_init_registry_config()
-            del nodes_config[provider]
+            del all_registry_conf[provider]
             store_config(REGISTRY_PATH, all_registry_conf)
             
             # Terrafom destroy azure container registry
@@ -80,4 +80,4 @@ def destroy(ctx, verbose):
             env_vars=provider_keys)
             click.secho(f"Provider: '{provider}' Container Registry destroyed", fg='green')
         else:
-            click.secho(f"Provider: '{provider}' still has node, not destroying its Container Registry", fg='green')
+            click.secho(f"Provider: '{provider}' still has node, therefore, keeping its Container Registry", fg='yellow')
