@@ -1,7 +1,5 @@
 import os
-
 import click
-
 from numerai.cli.util import files, docker
 
 

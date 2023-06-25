@@ -40,10 +40,13 @@ from numerai.cli.util.keys import \
 @click.option(
     '--cron', '-c', type=str,
     help=f'A cron expression to trigger this node on a schedule '
-         f'(e.g. "30 18 ? * 7 *" to execute at 18:30 UTC every Saturday). '
+         f'(e.g. "30 18 ? * 7 *" to execute at 18:30 UTC every Saturday. '
+         f'"0 30 13 * * SUN,TUE,WED,THU,FRI" to execute at 13:30 UTC every Sunday, Tuesday, Wednesday, Thursday and Friday). '
          f'This prevents your webhook from auto-registering. '
          f'Check the AWS docs for more info about cron expressions: '
-         f'https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html')
+         f'https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html'
+         f'Check the Azure docs for more info about cron expressions: '
+         f'https://learn.microsoft.com/en-us/azure/azure-functions/functions-bindings-timer?tabs=python-v2%2Cin-process&pivots=programming-language-python#ncrontab-expressions')
 @click.option(
     '--register-webhook', '-r', is_flag=True,
     help=f'Forces your webhook to register with Numerai. '
@@ -90,7 +93,7 @@ def config(ctx, verbose, provider, size, path, example, cron, register_webhook):
         node_conf['path'] = os.path.abspath(path)
     if model_id:
         node_conf['model_id'] = model_id
-    if cron and provider == 'aws':
+    if cron:
         node_conf['cron'] = cron
     nodes_config[node] = node_conf
 
@@ -110,10 +113,8 @@ def config(ctx, verbose, provider, size, path, example, cron, register_webhook):
     if provider == 'azure':
         provider_registry_conf=load_or_init_registry_config(provider,verbose)
         
-        # TODO: Add function to check if registry config is valid, if not valid, create and replace with new registry config
-        
+        # TODO: Add checks to see if registry config is valid, if not valid, create and replace with new registry config
         # click.secho(f'Current registry config: {provider_registry_conf}, creating a new registry', fg='green')
-        
         # Create Azure Container Registry if it doesn't exist
         if provider_registry_conf == {}:
             click.secho(f'No container registry for provider: {provider}, creating a new registry', fg='yellow')
@@ -135,23 +136,18 @@ def config(ctx, verbose, provider, size, path, example, cron, register_webhook):
         store_config(NODES_PATH, nodes_config)    
         copy_file(NODES_PATH,f'{CONFIG_PATH}/{provider}/',force=True,verbose=True)
 
-    if provider == 'aws':
+    if provider == 'aws' or provider == 'azure':
         terraform(f'apply -auto-approve', verbose, provider,
             env_vars=provider_keys,
             inputs={'node_config_file': 'nodes.json'})
-    elif provider == 'azure':
-        terraform(f'apply -auto-approve', verbose, provider,
-            env_vars=provider_keys,
-            inputs={'node_config_file': 'nodes.json',
-                    #'node_name': node
-                    })
+    else:
+        click.secho(f'provider {provider} not supported', fg='red')
+        exit(1)
     click.secho('cloud resources created successfully', fg='green') 
 
-    # terraform output for node config
+    # terraform output for node config, same for aws and azure
     click.echo(f'saving node configuration to {NODES_PATH}...')
     
-    # both should be nodes.json
-    #if provider == 'aws':
     res = terraform(f"output -json nodes", verbose, provider).decode('utf-8')
     try:
         nodes = json.loads(res)
@@ -159,18 +155,7 @@ def config(ctx, verbose, provider, size, path, example, cron, register_webhook):
         click.secho("failed to save node configuration, please retry.", fg='red')
         return
     for node_name, data in nodes.items():
-        nodes_config[node_name].update(data)
-               
-    """elif provider == 'azure':
-        res = terraform(f"output -json nodes", verbose, provider).decode('utf-8') 
-        try:
-            node_conf_added = json.loads(res)
-        except json.JSONDecodeError:
-            click.secho("failed to save node configuration, please retry.", fg='red')
-            return
-        node_conf.update(node_conf_added)
-        nodes_config[node]=node_conf
-    """
+        nodes_config[node_name].update(data)              
     
     store_config(NODES_PATH, nodes_config)
     if verbose:
@@ -190,18 +175,17 @@ def config(ctx, verbose, provider, size, path, example, cron, register_webhook):
                 'Next: deploy and test your node', fg='green')
     
     
-## WIP: add a repo config file to store the docker image registry details
 def load_or_init_registry_config(provider=None, verbose=False):
     """Load or initialize the registry config file, 
     The registry config file stores the container registry 
     details for each provider
 
     Args:
-        provider (str, optional): Specify the provider's registry_config to load. Defaults to None.
+        provider (str, optional): Specify the provider's registry_config to load. Defaults to None, which loads all registry configs.
         verbose (bool, optional): Verbose flag. Defaults to False. 
 
     Returns:
-        dict: all provider <> registry config if provider is None, else return the specific provider's registry config
+        dict: All providers / specific provider's registry config 
     """
     maybe_create(REGISTRY_PATH)
     cfg = load_config(REGISTRY_PATH)
@@ -220,7 +204,7 @@ def load_or_init_registry_config(provider=None, verbose=False):
         store_config(REGISTRY_PATH, cfg)
         return cfg[provider]
 
-# TODO: add support for other container registry, to be configured by -registry setting
+# TODO: add support for other container registry, to be configured by -registry setting?
 def create_azure_registry(provider, provider_keys, registry=None, verbose=False):
     terraform(f"-chdir=container_registry/azure init -upgrade", verbose, provider)
     terraform(f'-chdir=container_registry/azure apply -auto-approve ', verbose, provider,

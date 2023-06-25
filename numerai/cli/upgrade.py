@@ -6,7 +6,10 @@ import click
 from numerai.cli.constants import *
 from numerai.cli.util.docker import terraform
 from numerai.cli.util.files import \
-    copy_files
+    copy_files, \
+    store_config, \
+    copy_file, \
+    move_files
 from numerai.cli.util.keys import \
     load_or_init_keys, \
     load_or_init_nodes, \
@@ -53,11 +56,20 @@ def upgrade(verbose):
 
     # INIT KEYS AND NODES
     keys_config = load_or_init_keys()
-    if not os.path.exists(KEYS_PATH) or 'aws' not in keys_config or 'numerai' not in keys_config:
+    supported_providers=['aws', 'azure']
+    if not os.path.exists(KEYS_PATH) or 'numerai' not in keys_config or not any([provider for provider in keys_config if provider in supported_providers]):
         click.secho(f"Keys missing from {KEYS_PATH}, you must re-initialize your keys:")
         config_numerai_keys()
-        config_provider_keys(PROVIDER_AWS)
-    nodes_config = load_or_init_nodes()
+        click.secho(f"Currently supported providers: {supported_providers}")
+        provider = click.prompt('Enter your provider:', default='aws')
+        if provider == 'aws':
+            config_provider_keys(PROVIDER_AWS)
+        elif provider == 'azure':
+            config_provider_keys(PROVIDER_AZURE)
+        else:
+            click.secho(f"Invalid provider: {provider}", fg='red')
+            exit(1)
+    #nodes_config = load_or_init_nodes()
 
     # DELETE OLD CONFIG FILES
     click.secho('Checking for old config output files...', fg='yellow')
@@ -71,17 +83,55 @@ def upgrade(verbose):
         click.secho(f"\tdeleting {old_docker_path}, you can populate the "
                     f"new nodes.json file with `numerai node config`")
         os.remove(old_docker_path)
+    
+    # Upgrade to 0.4: create "/aws" directory and copy all files (except .keys and nodes.json) to "/aws"
+    if not os.path.isdir(os.path.join(CONFIG_PATH,'azure')):
+        click.secho('Upgrading from 0.3 to 0.4...', fg='yellow')
+        # Create the temp folder if it doesn't exist already
+        temp_folder_path = os.path.join(CONFIG_PATH, 'temp')
+        if not os.path.exists(temp_folder_path):
+            os.makedirs(temp_folder_path)
+        else:
+            click.secho(f"Temp folder {temp_folder_path} already exists, "
+                        f"upgrading will remove everything in this folder. "
+                        f"Please save a copy elsewhere and retry 'numerai upgrade'", fg='red')
+            exit(1)
+            
+        # Move all files and folders in the config folder to the temp folder
+        move_files(CONFIG_PATH, temp_folder_path)
+        
+        # Move .keys and nodes.json back to the config folder
+        unchange_files = ['.keys', 'nodes.json']
+        for file in unchange_files:
+            try:
+                src_path = os.path.join(temp_folder_path, file)
+                dst_path = os.path.join(CONFIG_PATH, file)
+                shutil.move(src_path, dst_path)
+                click.secho(f"Move {src_path} to {dst_path}")
 
+            except FileNotFoundError:
+                click.secho(f"File {file} not found in {temp_folder_path}", fg='yellow')
+        
+        # Create /aws directory
+        aws_path = os.path.join(CONFIG_PATH, 'aws')
+        if not os.path.exists(aws_path):
+            os.makedirs(aws_path)
+            
+        # Move all files and folders from the temp folder to the aws folder
+        move_files(temp_folder_path, aws_path)
+        os.rmdir(temp_folder_path)
+        
     # UPGRADE, RENAME, AND UPDATE TERRAFORM FILES
+    # 0.4: added "/aws" directory as previous version's terraform files are all moved to "/aws"
     click.secho('Upgrading terraform files...', fg='yellow')
     try:
-        with open(os.path.join(CONFIG_PATH, 'terraform.tfstate')) as f:
+        with open(os.path.join(CONFIG_PATH, 'aws', 'terraform.tfstate')) as f:
             tfstate = json.load(f)
         keys_config = load_or_init_keys('aws')
         if '0.12' in tfstate['terraform_version']:
-            terraform('0.13upgrade -yes', verbose, version='0.13.6', env_vars=keys_config)
-            terraform('init', verbose, version='0.13.6', env_vars=keys_config)
-            terraform('apply -auto-approve', verbose, version='0.13.6', env_vars=keys_config)
+            terraform('0.13upgrade -yes ', verbose, provider='aws', version='0.13.6', env_vars=keys_config)
+            terraform('init', verbose, provider='aws', version='0.13.6', env_vars=keys_config)
+            terraform('apply -auto-approve', verbose, provider='aws', version='0.13.6', env_vars=keys_config)
     except FileNotFoundError:
         pass
     except click.ClickException:
@@ -91,21 +141,25 @@ def upgrade(verbose):
         click.secho(f'Uncaught exception: {str(e)}', fg='red')
         return
 
-    tf_files_map = {
-        'main.tf': '-main.tf',
-        'variables.tf': '-inputs.tf',
-        'outputs.tf': '-outputs.tf'
-    }
-    for old_file, new_file in tf_files_map.items():
-        old_file = os.path.join(CONFIG_PATH, old_file)
-        new_file = os.path.join(CONFIG_PATH, new_file)
-        if not os.path.exists(old_file):
-            continue
-        if not os.path.exists(old_file):
-            click.secho(f'\trenaming {old_file} to {new_file} to prep for upgrade...')
-            shutil.move(old_file, new_file)
-        else:
-            os.remove(old_file)
+    # Rename terraform files, only for v0.2 -> v0.3 upgrade
+    try:
+        tf_files_map = {
+            'main.tf': '-main.tf',
+            'variables.tf': '-inputs.tf',
+            'outputs.tf': '-outputs.tf'
+        }
+        for old_file, new_file in tf_files_map.items():
+            old_file = os.path.join(CONFIG_PATH, old_file)
+            new_file = os.path.join(CONFIG_PATH,'aws', new_file)
+            if os.path.exists(new_file):
+                os.remove(new_file)
+            if not os.path.exists(old_file):
+                click.secho(f'\trenaming and moving {old_file} to {new_file} to prep for upgrade...')
+                shutil.move(old_file, new_file)
+            else:
+                os.remove(old_file)
+    except FileNotFoundError:
+        pass
     copy_files(
         TERRAFORM_PATH,
         CONFIG_PATH,
@@ -115,12 +169,14 @@ def upgrade(verbose):
 
     # terraform init
     click.secho("Re-initializing terraform...", fg='yellow')
-    terraform("init -upgrade", verbose=verbose)
+    terraform("init -upgrade", verbose=verbose, provider='aws')
 
     if click.confirm("It's recommended you destroy your current Compute Node. Continue?"):
         click.secho("Removing old cloud infrastructure...", fg='yellow')
-        # Remarks: suppose older numerai-cli version only support aws, will add Azure support if encounter issues
-        terraform('destroy -auto-approve', verbose,
+        nodes_config = load_or_init_nodes()
+        store_config(NODES_PATH, nodes_config)    
+        copy_file(NODES_PATH,f'{CONFIG_PATH}/aws/',force=True,verbose=True)
+        terraform('destroy -auto-approve', verbose, provider='aws',
                   env_vars=load_or_init_keys('aws'),
                   inputs={'node_config_file': 'nodes.json'})
 

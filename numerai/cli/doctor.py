@@ -2,7 +2,6 @@ import json
 import subprocess
 import sys
 from urllib import request
-
 import click
 
 from numerai.cli.util.files import load_or_init_nodes

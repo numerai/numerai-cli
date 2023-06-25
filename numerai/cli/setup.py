@@ -24,6 +24,11 @@ def setup(provider, verbose):
         click.secho('It looks like you have an old configuration of numerai-cli,'
                     'run `numerai upgrade` first.')
         return
+    
+    if not os.path.isdir(os.path.join(CONFIG_PATH,'azure')):
+        click.secho('Looks like you have an old configuration of numerai-cli (<=0.3).'
+                    'run `numerai upgrade` first.')
+        return
 
     # setup numerai keys
     click.secho("Initializing numerai keys "
@@ -42,7 +47,7 @@ def setup(provider, verbose):
 
     # terraform init, added provider to init at the specified provider's tf directory
     click.secho("initializing terraform to provision cloud infrastructure...")
-    terraform("init -upgrade", verbose, provider)
+    terraform("init -upgrade ", verbose, provider)
 
     click.secho("Numerai API Keys setup and working", fg='green')
     click.secho(f"{provider} API Keys setup and working", fg='green')

@@ -108,3 +108,34 @@ def copy_node_config_to_provider_tf_dir():
             copy_files('nodes.json','aws/nodes.json',force=True)
         elif node['provider'] == 'azure':
             copy_files('nodes.json','azure/nodes.json',force=True)
+
+def move_files(src, dst, verbose=False):
+    """
+    Function to move files from one folder to another, removing it from its original location
+    Args:
+        src (string): Folder location to move files from
+        dst (string): Folder location to move files to
+        verbose (bool, optional): Verbosity for the operation. Defaults to True.
+    """
+    for item in os.listdir(src):
+        src_path = os.path.join(src, item)
+        dir_to_ignore=''
+        if verbose:
+            click.secho(f'Moving to destination: {dst}')
+
+        # Exception if the dst folder is a subfolder of the src folder
+        if os.path.commonpath([src_path, dst]) == src_path:
+            dir_to_ignore=src_path
+        
+        # Move the files and folders
+        if os.path.isdir(src_path) and src_path != dir_to_ignore:
+            click.secho(f'Moving directory: {src_path}')
+            shutil.copytree(src_path, os.path.join(dst, item))
+            shutil.rmtree(src_path)   
+        elif os.path.isfile(src_path):
+            shutil.copy(src_path, dst)
+            os.remove(src_path)
+        if verbose:
+            click.secho(f'Moved file: {src_path}')
+
+
