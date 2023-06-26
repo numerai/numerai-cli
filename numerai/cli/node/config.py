@@ -120,7 +120,7 @@ def config(ctx, verbose, provider, size, path, example, cron, register_webhook):
             click.secho(f'No container registry for provider: {provider}, creating a new registry', fg='yellow')
             provider_registry_conf = create_azure_registry(provider, provider_keys, verbose=False)
         
-        click.secho(f'Appending provider_registry_conf:{provider_registry_conf}, to node_conf', fg='yellow')
+        #click.secho(f'Appending provider_registry_conf:{provider_registry_conf}, to node_conf', fg='yellow')
         node_conf.update(provider_registry_conf)
         # Create a placeholder image and push it to the registry
         node_conf['docker_repo'] = f'{node_conf["acr_login_server"]}/{node}'

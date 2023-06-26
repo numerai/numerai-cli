@@ -25,7 +25,7 @@ def setup(provider, verbose):
                     'run `numerai upgrade` first.')
         return
     
-    if not os.path.isdir(os.path.join(CONFIG_PATH,'azure')):
+    if os.path.isdir(CONFIG_PATH) and not os.path.isdir(os.path.join(CONFIG_PATH,'azure')):
         click.secho('Looks like you have an old configuration of numerai-cli (<=0.3).'
                     'run `numerai upgrade` first.')
         return

@@ -142,7 +142,7 @@ def test(ctx, local, command, verbose):
                 fg='red'
             )
             
-    if trigger_id != latest_sub['triggerId'] and node_config['provider'] == 'aws':
+    if trigger_id != latest_sub['triggerId']:
         click.secho(
             "Your node did not submit the Trigger ID assigned during this test, "
             "please ensure your node uses numerapi >= 0.2.4 (ignore if using rlang)",
@@ -431,115 +431,9 @@ def azure_refresh_and_print_log(table_client, monitor_start_time, shown_log_row_
                 click.secho(f"'{az_func_name1}' time taken: {time_taken.astype('timedelta64[s]').astype('float')/60:.2f} mins")
                 click.secho(f"'{az_func_name1}' result: {log_df.loc[i,'Result']}")
                 monitoring_done=True       
-            """
-            elif log_df.loc[i,'EventType']=='TaskScheduled':
-                #click.echo(f"Container Run time taken: {float(log_df.loc[i,'DurationMs'])/1000/60:.2f} mins")
-                #print(f"--------------Azure Trigger Function started: {log_df.loc[i,'Name']}--------------")
-                az_func_name2=log_df.loc[i,'Name']
-                print(f"Azure Trigger Function: '{az_func_name2}' started")
-                task_st=log_df.loc[i,'_Timestamp']
-            elif log_df.loc[i,'EventType']=='TaskCompleted':
-                #click.echo(f"Container Run time taken: {float(log_df.loc[i,'DurationMs'])/1000/60:.2f} mins")
-                container_run_finished = True 
-                #print(f'Time taken: {(log_df.loc[i,"_Timestamp"]-task_st).total_seconds()/60:.2f} mins')
-                #print(f"Result: {log_df.loc[i,'Result']}")
-                print(f"Azure Trigger Function: '{az_func_name2}' ended")
-                print(f"'{az_func_name2}' - time taken: {(log_df.loc[i,'_Timestamp']-task_st).total_seconds()/60:.2f} mins")
-                print(f"'{az_func_name2}' - result: {log_df.loc[i,'Result']}")       
-            """
+
     return monitoring_done, shown_log_row_key
     
-    
-"""
-# Azure Log Analytics is not informative, cannot get the webhook trigger's detailed log
-# Container Instance's Log group is broken
-def monitor_azure_OLD(node, config, num_lines, log_type, follow_tail, verbose):
-    azure_subs_id, azure_client, azure_tenant , azure_secret = get_azure_keys()
-    credentials = ClientSecretCredential(client_id=azure_client, 
-                                        tenant_id=azure_tenant,
-                                        client_secret=azure_secret)
-    client = LogsQueryClient(credentials)
-    workspace_id = config['webhook_log_group']
-
-
-    monitor_start_time=datetime.utcnow()
-    time_lapse = datetime.utcnow() - monitor_start_time
-    monitor_complete=False
-    shown_log_id=list()
-    
-    while time_lapse < timedelta(minutes=5) and not monitor_complete:
-        if len(shown_log_id) == 0:
-            click.secho(f"No log events yet, still waiting.../r", fg='yellow', nl=False)
-        else:
-            click.secho(f"Waiting for container run log.../r", fg='yellow', nl=False)
-        shown_log_id, monitor_complete = monitor_azure_trigger(client, workspace_id, monitor_start_time, shown_log_id)
-        time.sleep(15)
-        time_lapse = datetime.utcnow() - monitor_start_time
-    
-    if time_lapse >= timedelta(minutes=5):
-        click.secho(
-            f"Timeout after 5 minutes, container run status cannot be determined.", fg='red'
-        )
-        #exit(1)
-
-def monitor_azure_trigger_OLD(client, workspace_id, monitor_start_time, shown_log_id):
-    # Get the lastest 10 log entries from the AppRequests table
-    query = '''AppRequests | take 10
-    | order by TimeGenerated desc'''
-    
-    # Get the log entries starting from the 1 minute before of triggering the monitor function
-    log_query_start_time = monitor_start_time-timedelta(minutes=2)
-    log_query_end_time = datetime.utcnow()
-    
-    container_run_finished=False
-    
-    try:
-        response = client.query_workspace(
-            workspace_id=workspace_id,
-            query=query,
-            timespan=(log_query_start_time, log_query_end_time)
-            )
-        if response.status == LogsQueryStatus.PARTIAL:
-            error = response.partial_error
-            data = response.partial_data
-            #print(error)
-        elif response.status == LogsQueryStatus.SUCCESS:
-            data = response.tables
-        for table in data:
-            df = pd.DataFrame(data=table.rows, columns=table.columns)
-            #print(df)
-    except HttpResponseError as err:
-        print("Monitor error: ")
-        print(err)
-    
-    df['Properties']=df['Properties'].apply(json.loads) # convert string to json
-
-    # Sort by ascending order of TimeGenerated, earlier log first
-    df=df.sort_values(by=['TimeGenerated'],ascending=True)
-    # Filter out logs that are not related to the core submission and container run function
-    df=df[df['Name'].isin(['start_submission','run_container'])].reset_index()
-    useful_cols=['TimeGenerated','Id','Name',
-                'Success','ResultCode','DurationMs','PerformanceBucket',
-                'Properties']
-    df=df[useful_cols]
-    
-    # Remove logs that have been shown before
-    df=df[df['Id'].isin(shown_log_id)==False].reset_index()
-    
-    if len(df)>0:
-        for i in range(len(df)):
-            shown_log_id.append(df.loc[i,'Id'])
-            click.secho(f"-------------- Azure Trigger Function Task: {df.loc[i,'Name']} --------------", fg='yellow')
-            
-            if df.loc[i,'Name']=='start_submission':
-                click.echo(f"Trigger Function Status: {df.loc[i,'Properties']['DurableFunctionsRuntimeStatus']}")
-                
-            elif df.loc[i,'Name']=='run_container':
-                click.echo(f"Container Run time taken: {float(df.loc[i,'DurationMs'])/1000/60:.2f} mins")
-                container_run_finished = True 
-                
-    return shown_log_id , container_run_finished
-"""    
 
 @click.command()
 @click.option('--verbose', '-v', is_flag=True)
