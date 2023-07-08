@@ -83,8 +83,9 @@ def upgrade(verbose):
         click.secho(f"\tdeleting {old_docker_path}, you can populate the "
                     f"new nodes.json file with `numerai node config`")
         os.remove(old_docker_path)
-    
-    # Upgrade to 0.4: create "/aws" directory and copy all files (except .keys and nodes.json) to "/aws"
+
+    # Upgrade to 0.4
+    # create "/aws" directory, then copy all of the old config over (except .keys and nodes.json)
     if not os.path.isdir(os.path.join(CONFIG_PATH,'azure')):
         click.secho('Upgrading from 0.3 to 0.4...', fg='yellow')
         # Create the temp folder if it doesn't exist already
@@ -122,7 +123,6 @@ def upgrade(verbose):
         os.rmdir(temp_folder_path)
         
     # UPGRADE, RENAME, AND UPDATE TERRAFORM FILES
-    # 0.4: added "/aws" directory as previous version's terraform files are all moved to "/aws"
     click.secho('Upgrading terraform files...', fg='yellow')
     try:
         with open(os.path.join(CONFIG_PATH, 'aws', 'terraform.tfstate')) as f:

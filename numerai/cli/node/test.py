@@ -103,6 +103,11 @@ def test(ctx, local, command, verbose):
     elif node_config['provider'] == 'azure':
         monitor(node, node_config, verbose, 15, LOG_TYPE_CLUSTER, follow_tail=True)
         time.sleep(5)
+    
+    if node_config['provider'] == 'azure':
+        click.secho("[Azure node] Test complete, your model should submits automatically! "
+                    f"You may check your submission here: https://numer.ai/models", fg='green')
+        return
         
     click.secho("checking for submission...")
     res = api.raw_query(
@@ -145,7 +150,7 @@ def test(ctx, local, command, verbose):
     if trigger_id != latest_sub['triggerId']:
         click.secho(
             "Your node did not submit the Trigger ID assigned during this test, "
-            "please ensure your node uses numerapi >= 0.2.4 (ignore if using rlang)",
+            "please ensure your node uses numerapi >= 0.2.4 (ignore if using rlang or Azure as provider)",
             fg='red'
         )
         return

@@ -20,10 +20,10 @@ def setup(provider, verbose):
     Initializes cli and provider API keys.
     """
     # check for old format, tell user to run numerai upgrade first
-    if os.path.isfile(CONFIG_PATH) or os.path.isdir('.numerai'):
-        click.secho('It looks like you have an old configuration of numerai-cli,'
-                    'run `numerai upgrade` first.')
-        return
+    #if os.path.isfile(CONFIG_PATH) or os.path.isdir('.numerai'):
+    #    click.secho('It looks like you have an old configuration of numerai-cli,'
+    #                'run `numerai upgrade` first.')
+    #    return
     
     if os.path.isdir(CONFIG_PATH) and not os.path.isdir(os.path.join(CONFIG_PATH,'azure')):
         click.secho('Looks like you have an old configuration of numerai-cli (<=0.3).'
