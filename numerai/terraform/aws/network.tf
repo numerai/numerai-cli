@@ -33,7 +33,7 @@ resource "aws_route" "internet_access" {
 # Traffic to the ECS Cluster security group
 resource "aws_security_group" "ecs_tasks" {
   name        = "${local.node_prefix}-tasks"
-  description = "allow inbound access from evertone"
+  description = "Allow all outbound"
   vpc_id      = aws_vpc.main.id
 
   egress {
