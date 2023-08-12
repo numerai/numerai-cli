@@ -148,7 +148,7 @@ def config(ctx, verbose, provider, size, path, example, cron, register_webhook):
     # terraform output for node config, same for aws and azure
     click.echo(f'saving node configuration to {NODES_PATH}...')
     
-    res = terraform(f"output -json nodes", verbose, provider).decode('utf-8')
+    res = terraform(f"output -json {provider}_nodes", verbose, provider).decode('utf-8')
     try:
         nodes = json.loads(res)
     except json.JSONDecodeError:
