@@ -86,6 +86,9 @@ def config(ctx, verbose, provider, size, path, example, cron, register_webhook):
     click.secho(f'Current node config: "{node_conf}"...')
     if provider:
         node_conf['provider'] = provider
+    else:
+        provider = node_conf['provider']
+        
     if size:
         node_conf['cpu'] = SIZE_PRESETS[size][0]
         node_conf['memory'] = SIZE_PRESETS[size][1]
