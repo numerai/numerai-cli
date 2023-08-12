@@ -18,7 +18,8 @@ from numerai.cli.util.files import \
     load_config
 from numerai.cli.util.keys import \
     get_provider_keys, \
-    get_numerai_keys
+    get_numerai_keys, \
+    load_or_init_keys
 
 
 @click.command()
@@ -75,6 +76,13 @@ def config(ctx, verbose, provider, size, path, example, cron, register_webhook):
     click.secho(f'configuring node "{node}"...')
     nodes_config = load_or_init_nodes()
     nodes_config.setdefault(node, {})
+    
+    # Find any providers that will be affected by this config update
+    affected_providers = [provider]
+    if nodes_config[node] is not None and "provider" in nodes_config[node]:
+        affected_providers.append(nodes_config[node]['provider'])
+    affected_providers = set(filter(None,affected_providers))
+    
     nodes_config[node].update({
         key: default
         for key, default in DEFAULT_SETTINGS.items()
@@ -82,13 +90,14 @@ def config(ctx, verbose, provider, size, path, example, cron, register_webhook):
     })
     # update node as needed
     node_conf = nodes_config[node]
-    #click.secho(f'Provider: "{provider}"...')    
+
     click.secho(f'Current node config: "{node_conf}"...')
+
     if provider:
         node_conf['provider'] = provider
     else:
         provider = node_conf['provider']
-        
+
     if size:
         node_conf['cpu'] = SIZE_PRESETS[size][0]
         node_conf['memory'] = SIZE_PRESETS[size][1]
@@ -139,13 +148,16 @@ def config(ctx, verbose, provider, size, path, example, cron, register_webhook):
         store_config(NODES_PATH, nodes_config)    
         copy_file(NODES_PATH,f'{CONFIG_PATH}/{provider}/',force=True,verbose=True)
 
-    if provider == 'aws' or provider == 'azure':
-        terraform(f'apply -auto-approve', verbose, provider,
-            env_vars=provider_keys,
-            inputs={'node_config_file': 'nodes.json'})
-    else:
-        click.secho(f'provider {provider} not supported', fg='red')
-        exit(1)
+    # Apply terraform for any affected provider
+    for affected_provider in affected_providers:
+        if affected_provider == 'aws' or affected_provider == 'azure':
+            click.secho(f'Updating resources in {affected_provider}')
+            terraform(f'apply -auto-approve', verbose, affected_provider,
+                env_vars=load_or_init_keys(affected_provider),
+                inputs={'node_config_file': 'nodes.json'})
+        else:
+            click.secho(f'provider {affected_provider} not supported', fg='red')
+            exit(1)
     click.secho('cloud resources created successfully', fg='green') 
 
     # terraform output for node config, same for aws and azure
