@@ -48,7 +48,8 @@ def uninstall():
             for provider in PROVIDERS:
                 if provider in all_keys.keys():
                     provider_keys.update(all_keys[provider])
-            terraform('destroy -auto-approve',
+                    terraform('destroy -auto-approve',
+                      provider=provider,
                       verbose=True, env_vars=provider_keys,
                       inputs={'node_config_file': 'nodes.json'})
 
