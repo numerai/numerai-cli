@@ -114,7 +114,8 @@ def config(ctx, verbose, provider, size, path, example, cron, register_webhook):
     store_config(NODES_PATH, nodes_config)
     
     # Added after tf directory restructure: copy nodes.json to providers' tf directory
-    copy_file(NODES_PATH,f'{CONFIG_PATH}/{provider}/',force=True,verbose=True)
+    for affected_provider in affected_providers:
+        copy_file(NODES_PATH,f'{CONFIG_PATH}/{affected_provider}/',force=True,verbose=True)
 
 
     # terraform apply: create cloud resources
