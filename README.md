@@ -13,8 +13,6 @@ but should theoretically work anywhere that Docker and Python 3 are available.
 
 ## Contents
 
-- [numerai-cli](#numerai-cli)
-  - [Contents](#contents)
 - [Getting Started](#getting-started)
   - [List of Commands](#list-of-commands)
   - [Upgrading](#upgrading)
@@ -32,9 +30,9 @@ but should theoretically work anywhere that Docker and Python 3 are available.
 - [Prediction Node Architecture](#prediction-node-architecture)
   - [Python Example](#python-example)
   - [RLang Example](#rlang-example)
-    - [The Dockerfile](#the-dockerfile)
-    - [Cloud Components](#cloud-components)
-  - [Special Thanks](#special-thanks)
+  - [The Dockerfile](#the-dockerfile)
+  - [Cloud Components](#cloud-components)
+- [Special Thanks](#special-thanks)
 
 ## Getting Started
 
@@ -160,7 +158,7 @@ To use this tool you need:
       [ECS Cluster](https://console.aws.amazon.com/ecs/home?region=us-east-1#/clusters/numerai-submission-ecs-cluster/tasks)
       and [other resources](https://console.aws.amazon.com/cloudwatch/home?region=us-east-1#logsV2:log-groups)
 
-## List of Commands
+### List of Commands
 
 Use the `--help` option on any command or sub-command to get a full description of it:
 
@@ -184,7 +182,7 @@ Here, the `node` command takes a model name with `-m` and a flag `-s` to detect 
 a signals model or numerai model. The `config` sub-command also takes a `-s` option to
 specify the size of the node to configure.
 
-## Upgrading
+### Upgrading
 
 Upgrading numerai-cli will always require you to update the package itself using pip:
 
@@ -192,7 +190,7 @@ Upgrading numerai-cli will always require you to update the package itself using
 pip install --upgrade numerai-cli --user
 ```
 
-### Upgrading from 0.1/0.2 to 0.3.0
+#### Upgrading from 0.1/0.2 to 0.3.0
 
 CLI 0.3.0 uses a new configuration format that is incompatible with versions 0.1 and 0.2,
 but a command to migrate you configuration is provided for you. Run this in the directory
@@ -202,7 +200,7 @@ you ran `numerai setup` from the previous version:
 numerai upgrade
 ```
 
-### Beyond
+#### Beyond
 
 Some updates will make changes to configuration files used by Numerai CLI. These will
 require you to re-run some commands to upgrade your nodes to the newest versions:
@@ -210,7 +208,7 @@ require you to re-run some commands to upgrade your nodes to the newest versions
 - `numerai setup` will copy over changes to files in the `$HOME/.numerai` directory
 - `numerai node config` will apply those changes to a node
 
-## Uninstalling
+### Uninstalling
 
 ```shell
 numerai uninstall
