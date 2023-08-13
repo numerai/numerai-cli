@@ -77,12 +77,6 @@ def config(ctx, verbose, provider, size, path, example, cron, register_webhook):
     nodes_config = load_or_init_nodes()
     nodes_config.setdefault(node, {})
     
-    # Find any providers that will be affected by this config update
-    affected_providers = [provider]
-    if nodes_config[node] is not None and "provider" in nodes_config[node]:
-        affected_providers.append(nodes_config[node]['provider'])
-    affected_providers = set(filter(None,affected_providers))
-    
     nodes_config[node].update({
         key: default
         for key, default in DEFAULT_SETTINGS.items()
@@ -90,6 +84,12 @@ def config(ctx, verbose, provider, size, path, example, cron, register_webhook):
     })
     # update node as needed
     node_conf = nodes_config[node]
+
+    # Find any providers that will be affected by this config update
+    affected_providers = [provider]
+    if nodes_config[node] is not None and "provider" in nodes_config[node]:
+        affected_providers.append(nodes_config[node]['provider'])
+    affected_providers = set(filter(None,affected_providers))
 
     click.secho(f'Current node config: "{node_conf}"...')
 
