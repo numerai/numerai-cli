@@ -144,6 +144,9 @@ To use this tool you need:
       [ECS Cluster](https://console.aws.amazon.com/ecs/home?region=us-east-1#/clusters/numerai-submission-ecs-cluster/tasks)
       and [other resources](https://console.aws.amazon.com/cloudwatch/home?region=us-east-1#logsV2:log-groups)
 
+### Using Custom Keys
+During `numerai setup` you can optionally set up to two custom keys, or leave blank if not required. These keys can be used for any constants that you don't want to hardcode in your app or Dockerfile (for example usernames, passwords or secrets for other services that your app uses, such as Numerbay). These custom keys will be available in the environment as *CUSTOM_KEY_1* and *CUSTOM_KEY_2*.
+
 ## List of Commands
 Use the `--help` option on any command or sub-command to get a full description of it:
 ```

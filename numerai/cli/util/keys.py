@@ -32,6 +32,10 @@ def reformat_keys():
             'numerai': {
                 'NUMERAI_PUBLIC_ID': config['default']['NUMERAI_PUBLIC_ID'],
                 'NUMERAI_SECRET_KEY': config['default']['NUMERAI_SECRET_KEY']
+            },
+            'custom': {
+                'CUSTOM_KEY_1': config['default']['CUSTOM_KEY_1'],
+                'CUSTOM_KEY_2': config['default']['CUSTOM_KEY_2']
             }
         }
 
@@ -66,8 +70,11 @@ def get_numerai_keys():
         return None, None
 
 
-def prompt_for_key(name, default):
+def prompt_for_key(name, default, allow_blank=False):
     hidden = sanitize_message(default)
+    if hidden is None:
+        if allow_blank:
+            hidden='' # if allow_blank=True, pass an empty string as the default value
     new = click.prompt(name, default=hidden).strip()
     if new == hidden:
         return default
@@ -144,6 +151,28 @@ def check_aws_validity(key_id, secret):
         )
 
 
+def get_custom_keys():
+    keys = load_or_init_keys()
+    try:
+        return keys['custom']['CUSTOM_KEY_1'],\
+               keys['custom']['CUSTOM_KEY_2']
+    except KeyError:
+        return None, None
+
+
+def config_custom_keys():
+    custom_key_1, custom_key_2 = get_custom_keys()
+    # custom keys are optional, so are allowed to be blank, unlike numerai and provider keys
+    custom_key_1 = prompt_for_key('CUSTOM_KEY_1', custom_key_1, allow_blank=True)
+    custom_key_2 = prompt_for_key('CUSTOM_KEY_2', custom_key_2, allow_blank=True)
+
+    keys_config = load_or_init_keys()
+    keys_config.setdefault('custom', {})
+    keys_config['custom']['CUSTOM_KEY_1'] = custom_key_1
+    keys_config['custom']['CUSTOM_KEY_2'] = custom_key_2
+    store_config(KEYS_PATH, keys_config)
+
+
 def config_provider_keys(cloud_provider):
     if cloud_provider == PROVIDER_AWS:
         config_aws_keys()
@@ -152,7 +181,7 @@ def config_provider_keys(cloud_provider):
 def sanitize_message(message, censor_substr=None):
     if message is None:
         return None
-    all_keys = get_aws_keys() + get_numerai_keys()
+    all_keys = get_aws_keys() + get_numerai_keys() + get_custom_keys()
     for key in all_keys:
         if key:
             try:

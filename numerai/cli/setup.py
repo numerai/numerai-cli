@@ -7,7 +7,8 @@ from numerai.cli.util.files import \
     copy_files
 from numerai.cli.util.keys import \
     config_numerai_keys, \
-    config_provider_keys
+    config_provider_keys, \
+    config_custom_keys
 
 
 @click.command()
@@ -36,6 +37,11 @@ def setup(provider, verbose):
                 f"(press enter to keep value in brackets)...", fg='yellow')
     config_provider_keys(provider)
 
+    # setup custom keys
+    click.secho("\nInitializing custom keys (optional) "
+                "(press enter to keep value in brackets or skip custom keys)...", fg='yellow')
+    config_custom_keys()
+
     # copy tf files
     click.secho("copying terraform files...")
     copy_files(TERRAFORM_PATH, CONFIG_PATH, force=True, verbose=True)
@@ -46,5 +52,6 @@ def setup(provider, verbose):
 
     click.secho("Numerai API Keys setup and working", fg='green')
     click.secho(f"{provider} API Keys setup and working", fg='green')
+    click.secho("Custom Keys setup", fg='green')
     click.secho(f"Terraform files copied to {CONFIG_PATH}", fg='green')
     click.echo('succesfully initialized numerai-cli')

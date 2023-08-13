@@ -130,6 +130,7 @@ def terraform(tf_cmd, verbose, env_vars=None, inputs=None, version='0.14.3'):
 
 def build(node_config, node, verbose):
     numerai_keys = load_or_init_keys()['numerai']
+    custom_keys = load_or_init_keys()['custom']
 
     node_path = node_config["path"]
     curr_path = os.path.abspath('.')
@@ -145,6 +146,8 @@ def build(node_config, node, verbose):
     build_arg_str = ''
     for arg in numerai_keys:
         build_arg_str += f' --build-arg {arg}={numerai_keys[arg]}'
+    for arg in custom_keys:
+        build_arg_str += f' --build-arg {arg}={custom_keys[arg]}'
     build_arg_str += f' --build-arg MODEL_ID={node_config["model_id"]}'
     build_arg_str += f' --build-arg SRC_PATH={path}'
     build_arg_str += f' --build-arg NODE={node}'
