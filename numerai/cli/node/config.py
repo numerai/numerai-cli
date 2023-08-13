@@ -187,6 +187,21 @@ def config(ctx, verbose, provider, size, path, example, cron, register_webhook):
         click.echo(f'removing registered webhook for model {model_id}...')
         napi.set_submission_webhook(model_id, None)
 
+    # Check if azure container registry needs to be cleaned
+    if "azure" in affected_providers:
+        remaining_azure_nodes=sum(1 for node in nodes_config.values() if node['provider'] == 'azure')
+        if remaining_azure_nodes==0:
+            click.secho("Provider: Azure has no more nodes, destroying Container Registry...", fg='yellow')
+            # Load and delete registry config
+            all_registry_conf=load_or_init_registry_config()
+            del all_registry_conf["azure"]
+            store_config(REGISTRY_PATH, all_registry_conf)
+            
+            # Terrafom destroy azure container registry
+            terraform('-chdir=container_registry/azure destroy -auto-approve ', verbose, "azure",
+            env_vars=load_or_init_keys("azure"))
+            click.secho("Provider: Azure Container Registry destroyed", fg='green')
+
     click.secho('Prediction Node configured successfully. '
                 'Next: deploy and test your node', fg='green')
     
