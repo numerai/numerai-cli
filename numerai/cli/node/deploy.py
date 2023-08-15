@@ -1,4 +1,4 @@
-import os
+"""Deploy command for Numerai CLI"""
 import click
 from numerai.cli.util import files, docker
 
@@ -24,7 +24,6 @@ def deploy(ctx, verbose):
     click.echo('pushing image to registry (this may take several minutes)...')
     docker.push(node_config['docker_repo'], verbose)
 
-    #eses-wk: this should be cleaning the remote images stored in the registry?
     click.echo('cleaning up local images...')
     docker.cleanup(node_config)
 

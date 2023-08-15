@@ -1,3 +1,4 @@
+"""Setup command for Numerai CLI"""
 import click
 
 from numerai.cli.constants import *
@@ -19,13 +20,8 @@ def setup(provider, verbose):
     """
     Initializes cli and provider API keys.
     """
-    # check for old format, tell user to run numerai upgrade first
-    #if os.path.isfile(CONFIG_PATH) or os.path.isdir('.numerai'):
-    #    click.secho('It looks like you have an old configuration of numerai-cli,'
-    #                'run `numerai upgrade` first.')
-    #    return
-    
-    if os.path.isdir(CONFIG_PATH) and not os.path.isdir(os.path.join(CONFIG_PATH,'azure')):
+
+    if os.path.isdir(CONFIG_PATH) and not os.path.isdir(os.path.join(CONFIG_PATH, 'azure')):
         click.secho('Looks like you have an old configuration of numerai-cli (<=0.3).'
                     'run `numerai upgrade` first.')
         return
@@ -52,4 +48,4 @@ def setup(provider, verbose):
     click.secho("Numerai API Keys setup and working", fg='green')
     click.secho(f"{provider} API Keys setup and working", fg='green')
     click.secho(f"Terraform files copied to {CONFIG_PATH}", fg='green')
-    click.echo('succesfully initialized numerai-cli')
+    click.echo('Successfully initialized numerai-cli')

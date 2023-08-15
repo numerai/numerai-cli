@@ -15,26 +15,3 @@ variable "node_container_port" {
   type        = number
   default     = 3000
 }
-
-# Load from the nodes.json file
-#variable "node_config_file" {
-#  description = "Path to the json file used to configure nodes"
-#  type        = string
-#  default     = "nodes.json" #TODO: remove after all tests complete
-#}
-
-#variable "node_name" {
-#  description = "Name used to identify the node"
-#  type        = string
-#  default     = "" 
-#}
-
-# Identify the current node's node_config from the nodes.json file
-#locals {
-#  nodes = jsondecode(file(var.node_config_file))
-#
-#  node_config = {
-#    for node, config in local.nodes:
-#    node => config if config.provider == "azure" && node == var.node_name
-#  }
-#}

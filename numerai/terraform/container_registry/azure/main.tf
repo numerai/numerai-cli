@@ -1,5 +1,5 @@
 terraform {
-  required_version = ">= 0.12"  #">=0.12"
+  required_version = ">= 0.12" #">=0.12"
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
@@ -18,8 +18,8 @@ provider "azurerm" {
 
 resource "random_string" "random" {
   length  = 10
-  lower = true
-  upper = false
+  lower   = true
+  upper   = false
   special = false
 }
 
@@ -31,7 +31,7 @@ variable "az_resource_group_location" {
 
 resource "azurerm_resource_group" "acr_rg" {
   location = var.az_resource_group_location
-  name = "numerai-cli-acr-resource-grp"
+  name     = "numerai-cli-acr-resource-grp"
 }
 
 variable "registry_sku" {

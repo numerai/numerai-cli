@@ -1,4 +1,4 @@
-"""Config command for numerai cli"""
+"""Config command for Numerai CLI"""
 import json
 import os
 import click

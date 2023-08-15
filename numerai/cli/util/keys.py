@@ -8,7 +8,7 @@ import click
 import numerapi
 
 
-from azure.identity import ClientSecretCredential  #DefaultAzureCredential
+from azure.identity import ClientSecretCredential  # DefaultAzureCredential
 from azure.mgmt.subscription import SubscriptionClient
 
 
@@ -66,7 +66,7 @@ def get_numerai_keys():
     keys = load_or_init_keys()
     try:
         return keys['numerai']['NUMERAI_PUBLIC_ID'],\
-               keys['numerai']['NUMERAI_SECRET_KEY']
+            keys['numerai']['NUMERAI_SECRET_KEY']
     except KeyError:
         return None, None
 
@@ -111,18 +111,19 @@ def get_aws_keys():
     keys = load_or_init_keys()
     try:
         return keys['aws']['AWS_ACCESS_KEY_ID'],\
-               keys['aws']['AWS_SECRET_ACCESS_KEY']
+            keys['aws']['AWS_SECRET_ACCESS_KEY']
     except KeyError:
         return None, None
+
 
 def get_azure_keys():
     keys = load_or_init_keys()
     try:
         return keys['azure']['ARM_SUBSCRIPTION_ID'],\
-               keys['azure']['ARM_CLIENT_ID'],\
-               keys['azure']['ARM_TENANT_ID'],\
-               keys['azure']['ARM_CLIENT_SECRET']
-               
+            keys['azure']['ARM_CLIENT_ID'],\
+            keys['azure']['ARM_TENANT_ID'],\
+            keys['azure']['ARM_CLIENT_SECRET']
+
     except KeyError:
         return None, None, None, None
 
@@ -141,13 +142,18 @@ def config_aws_keys():
 
 
 def config_azure_keys():
-    azure_subs_id, azure_client, azure_tenant , azure_secret = get_azure_keys()
-    azure_subs_id = prompt_for_key('Azure Subscription ID [ARM_SUBSCRIPTION_ID]', azure_subs_id)
-    azure_client = prompt_for_key('Azure Client ID [ARM_CLIENT_ID]', azure_client)
-    azure_tenant = prompt_for_key('Azure Tenant ID [ARM_TENANT_ID]', azure_tenant)
-    azure_secret = prompt_for_key('Azure Client Secret [ARM_CLIENT_SECRET]', azure_secret)
-    check_azure_validity(azure_subs_id, azure_client, azure_tenant, azure_secret)
-    
+    azure_subs_id, azure_client, azure_tenant, azure_secret = get_azure_keys()
+    azure_subs_id = prompt_for_key(
+        'Azure Subscription ID [ARM_SUBSCRIPTION_ID]', azure_subs_id)
+    azure_client = prompt_for_key(
+        'Azure Client ID [ARM_CLIENT_ID]', azure_client)
+    azure_tenant = prompt_for_key(
+        'Azure Tenant ID [ARM_TENANT_ID]', azure_tenant)
+    azure_secret = prompt_for_key(
+        'Azure Client Secret [ARM_CLIENT_SECRET]', azure_secret)
+    check_azure_validity(azure_subs_id, azure_client,
+                         azure_tenant, azure_secret)
+
     keys_config = load_or_init_keys()
     keys_config.setdefault('azure', {})
     # Renaming the keys to match the environment variables that TF would recognize
@@ -161,7 +167,8 @@ def config_azure_keys():
 
 def check_aws_validity(key_id, secret):
     try:
-        client = boto3.client('s3', aws_access_key_id=key_id, aws_secret_access_key=secret)
+        client = boto3.client('s3', aws_access_key_id=key_id,
+                              aws_secret_access_key=secret)
         client.list_buckets()
     except Exception as e:
         if 'NotSignedUp' in str(e):
@@ -179,38 +186,41 @@ def check_aws_validity(key_id, secret):
         )
 
 # TODO: add azure keys checks with azure-cli
+
+
 def check_azure_validity(subs_id, client_id, tenant_id, secret):
     try:
-        credentials = ClientSecretCredential(client_id=client_id, 
+        credentials = ClientSecretCredential(client_id=client_id,
                                              tenant_id=tenant_id,
                                              client_secret=secret)
         sub_client = SubscriptionClient(credentials)
         subs = [sub.as_dict() for sub in sub_client.subscriptions.list()]
-        all_subs_ids=[subs_details['subscription_id'] for subs_details in subs]
+        all_subs_ids = [subs_details['subscription_id']
+                        for subs_details in subs]
         if subs_id not in all_subs_ids:
             raise Exception('Invalid Subscription ID')
-        
+
     except Exception as e:
-            error_msg=f"Make sure you follow the instructions in the wiki page: "+\
-                      f"<INSERT_LINK> to set up the Client ID, Tenant ID and Client Secret correctly."
-            if 'AADSTS700016' in str(e):
-                raise exception_with_msg(
-                    f"Invalid Client ID. "+error_msg
-                    )
-            elif 'double check your tenant name' in str(e):
-                raise exception_with_msg(
-                    f"Invalid Tenant ID. "+error_msg
-                    )
-            elif 'Invalid client secret' in str(e):
-                raise exception_with_msg(
-                    f"Invalid Client Secret. "+error_msg)
-            elif 'Invalid Subscription ID' in str(e):
-                raise exception_with_msg(
-                    f"Azure Subscription ID is invalid, or IAM is NOT set up correctly. "+\
-                    f"Your Azure Client ID, Tenant ID and Client Secret are valid. "+\
-                    f"Make sure to follow the instructions in the wiki page: "+\
-                    f"<INSERT_LINK>"
-                    )
+        error_msg = f"Make sure you follow the instructions in the wiki page: " +\
+            f"<INSERT_LINK> to set up the Client ID, Tenant ID and Client Secret correctly."
+        if 'AADSTS700016' in str(e):
+            raise exception_with_msg(
+                f"Invalid Client ID. "+error_msg
+            )
+        elif 'double check your tenant name' in str(e):
+            raise exception_with_msg(
+                f"Invalid Tenant ID. "+error_msg
+            )
+        elif 'Invalid client secret' in str(e):
+            raise exception_with_msg(
+                f"Invalid Client Secret. "+error_msg)
+        elif 'Invalid Subscription ID' in str(e):
+            raise exception_with_msg(
+                f"Azure Subscription ID is invalid, or IAM is NOT set up correctly. " +
+                f"Your Azure Client ID, Tenant ID and Client Secret are valid. " +
+                f"Make sure to follow the instructions in the wiki page: " +
+                f"<INSERT_LINK>"
+            )
 
 
 def config_provider_keys(cloud_provider):

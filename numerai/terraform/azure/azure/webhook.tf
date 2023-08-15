@@ -18,7 +18,7 @@ resource "azurerm_role_assignment" "function_app" {
 
 
 # Define the service plan for the Function App
-#Function consumption plan: https://learn.microsoft.com/en-us/azure/azure-functions/functions-scale
+# Function consumption plan: https://learn.microsoft.com/en-us/azure/azure-functions/functions-scale
 resource "azurerm_service_plan" "function_app" {
   for_each            = { for name, config in var.nodes : name => config }
   name                = "${local.node_prefix}-function-app-plan"
@@ -51,9 +51,7 @@ resource "random_string" "random" {
 # Create Linux Function App, with a azure_trigger Function
 # https://learn.microsoft.com/en-us/azure/azure-functions/functions-reference-python?pivots=python-mode-decorators&tabs=wsgi%2Capplication-level#folder-structure
 resource "azurerm_linux_function_app" "function_app" {
-  for_each = { for name, config in var.nodes : name => config }
-  #name                = "${local.node_prefix}-func-app"
-  #name                = substr("${local.node_prefix}-trigger-${var.node_name}",-60, -1)
+  for_each            = { for name, config in var.nodes : name => config }
   name                = "${substr(replace(each.key, "_", "-"), 8, 49)}-${random_string.random[each.key].result}"
   resource_group_name = azurerm_resource_group.rg[each.key].name
   location            = azurerm_resource_group.rg[each.key].location
@@ -110,7 +108,7 @@ resource "azurerm_log_analytics_workspace" "function_app" {
 
 # Cron trigger
 # Define the service plan for the Function App
-#Function consumption plan: https://learn.microsoft.com/en-us/azure/azure-functions/functions-scale
+# Function consumption plan: https://learn.microsoft.com/en-us/azure/azure-functions/functions-scale
 resource "azurerm_service_plan" "cron_function_app" {
   for_each = {
     for name, config in var.nodes :

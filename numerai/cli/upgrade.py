@@ -46,19 +46,22 @@ def upgrade(verbose):
     # MOVE KEYS FILE
     if os.path.isfile(old_key_path):
         temp_key_path = os.path.join(old_config_path, '.keys')
-        click.secho(f"\tmoving old keyfile from '{old_key_path}' to '{temp_key_path}'",)
+        click.secho(
+            f"\tmoving old keyfile from '{old_key_path}' to '{temp_key_path}'",)
         shutil.move(old_key_path, temp_key_path)
 
     # MOVE CONFIG FILE
     if os.path.exists(old_config_path):
-        click.secho(f"\tmoving old config from {old_config_path} to {CONFIG_PATH}",)
+        click.secho(
+            f"\tmoving old config from {old_config_path} to {CONFIG_PATH}",)
         shutil.move(old_config_path, CONFIG_PATH)
 
     # INIT KEYS AND NODES
     keys_config = load_or_init_keys()
-    supported_providers=['aws', 'azure']
+    supported_providers = ['aws', 'azure']
     if not os.path.exists(KEYS_PATH) or 'numerai' not in keys_config or not any([provider for provider in keys_config if provider in supported_providers]):
-        click.secho(f"Keys missing from {KEYS_PATH}, you must re-initialize your keys:")
+        click.secho(
+            f"Keys missing from {KEYS_PATH}, you must re-initialize your keys:")
         config_numerai_keys()
         click.secho(f"Currently supported providers: {supported_providers}")
         provider = click.prompt('Enter your provider:', default='aws')
@@ -86,7 +89,7 @@ def upgrade(verbose):
 
     # Upgrade to 0.4
     # create "/aws" directory, then copy all of the old config over (except .keys and nodes.json)
-    if not os.path.isdir(os.path.join(CONFIG_PATH,'azure')):
+    if not os.path.isdir(os.path.join(CONFIG_PATH, 'azure')):
         click.secho('Upgrading from 0.3 to 0.4...', fg='yellow')
         # Create the temp folder if it doesn't exist already
         temp_folder_path = os.path.join(CONFIG_PATH, 'temp')
@@ -97,10 +100,10 @@ def upgrade(verbose):
                         f"upgrading will remove everything in this folder. "
                         f"Please save a copy elsewhere and retry 'numerai upgrade'", fg='red')
             exit(1)
-            
+
         # Move all files and folders in the config folder to the temp folder
         move_files(CONFIG_PATH, temp_folder_path)
-        
+
         # Move .keys and nodes.json back to the config folder
         unchange_files = ['.keys', 'nodes.json']
         for file in unchange_files:
@@ -111,17 +114,18 @@ def upgrade(verbose):
                 click.secho(f"Move {src_path} to {dst_path}")
 
             except FileNotFoundError:
-                click.secho(f"File {file} not found in {temp_folder_path}", fg='yellow')
-        
+                click.secho(
+                    f"File {file} not found in {temp_folder_path}", fg='yellow')
+
         # Create /aws directory
         aws_path = os.path.join(CONFIG_PATH, 'aws')
         if not os.path.exists(aws_path):
             os.makedirs(aws_path)
-            
+
         # Move all files and folders from the temp folder to the aws folder
         move_files(temp_folder_path, aws_path)
         os.rmdir(temp_folder_path)
-        
+
     # UPGRADE, RENAME, AND UPDATE TERRAFORM FILES
     click.secho('Upgrading terraform files...', fg='yellow')
     try:
@@ -129,9 +133,12 @@ def upgrade(verbose):
             tfstate = json.load(f)
         keys_config = load_or_init_keys('aws')
         if '0.12' in tfstate['terraform_version']:
-            terraform('0.13upgrade -yes ', verbose, provider='aws', version='0.13.6', env_vars=keys_config)
-            terraform('init', verbose, provider='aws', version='0.13.6', env_vars=keys_config)
-            terraform('apply -auto-approve', verbose, provider='aws', version='0.13.6', env_vars=keys_config)
+            terraform('0.13upgrade -yes ', verbose, provider='aws',
+                      version='0.13.6', env_vars=keys_config)
+            terraform('init', verbose, provider='aws',
+                      version='0.13.6', env_vars=keys_config)
+            terraform('apply -auto-approve', verbose, provider='aws',
+                      version='0.13.6', env_vars=keys_config)
     except FileNotFoundError:
         pass
     except click.ClickException:
@@ -150,11 +157,12 @@ def upgrade(verbose):
         }
         for old_file, new_file in tf_files_map.items():
             old_file = os.path.join(CONFIG_PATH, old_file)
-            new_file = os.path.join(CONFIG_PATH,'aws', new_file)
+            new_file = os.path.join(CONFIG_PATH, 'aws', new_file)
             if os.path.exists(new_file):
                 os.remove(new_file)
             if not os.path.exists(old_file):
-                click.secho(f'\trenaming and moving {old_file} to {new_file} to prep for upgrade...')
+                click.secho(
+                    f'\trenaming and moving {old_file} to {new_file} to prep for upgrade...')
                 shutil.move(old_file, new_file)
             else:
                 os.remove(old_file)
@@ -174,8 +182,8 @@ def upgrade(verbose):
     if click.confirm("It's recommended you destroy your current Compute Node. Continue?"):
         click.secho("Removing old cloud infrastructure...", fg='yellow')
         nodes_config = load_or_init_nodes()
-        store_config(NODES_PATH, nodes_config)    
-        copy_file(NODES_PATH,f'{CONFIG_PATH}/aws/',force=True,verbose=True)
+        store_config(NODES_PATH, nodes_config)
+        copy_file(NODES_PATH, f'{CONFIG_PATH}/aws/', force=True, verbose=True)
         terraform('destroy -auto-approve', verbose, provider='aws',
                   env_vars=load_or_init_keys('aws'),
                   inputs={'node_config_file': 'nodes.json'})
