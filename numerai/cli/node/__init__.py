@@ -1,6 +1,8 @@
+"""Init for node"""
 import json
-
+import logging
 import click
+
 from numerapi import base_api
 
 from numerai.cli.constants import *
@@ -11,7 +13,7 @@ from numerai.cli.node.test import test, status
 from numerai.cli.util.keys import get_numerai_keys
 
 # Setting azure's logging level "ERROR" to avoid spamming the terminal
-import logging
+
 logger = logging.getLogger('azure')
 logger.setLevel(logging.ERROR)
 
@@ -19,12 +21,12 @@ logger.setLevel(logging.ERROR)
 @click.group()
 @click.option(
     '--model-name', '-m', type=str, prompt=True,
-    help=f"The name of one of your models to configure the Prediction Node for."
-         f"It defaults to the first model returned from your account."
+    help="The name of one of your models to configure the Prediction Node for."
+         "It defaults to the first model returned from your account."
 )
 @click.option(
     '--signals', '-s', is_flag=True,
-    help=f"Target a signals model with this name. Defaults to false."
+    help="Target a signals model with this name. Defaults to false."
 )
 @click.pass_context
 def node(ctx, model_name, signals):

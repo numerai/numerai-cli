@@ -1,3 +1,4 @@
+"""Config command for numerai cli"""
 import json
 import os
 import click
@@ -259,6 +260,7 @@ def load_or_init_registry_config(provider=None):
 
 
 def create_azure_registry(provider, provider_keys, verbose=False):
+    """Creates a registry for azure"""
     terraform("-chdir=container_registry/azure init -upgrade",
               verbose, provider)
     terraform('-chdir=container_registry/azure apply -auto-approve', verbose, provider,
