@@ -1,7 +1,7 @@
+"""Constants for Numerai CLI"""
 import os
 import json
 from pathlib import Path
-
 
 TOURNAMENT_NUMERAI = 8
 TOURNAMENT_SIGNALS = 11
@@ -9,22 +9,17 @@ PACKAGE_PATH = os.path.dirname(__file__)
 CONFIG_PATH = os.path.join(str(Path.home()), '.numerai')
 KEYS_PATH = os.path.join(CONFIG_PATH, '.keys')
 NODES_PATH = os.path.join(CONFIG_PATH, 'nodes.json')
-# Registry info, currently only for Azure
 REGISTRY_PATH = os.path.join(CONFIG_PATH, 'registry.json')
-# Splitting to different TF directory in subdirectory
 TERRAFORM_PATH = os.path.join(PACKAGE_PATH, "..", "terraform")
-#TERRAFORM_PATH_AZURE = os.path.join(PACKAGE_PATH, "..", "terraform_azure")
 EXAMPLE_PATH = os.path.join(PACKAGE_PATH, "..", "examples")
 
 EXAMPLES = os.listdir(EXAMPLE_PATH)
 
 PROVIDER_AWS = "aws"
 PROVIDER_AZURE = "azure"
-# PROVIDER_GCP = "gcp"
 PROVIDERS = [
     PROVIDER_AWS,
     PROVIDER_AZURE
-    # PROVIDER_GCP
 ]
 
 LOG_TYPE_WEBHOOK = 'webhook'
@@ -69,7 +64,6 @@ DEFAULT_SETTINGS = {
 }
 
 CONSTANTS_STR = f'''Default values (not your configured node values):
-# (TEMPORARY) Installed the Azure testing verison!!!
 
 ---Tournament Numbers---
 TOURNAMENT_NUMERAI: {TOURNAMENT_NUMERAI}
