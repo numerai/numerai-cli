@@ -28,8 +28,7 @@ def destroy(ctx, verbose):
     model = ctx.obj['model']
     node = model['name']
     if not os.path.exists(CONFIG_PATH):
-        click.secho(
-            ".numerai directory not setup, run `numerai setup`...", fg='red')
+        click.secho(".numerai directory not setup, run `numerai setup`...", fg='red')
         return
 
     try:
@@ -46,13 +45,10 @@ def destroy(ctx, verbose):
         click.secho("deleting node configuration...")
         del nodes_config[node]
         store_config(NODES_PATH, nodes_config)
-        copy_file(NODES_PATH, f'{CONFIG_PATH}/{provider}/',
-                  force=True, verbose=True)
+        copy_file(NODES_PATH, f'{CONFIG_PATH}/{provider}/', force=True, verbose=True)
 
         click.secho("deleting cloud resources for node...")
-        terraform('apply -auto-approve', verbose, provider,
-                  env_vars=provider_keys,
-                  inputs={'node_config_file': 'nodes.json'})
+        terraform('apply -auto-approve', verbose, provider, env_vars=provider_keys, inputs={'node_config_file': 'nodes.json'})
 
     except Exception as e:
         click.secho(e.__str__(), fg='red')
@@ -64,8 +60,7 @@ def destroy(ctx, verbose):
         napi = base_api.Api(*get_numerai_keys())
         model_id = node_config['model_id']
         webhook_url = node_config['webhook_url']
-        click.echo(
-            f'deregistering webhook {webhook_url} for model {model_id}...')
+        click.echo(f'deregistering webhook {webhook_url} for model {model_id}...')
         napi.set_submission_webhook(model_id, None)
 
     click.secho("Prediction Node destroyed successfully", fg='green')
