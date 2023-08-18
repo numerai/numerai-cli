@@ -15,7 +15,7 @@ from numerai.cli.util.keys import get_numerai_keys
 # Setting azure's logging level "ERROR" to avoid spamming the terminal
 
 logger = logging.getLogger('azure')
-logger.setLevel(logging.ERROR)
+logger.setLevel(logging.INFO)
 
 
 @click.group()
