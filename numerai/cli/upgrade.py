@@ -46,22 +46,19 @@ def upgrade(verbose):
     # MOVE KEYS FILE
     if os.path.isfile(old_key_path):
         temp_key_path = os.path.join(old_config_path, '.keys')
-        click.secho(
-            f"\tmoving old keyfile from '{old_key_path}' to '{temp_key_path}'",)
+        click.secho(f"\tmoving old keyfile from '{old_key_path}' to '{temp_key_path}'",)
         shutil.move(old_key_path, temp_key_path)
 
     # MOVE CONFIG FILE
     if os.path.exists(old_config_path):
-        click.secho(
-            f"\tmoving old config from {old_config_path} to {CONFIG_PATH}",)
+        click.secho(f"\tmoving old config from {old_config_path} to {CONFIG_PATH}",)
         shutil.move(old_config_path, CONFIG_PATH)
 
     # INIT KEYS AND NODES
     keys_config = load_or_init_keys()
     supported_providers = ['aws', 'azure']
     if not os.path.exists(KEYS_PATH) or 'numerai' not in keys_config or not any([provider for provider in keys_config if provider in supported_providers]):
-        click.secho(
-            f"Keys missing from {KEYS_PATH}, you must re-initialize your keys:")
+        click.secho(f"Keys missing from {KEYS_PATH}, you must re-initialize your keys:")
         config_numerai_keys()
         click.secho(f"Currently supported providers: {supported_providers}")
         provider = click.prompt('Enter your provider:', default='aws')
@@ -133,12 +130,9 @@ def upgrade(verbose):
             tfstate = json.load(f)
         keys_config = load_or_init_keys('aws')
         if '0.12' in tfstate['terraform_version']:
-            terraform('0.13upgrade -yes ', verbose, provider='aws',
-                      version='0.13.6', env_vars=keys_config)
-            terraform('init', verbose, provider='aws',
-                      version='0.13.6', env_vars=keys_config)
-            terraform('apply -auto-approve', verbose, provider='aws',
-                      version='0.13.6', env_vars=keys_config)
+            terraform('0.13upgrade -yes ', verbose, provider='aws', version='0.13.6', env_vars=keys_config)
+            terraform('init', verbose, provider='aws', version='0.13.6', env_vars=keys_config)
+            terraform('apply -auto-approve', verbose, provider='aws', version='0.13.6', env_vars=keys_config)
     except FileNotFoundError:
         pass
     except click.ClickException:
@@ -161,8 +155,7 @@ def upgrade(verbose):
             if os.path.exists(new_file):
                 os.remove(new_file)
             if not os.path.exists(old_file):
-                click.secho(
-                    f'\trenaming and moving {old_file} to {new_file} to prep for upgrade...')
+                click.secho(f'\trenaming and moving {old_file} to {new_file} to prep for upgrade...')
                 shutil.move(old_file, new_file)
             else:
                 os.remove(old_file)
@@ -184,9 +177,7 @@ def upgrade(verbose):
         nodes_config = load_or_init_nodes()
         store_config(NODES_PATH, nodes_config)
         copy_file(NODES_PATH, f'{CONFIG_PATH}/aws/', force=True, verbose=True)
-        terraform('destroy -auto-approve', verbose, provider='aws',
-                  env_vars=load_or_init_keys('aws'),
-                  inputs={'node_config_file': 'nodes.json'})
+        terraform('destroy -auto-approve', verbose, provider='aws', env_vars=load_or_init_keys('aws'), inputs={'node_config_file': 'nodes.json'})
 
     click.secho('Upgrade complete!', fg='green')
     click.secho('run `numerai node config --help` to learn how to '

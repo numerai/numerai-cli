@@ -67,8 +67,7 @@ def doctor():
         stderr=subprocess.PIPE,
         shell=True
     ))
-    curr_ver = [s for s in res.split(
-        '\\n') if 'Version:' in s][0].split(': ')[1]
+    curr_ver = [s for s in res.split('\\n') if 'Version:' in s][0].split(': ')[1]
     url = "https://pypi.org/pypi/numerai-cli/json"
     versions = list(reversed(sorted(filter(
         lambda key: 'dev' not in key,
