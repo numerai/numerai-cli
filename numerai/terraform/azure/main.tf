@@ -27,6 +27,12 @@ locals {
   }
 }
 
+resource "azurerm_resource_group" "acr_rg" {
+  count    = length(local.azure_nodes) > 0 ? 1 : 0
+  location = var.az_resource_group_location
+  name     = "numerai-cli-acr-resource-grp"
+}
+
 module "azure" {
   count                      = length(local.azure_nodes) > 0 ? 1 : 0
   source                     = "./azure"
@@ -34,5 +40,10 @@ module "azure" {
   nodes                      = local.azure_nodes
   node_container_port        = var.node_container_port
   registry_name              = azurerm_container_registry.registry[0].name
+
+  depends_on = [
+    azurerm_container_registry.registry[0].name,
+    azurerm_resource_group.acr_rg
+  ]
 }
 

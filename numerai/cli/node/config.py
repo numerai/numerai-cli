@@ -133,36 +133,20 @@ def config(ctx, verbose, provider, size, path, example, cron, register_webhook):
 
     # Azure only: Need to create a master Azure Container Registry and push a dummy placeholder image, before deploying the rest of the resources
     if provider == 'azure':
-        provider_registry_conf = load_or_init_registry_config(provider)
-
-        # TODO: Add checks to see if registry config is valid, if not valid, create and replace with new registry config
-        # click.secho(f'Current registry config: {provider_registry_conf}, creating a new registry', fg='green')
-        # Create Azure Container Registry if it doesn't exist
-        if provider_registry_conf == {}:
-            click.secho(
-                f'No container registry for provider: {provider}, creating a new registry', fg='yellow')
-            provider_registry_conf = create_azure_registry(
-                provider, provider_keys, verbose=verbose)
-
-        # click.secho(f'Appending provider_registry_conf:{provider_registry_conf}, to node_conf', fg='yellow')
+        provider_registry_conf = create_azure_registry(provider, provider_keys, verbose=verbose)
         node_conf.update(provider_registry_conf)
-        # Create a placeholder image and push it to the registry
         node_conf['docker_repo'] = f'{node_conf["acr_login_server"]}/{node}'
-
         docker.login(node_conf, verbose)
         docker.pull('hello-world:linux', verbose)
-
         docker.tag('hello-world:linux', node_conf['docker_repo'], verbose)
         docker.push(node_conf['docker_repo'], verbose)
-        # click.secho(f'node_config is: {node_conf}, saved once again', fg='yellow')
-
         nodes_config[node] = node_conf
-        store_config(NODES_PATH, nodes_config)
-        copy_file(NODES_PATH, f'{CONFIG_PATH}/{provider}/',
-                  force=True, verbose=verbose)
+
+    store_config(NODES_PATH, nodes_config)
 
     # Apply terraform for any affected provider
     for affected_provider in affected_providers:
+
         if affected_provider == 'aws' or affected_provider == 'azure':
             click.secho(f'Updating resources in {affected_provider}')
             terraform('apply -auto-approve', verbose, affected_provider,
@@ -253,6 +237,7 @@ def create_azure_registry(provider, provider_keys, verbose):
 
     click.secho(
         f'Created new provider_registry_conf:{provider_registry_conf}, updating {REGISTRY_PATH}', fg='yellow')
+    
     all_registry_conf = load_or_init_registry_config()
     all_registry_conf[provider] = provider_registry_conf
     store_config(REGISTRY_PATH, all_registry_conf)

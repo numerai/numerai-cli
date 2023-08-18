@@ -6,12 +6,6 @@ resource "random_string" "registry_name_random" {
   special = false
 }
 
-resource "azurerm_resource_group" "acr_rg" {
-  count    = length(local.azure_nodes) > 0 ? 1 : 0
-  location = var.az_resource_group_location
-  name     = "numerai-cli-acr-resource-grp"
-}
-
 variable "registry_sku" {
   type        = string
   description = "The sku option of Azure Container Registry"
