@@ -272,7 +272,7 @@ If your machine is older and/or doesn't have Hyper-V enabled, then you will have
 4. Restart your computer
 5. After it's installed, open the "Docker QuickStart Terminal" and run the following to increase its RAM:
 
-```
+```shell
 docker-machine rm default
 docker-machine create -d virtualbox --virtualbox-cpu-count=2 --virtualbox-memory=4096 --virtualbox-disk-size=50000 default
 docker-machine restart default
