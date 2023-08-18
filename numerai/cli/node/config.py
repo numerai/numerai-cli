@@ -192,39 +192,6 @@ def config(ctx, verbose, provider, size, path, example, cron, register_webhook):
                 'Next: deploy and test your node', fg='green')
 
 
-def load_or_init_registry_config(provider=None):
-    """Load or initialize the registry config file, 
-    The registry config file stores the container registry 
-    details for each provider
-
-    Args:
-        provider (str, optional): Specify the provider's registry_config to load. Defaults to None, which loads all registry configs.
-        verbose (bool, optional): Verbose flag. Defaults to False. 
-
-    Returns:
-        dict: All providers / specific provider's registry config 
-    """
-    maybe_create(REGISTRY_PATH)
-    cfg = load_config(REGISTRY_PATH)
-    try:
-        if provider is None:
-            return cfg
-        elif provider == 'azure':
-            # Return the specific registry if it exists
-            return cfg[provider]
-        else:
-            click.secho(f"Unsupported provider: '{cfg[provider]}'", fg='red')
-            exit(1)
-    except KeyError:
-        click.secho(
-            f"Return an empty container registry for provider: {provider}", fg='yellow')
-        cfg[provider] = {}
-        store_config(REGISTRY_PATH, cfg)
-        return cfg[provider]
-
-# TODO: add support for other container registry, to be configured by -registry setting?
-
-
 def create_azure_registry(provider, provider_keys, verbose):
     """Creates a registry for azure"""
     terraform('init -upgrade', verbose, provider)
@@ -237,8 +204,5 @@ def create_azure_registry(provider, provider_keys, verbose):
 
     click.secho(
         f'Created new provider_registry_conf:{provider_registry_conf}, updating {REGISTRY_PATH}', fg='yellow')
-    
-    all_registry_conf = load_or_init_registry_config()
-    all_registry_conf[provider] = provider_registry_conf
-    store_config(REGISTRY_PATH, all_registry_conf)
+
     return provider_registry_conf

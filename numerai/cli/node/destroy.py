@@ -9,7 +9,6 @@ from numerai.cli.util.files import \
     store_config, \
     copy_file
 from numerai.cli.util.keys import get_provider_keys, get_numerai_keys
-from numerai.cli.node.config import load_or_init_registry_config
 
 
 @click.command()
