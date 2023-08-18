@@ -20,9 +20,7 @@ from numerai.cli.util.files import \
     load_or_init_nodes, \
     store_config, \
     copy_example, \
-    copy_file, \
-    maybe_create, \
-    load_config
+    copy_file
 from numerai.cli.util.keys import \
     get_provider_keys, \
     get_numerai_keys, \
