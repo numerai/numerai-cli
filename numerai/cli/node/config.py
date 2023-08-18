@@ -125,7 +125,7 @@ def config(ctx, verbose, provider, size, path, example, cron, register_webhook):
     # Added after tf directory restructure: copy nodes.json to providers' tf directory
     for affected_provider in affected_providers:
         copy_file(
-            NODES_PATH, f'{CONFIG_PATH}/{affected_provider}/', force=True, verbose=True)
+            NODES_PATH, f'{CONFIG_PATH}/{affected_provider}/', force=True, verbose=verbose)
 
     # terraform apply: create cloud resources
     provider_keys = get_provider_keys(node)
@@ -142,7 +142,7 @@ def config(ctx, verbose, provider, size, path, example, cron, register_webhook):
             click.secho(
                 f'No container registry for provider: {provider}, creating a new registry', fg='yellow')
             provider_registry_conf = create_azure_registry(
-                provider, provider_keys, verbose=False)
+                provider, provider_keys, verbose=verbose)
 
         # click.secho(f'Appending provider_registry_conf:{provider_registry_conf}, to node_conf', fg='yellow')
         node_conf.update(provider_registry_conf)
@@ -159,7 +159,7 @@ def config(ctx, verbose, provider, size, path, example, cron, register_webhook):
         nodes_config[node] = node_conf
         store_config(NODES_PATH, nodes_config)
         copy_file(NODES_PATH, f'{CONFIG_PATH}/{provider}/',
-                  force=True, verbose=True)
+                  force=True, verbose=verbose)
 
     # Apply terraform for any affected provider
     for affected_provider in affected_providers:
@@ -204,24 +204,6 @@ def config(ctx, verbose, provider, size, path, example, cron, register_webhook):
         click.echo(f'removing registered webhook for model {model_id}...')
         napi.set_submission_webhook(model_id, None)
 
-    # Check if azure container registry needs to be cleaned
-    if "azure" in affected_providers:
-        remaining_azure_nodes = sum(
-            1 for node in nodes_config.values() if node['provider'] == 'azure')
-        if remaining_azure_nodes == 0:
-            click.secho(
-                "Provider: Azure has no more nodes, destroying Container Registry...", fg='yellow')
-            # Load and delete registry config
-            all_registry_conf = load_or_init_registry_config()
-            del all_registry_conf["azure"]
-            store_config(REGISTRY_PATH, all_registry_conf)
-
-            # Terraform destroy azure container registry
-            terraform('-chdir=container_registry/azure destroy -auto-approve ', verbose, "azure",
-                      env_vars=load_or_init_keys("azure"))
-            click.secho(
-                "Provider: Azure Container Registry destroyed", fg='green')
-
     click.secho('Prediction Node configured successfully. '
                 'Next: deploy and test your node', fg='green')
 
@@ -259,14 +241,14 @@ def load_or_init_registry_config(provider=None):
 # TODO: add support for other container registry, to be configured by -registry setting?
 
 
-def create_azure_registry(provider, provider_keys, verbose=False):
+def create_azure_registry(provider, provider_keys, verbose):
     """Creates a registry for azure"""
-    terraform("-chdir=container_registry/azure init -upgrade",
-              verbose, provider)
-    terraform('-chdir=container_registry/azure apply -auto-approve', verbose, provider,
-              env_vars=provider_keys)
-    res = terraform('-chdir=container_registry/azure output -json acr_repo_details',
-                    verbose, provider).decode('utf-8')
+    terraform('init -upgrade', verbose, provider)
+    terraform('apply -target="azurerm_container_registry.registry[0]" -target="azurerm_resource_group.acr_rg[0]" -auto-approve ', verbose, "azure",
+                      env_vars=provider_keys,
+                      inputs={'node_config_file': 'nodes.json'})
+    res = terraform('output -json acr_repo_details',
+                    True, provider).decode('utf-8')
     provider_registry_conf = json.loads(res)
 
     click.secho(

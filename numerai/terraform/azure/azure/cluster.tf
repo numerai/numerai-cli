@@ -31,9 +31,7 @@ data "azurerm_resource_group" "acr_rg" {
 }
 
 data "azurerm_container_registry" "registry" {
-  for_each = { for name, config in var.nodes : name => config }
-  #name                = local.node_config[var.node_name].registry_name
-  name                = each.value.registry_name
+  name                = input.registry_name
   resource_group_name = data.azurerm_resource_group.acr_rg.name
 }
 
@@ -56,9 +54,9 @@ resource "azurerm_container_group" "container" {
   }
 
   image_registry_credential {
-    username = data.azurerm_container_registry.registry[each.key].admin_username
-    password = data.azurerm_container_registry.registry[each.key].admin_password
-    server   = data.azurerm_container_registry.registry[each.key].login_server
+    username = data.azurerm_container_registry.registry.admin_username
+    password = data.azurerm_container_registry.registry.admin_password
+    server   = data.azurerm_container_registry.registry.login_server
   }
 
   container {

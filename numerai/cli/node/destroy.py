@@ -64,24 +64,3 @@ def destroy(ctx, verbose):
         napi.set_submission_webhook(model_id, None)
 
     click.secho("Prediction Node destroyed successfully", fg='green')
-
-    if provider == 'azure':
-        remaining_azure_nodes = sum(
-            1 for node in nodes_config.values() if node['provider'] == 'azure')
-        if remaining_azure_nodes == 0:
-            click.secho(
-                f"Provider: '{provider}' has no more nodes, destroying Container Registry...", fg='yellow')
-            # provider_registry_conf=load_or_init_registry_config(provider,verbose)
-            # Load and delete registry config
-            all_registry_conf = load_or_init_registry_config()
-            del all_registry_conf[provider]
-            store_config(REGISTRY_PATH, all_registry_conf)
-
-            # Terrafom destroy azure container registry
-            terraform(f'-chdir=container_registry/azure destroy -auto-approve ', verbose, provider,
-                      env_vars=provider_keys)
-            click.secho(
-                f"Provider: '{provider}' Container Registry destroyed", fg='green')
-        else:
-            click.secho(
-                f"Provider: '{provider}' still has node, therefore, keeping its Container Registry", fg='yellow')

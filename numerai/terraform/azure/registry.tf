@@ -1,35 +1,13 @@
-terraform {
-  required_version = ">= 0.12" #">=0.12"
-  required_providers {
-    azurerm = {
-      source  = "hashicorp/azurerm"
-      version = ">=3.57"
-    }
-  }
-}
-
-provider "azurerm" {
-  features {
-    resource_group {
-      prevent_deletion_if_contains_resources = false
-    }
-  }
-}
-
-resource "random_string" "random" {
+resource "random_string" "registry_name_random" {
+  count   = length(local.azure_nodes) > 0 ? 1 : 0
   length  = 10
   lower   = true
   upper   = false
   special = false
 }
 
-variable "az_resource_group_location" {
-  description = "Default location of the Azure resource group."
-  type        = string
-  default     = "eastus"
-}
-
 resource "azurerm_resource_group" "acr_rg" {
+  count    = length(local.azure_nodes) > 0 ? 1 : 0
   location = var.az_resource_group_location
   name     = "numerai-cli-acr-resource-grp"
 }
@@ -46,9 +24,18 @@ variable "registry_sku" {
 
 # Does not support non alphanumeric characters in the name
 resource "azurerm_container_registry" "registry" {
-  name                = "NumeraiACR${random_string.random.result}"
-  resource_group_name = azurerm_resource_group.acr_rg.name
-  location            = azurerm_resource_group.acr_rg.location
+  count               = length(local.azure_nodes) > 0 ? 1 : 0
+  name                = "NumeraiACR${random_string.registry_name_random[0].result}"
+  resource_group_name = azurerm_resource_group.acr_rg[0].name
+  location            = azurerm_resource_group.acr_rg[0].location
   sku                 = var.registry_sku
   admin_enabled       = true
+}
+
+output "acr_repo_details" {
+  value = length(local.azure_nodes) > 0 ? {
+    registry_rg_name = azurerm_resource_group.acr_rg[0].name
+    registry_name    = azurerm_container_registry.registry[0].name
+    acr_login_server = azurerm_container_registry.registry[0].login_server
+  } : null
 }

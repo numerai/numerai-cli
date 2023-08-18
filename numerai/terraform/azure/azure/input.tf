@@ -15,3 +15,8 @@ variable "node_container_port" {
   type        = number
   default     = 3000
 }
+
+variable "registry_name" {
+  description = "Name of Azure container registry"
+  type = string
+}

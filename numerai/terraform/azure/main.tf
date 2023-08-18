@@ -33,4 +33,6 @@ module "azure" {
   az_resource_group_location = var.az_resource_group_location
   nodes                      = local.azure_nodes
   node_container_port        = var.node_container_port
+  registry_name              = azurerm_container_registry.registry[0].name
 }
+
