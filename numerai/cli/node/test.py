@@ -132,15 +132,13 @@ def test(ctx, local, command, verbose):
         reverse=True
     )
     if len(latest_subs) == 0:
-        click.secho(
-            "No submission found for current round, test failed", fg='red')
+        click.secho("No submission found for current round, test failed", fg='red')
         return
 
     latest_sub = latest_subs[0]
 
     if 'cron' in node_config:
-        latest_date = datetime.strptime(
-            latest_sub['insertedAt'], "%Y-%m-%dT%H:%M:%SZ")
+        latest_date = datetime.strptime(latest_sub['insertedAt'], "%Y-%m-%dT%H:%M:%SZ")
         if latest_date < datetime.utcnow() - timedelta(minutes=5):
             click.secho(
                 "No submission appeared in the last 5 minutes, be sure that your node"
@@ -158,8 +156,7 @@ def test(ctx, local, command, verbose):
         return
 
     click.secho("Submission uploaded correctly", fg='green')
-    click.secho(
-        "Test complete, your model now submits automatically!", fg='green')
+    click.secho("Test complete, your model now submits automatically!", fg='green')
 
 
 def monitor(node, config, verbose, num_lines, log_type, follow_tail):
@@ -188,10 +185,8 @@ def monitor_aws(node, config, num_lines, log_type, follow_tail, verbose):
         aws_secret_access_key=aws_secret)
 
     if log_type == LOG_TYPE_WEBHOOK:
-        get_name_and_print_logs(
-            logs_client, config['api_log_group'], num_lines)
-        get_name_and_print_logs(
-            logs_client, config['webhook_log_group'], num_lines)
+        get_name_and_print_logs(logs_client, config['api_log_group'], num_lines)
+        get_name_and_print_logs(logs_client, config['webhook_log_group'], num_lines)
         return
 
     if log_type == LOG_TYPE_CLUSTER:
@@ -221,12 +216,10 @@ def monitor_aws(node, config, num_lines, log_type, follow_tail, verbose):
 
             if task['lastStatus'] == "STOPPED":
                 if len(streams) == 0:
-                    click.secho(
-                        f"{msg} No log file, did you deploy?", fg='yellow')
+                    click.secho(f"{msg} No log file, did you deploy?", fg='yellow')
                     exit(1)
                 else:
-                    click.secho(
-                        f"{msg} Checking for log events...", fg='green')
+                    click.secho(f"{msg} Checking for log events...", fg='green')
                     break
 
             elif len(streams) == 0:
@@ -242,8 +235,7 @@ def monitor_aws(node, config, num_lines, log_type, follow_tail, verbose):
                 break
 
         # print out the logs
-        next_token, num_events = print_logs(
-            logs_client, family, name, limit=num_lines)
+        next_token, num_events = print_logs(logs_client, family, name, limit=num_lines)
         total_events = num_events
         while follow_tail:
             next_token, num_events = print_logs(
@@ -252,8 +244,7 @@ def monitor_aws(node, config, num_lines, log_type, follow_tail, verbose):
             )
             total_events += num_events
             if total_events == 0:
-                click.secho("Waiting for log events...\r",
-                            fg='yellow', nl=False)
+                click.secho("Waiting for log events...\r", fg='yellow', nl=False)
 
             task = get_recent_task_status_aws(ecs_client, node, verbose)
 
@@ -269,8 +260,7 @@ def monitor_aws(node, config, num_lines, log_type, follow_tail, verbose):
         start = time.time()
         if total_events == 0:
             while total_events == 0:
-                click.secho("No log events yet, still waiting...\r",
-                            fg='yellow', nl=False)
+                click.secho("No log events yet, still waiting...\r", fg='yellow', nl=False)
                 next_token, num_events = print_logs(logs_client, family, name)
                 total_events += num_events
                 if (time.time() - start) > 60 * 5:
@@ -346,8 +336,7 @@ def print_logs(logs_client, family, name, limit=None, next_token=None):
     if len(events["events"]) == limit:
         click.echo('...more log lines available: use -n option to get more...')
     for event in events["events"]:
-        click.echo(
-            f"[{name}] {str(datetime.fromtimestamp(event['timestamp'] / 1000))}: {event['message']}")
+        click.echo(f"[{name}] {str(datetime.fromtimestamp(event['timestamp'] / 1000))}: {event['message']}")
 
     return events['nextForwardToken'], len(events['events'])
 
@@ -489,5 +478,4 @@ def status(ctx, verbose, num_lines, log_type, follow_tail):
     ctx.ensure_object(dict)
     model = ctx.obj['model']
     node = model['name']
-    monitor(node, load_or_init_nodes(node), verbose,
-            num_lines, log_type, follow_tail)
+    monitor(node, load_or_init_nodes(node), verbose, num_lines, log_type, follow_tail)

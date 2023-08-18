@@ -167,8 +167,7 @@ def config_azure_keys():
 
 def check_aws_validity(key_id, secret):
     try:
-        client = boto3.client('s3', aws_access_key_id=key_id,
-                              aws_secret_access_key=secret)
+        client = boto3.client('s3', aws_access_key_id=key_id, aws_secret_access_key=secret)
         client.list_buckets()
     except Exception as e:
         if 'NotSignedUp' in str(e):
