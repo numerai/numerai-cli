@@ -9,7 +9,6 @@ PACKAGE_PATH = os.path.dirname(__file__)
 CONFIG_PATH = os.path.join(str(Path.home()), '.numerai')
 KEYS_PATH = os.path.join(CONFIG_PATH, '.keys')
 NODES_PATH = os.path.join(CONFIG_PATH, 'nodes.json')
-REGISTRY_PATH = os.path.join(CONFIG_PATH, 'registry.json')
 TERRAFORM_PATH = os.path.join(PACKAGE_PATH, "..", "terraform")
 EXAMPLE_PATH = os.path.join(PACKAGE_PATH, "..", "examples")
 
@@ -73,7 +72,6 @@ TOURNAMENT_SIGNALS: {TOURNAMENT_SIGNALS}
 PACKAGE_PATH: {PACKAGE_PATH}
 CONFIG_PATH: {CONFIG_PATH}
 KEYS_PATH: {KEYS_PATH}
-REGISTRY_PATH: {REGISTRY_PATH}
 NODES_PATH: {NODES_PATH}
 TERRAFORM_PATH: {TERRAFORM_PATH}
 EXAMPLE_PATH: {EXAMPLE_PATH}

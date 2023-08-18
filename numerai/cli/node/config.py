@@ -12,8 +12,7 @@ from numerai.cli.constants import \
     DEFAULT_PATH, \
     SIZE_PRESETS, \
     NODES_PATH, \
-    CONFIG_PATH, \
-    REGISTRY_PATH
+    CONFIG_PATH    
 from numerai.cli.util.docker import terraform, check_for_dockerfile
 from numerai.cli.util import docker
 from numerai.cli.util.files import \
@@ -198,9 +197,4 @@ def create_azure_registry(provider, provider_keys, verbose):
                       inputs={'node_config_file': 'nodes.json'})
     res = terraform('output -json acr_repo_details',
                     True, provider).decode('utf-8')
-    provider_registry_conf = json.loads(res)
-
-    click.secho(
-        f'Created new provider_registry_conf:{provider_registry_conf}, updating {REGISTRY_PATH}', fg='yellow')
-
-    return provider_registry_conf
+    return json.loads(res)
