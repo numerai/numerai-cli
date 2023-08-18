@@ -93,6 +93,7 @@ To use this tool you need:
 
 3. Install Docker and Python for your Operating System (if you encounter errors or your
     OS is not supported, please see [Troubleshooting and Feedback](#troubleshooting-and-feedback)):
+
     - Mac Terminal (cmd + space, type `terminal`, select `terminal.app`):
 
         ```shell
