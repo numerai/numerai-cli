@@ -97,8 +97,6 @@ def config(ctx, verbose, provider, size, path, example, cron, register_webhook):
     # update node as needed
     node_conf = nodes_config[node]
 
-    click.secho(f'Current node config: "{node_conf}"...')
-
     if provider:
         node_conf['provider'] = provider
     else:
@@ -114,6 +112,8 @@ def config(ctx, verbose, provider, size, path, example, cron, register_webhook):
     if cron:
         node_conf['cron'] = cron
     nodes_config[node] = node_conf
+
+    click.secho(f'Current node config: "{node_conf}"...')
 
     # double check there is a dockerfile in the path we are about to configure
     check_for_dockerfile(nodes_config[node]['path'])
