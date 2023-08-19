@@ -1,6 +1,5 @@
 # numerai-cli
 
-[![CircleCI](https://circleci.com/gh/numerai/numerai-cli.svg?style=svg)](https://circleci.com/gh/numerai/numerai-cli)
 [![PyPI](https://img.shields.io/pypi/v/numerai-cli.svg?color=brightgreen)](https://pypi.org/project/numerai-cli/)
 
 Welcome to the Numerai CLI for the [Numerai Tournament](https://docs.numer.ai/tournament/learn).
