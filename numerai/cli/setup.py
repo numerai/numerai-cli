@@ -1,5 +1,6 @@
 """Setup command for Numerai CLI"""
 import click
+import logging
 
 from numerai.cli.constants import *
 from numerai.cli.util.docker import terraform
@@ -20,6 +21,13 @@ def setup(provider, verbose):
     """
     Initializes cli and provider API keys.
     """
+
+    logger = logging.getLogger('azure')
+    if verbose:
+        logger.setLevel(logging.INFO)
+    else:
+        logger.setLevel(logging.ERROR)
+
 
     if os.path.isdir(CONFIG_PATH) and not os.path.isdir(os.path.join(CONFIG_PATH, 'azure')):
         click.secho('Looks like you have an old configuration of numerai-cli (<=0.3).'
