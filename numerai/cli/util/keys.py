@@ -218,7 +218,7 @@ def check_azure_validity(subs_id, client_id, tenant_id, secret):
                 f"Azure Subscription ID is invalid, or IAM is NOT set up correctly. " +
                 f"Your Azure Client ID, Tenant ID and Client Secret are valid. " +
                 f"Make sure to follow the instructions in the wiki page: " +
-                f"<INSERT_LINK>"
+                f"https://github.com/numerai/numerai-cli/tree/master/docs/configure_azure.md"
             )
 
 
