@@ -50,46 +50,7 @@ To use this tool you need:
     4. Enter your password and click "Confirm"
     5. Copy your secret public key and secret key somewhere safe
   
-2. Create a payed AWS account with an IAM user and API keys:
-    1. Create an [Amazon Web Services (AWS) Account](https://portal.aws.amazon.com/billing/signup)
-    2. Make sure you are signed in to the [AWS Console](console.aws.amazon.com)
-    3. Set up [AWS Billing](https://console.aws.amazon.com/billing/home?#/paymentmethods)
-    4. Create a [new IAM Policy](https://console.aws.amazon.com/iam/home?region=us-east-1#/policies$new?step=edit):
-    5. Select the "JSON" tab and overwrite the existing values with the following policy document:
-
-        ```json
-        {
-            "Version": "2012-10-17",
-            "Statement": [
-                {
-                    "Sid": "VisualEditor0",
-                    "Effect": "Allow",
-                    "Action": [
-                        "apigateway:*",
-                        "logs:*",
-                        "s3:List*",
-                        "ecs:*",
-                        "lambda:*",
-                        "ecr:*",
-                        "ec2:*",
-                        "iam:*",
-                        "events:*"
-                    ],
-                    "Resource": "*"
-                }
-            ]
-        }
-        ```
-
-        NOTE: For experienced cloud users, it may seem unsafe to have `:*` next to resources. You may experiment with constricting these permissions at your own risk, but future versions of the CLI may not work if you do this.
-
-    6. Click "Next" at the bottom until you reach "Review Policy"
-    7. Name your policy (e.g. "compute-setup-policy") and remember this name, then hit "Create Policy"
-    8. Give the user a name (like "numerai-compute") and select "Programmatic access"
-    9. For permissions, click "Attach existing policies directly"
-    10. Search for the Policy you just created and check the box next to it
-    11. Continue through remaining pages and click "Create User"
-    12. Record the "Access key ID" and "Secret access key" from the final step.
+2. If using AWS, follow the guide in [Configure AWS](./docs/configure_aws.md). If using Azure, follow the guide in [Configure Azure](./docs/configure_azure.md)
 
 3. Install Docker and Python for your Operating System (if you encounter errors or your
     OS is not supported, please see [Troubleshooting and Feedback](#troubleshooting-and-feedback)):
@@ -126,8 +87,19 @@ To use this tool you need:
 5. Run these commands on your personal computer (not a temporary instance)
    to get an example node running in minutes:
 
+    For AWS run:
+
     ```shell
     numerai setup
+    ```
+
+    For Azure users run:
+
+    ```shell
+    numerai setup --provider azure
+    ```
+
+    ```shell
     numerai node config --example tournament-python3
     numerai node deploy
     numerai node test
