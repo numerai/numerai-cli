@@ -59,7 +59,7 @@ def copy_file(src_file, dst_path, force=False, verbose=True):
             return
     if verbose:
         click.secho(f"copying file {dst_file}", fg='yellow')
-        shutil.copy(src_file, dst_path)
+    shutil.copy(src_file, dst_path)
 
 
 def copy_files(src, dst, force=False, verbose=True):
