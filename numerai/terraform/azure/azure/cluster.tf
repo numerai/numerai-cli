@@ -31,7 +31,7 @@ data "azurerm_resource_group" "acr_rg" {
 }
 
 data "azurerm_container_registry" "registry" {
-  name                = input.registry_name
+  name                = var.registry_name
   resource_group_name = data.azurerm_resource_group.acr_rg.name
 }
 

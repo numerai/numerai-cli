@@ -42,7 +42,7 @@ module "azure" {
   registry_name              = azurerm_container_registry.registry[0].name
 
   depends_on = [
-    azurerm_container_registry.registry[0].name,
+    azurerm_container_registry.registry[0],
     azurerm_resource_group.acr_rg
   ]
 }

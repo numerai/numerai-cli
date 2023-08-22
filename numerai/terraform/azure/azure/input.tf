@@ -18,5 +18,5 @@ variable "node_container_port" {
 
 variable "registry_name" {
   description = "Name of Azure container registry"
-  type = string
+  type        = string
 }

@@ -24,6 +24,7 @@ but should theoretically work anywhere that Docker and Python 3 are available.
     - [MacOS and Windows 10](#macos-and-windows-10)
     - [Linux](#linux)
     - [Older PCs: Docker Toolbox](#older-pcs-docker-toolbox)
+  - [Azure](#azure)
   - [Common Errors](#common-errors)
 - [Billing Alerts](#billing-alerts)
 - [Prediction Node Architecture](#prediction-node-architecture)
@@ -251,6 +252,12 @@ docker-machine restart default
 ```
 
 NOTE: your code must live somewhere under your User directory (ie. C:\Users\USER_NAME\ANY_FOLDER). This is a restriction of docker toolbox not sharing paths correctly otherwise.
+
+### Azure
+
+If you just made your Azure account there's a chance your account provisioning could take some time, potentially up to 24 hours.
+
+When you use numerai-cli to configure a new node to run on Azure, your
 
 ### Common Errors
 
