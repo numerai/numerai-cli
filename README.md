@@ -257,7 +257,7 @@ NOTE: your code must live somewhere under your User directory (ie. C:\Users\USER
 
 If you just made your Azure account there's a chance your account provisioning could take some time, potentially up to 24 hours.
 
-When you use numerai-cli to configure a new node to run on Azure, your
+When configuring your node for the first time the numerai-cli may hang as it tries to provision infrastructure in your account. If running `numerai node config --provider azure` shows no log output for more than 5 minutes, your account is likely in the stuck provisioning state. While we investigate this issue, the best course of action is to wait until the following day and run the command again as there is no way to skip this Azure provisioning step.
 
 ### Common Errors
 
