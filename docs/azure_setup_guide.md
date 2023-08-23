@@ -3,7 +3,7 @@
 Numerai CLI will create several resources in your Azure account to deploy and run your models.
 Follow the steps below to give the Numerai CLI access to your Azure account.
 
-1. Create an [Azure Account](https://http://signup.azure.com)
+1. Create an [Azure Account](https://signup.azure.com)
 2. Make sure you are signed in to the [Azure Portal](https://portal.azure.com/)
 3. Create an [Azure Subscription](https://portal.azure.com/#view/Microsoft_Azure_Billing/SubscriptionsBlade). Save your `Subscription ID` to use in the Numerai CLI later.
 4. In `Azure Active Directory`, navigate to [App Registrations](https://portal.azure.com/#view/Microsoft_AAD_IAM/ActiveDirectoryMenuBlade/~/RegisteredApps)
