@@ -48,6 +48,19 @@ def load_or_init_nodes(node=None):
         )
         exit(1)
 
+def copy_file(src_file, dst_path, force=False, verbose=True):
+    if not os.path.exists(dst_path):
+        if verbose:
+            click.secho(f"creating directory {dst_path}", fg='yellow')
+        os.mkdir(dst_path)
+    dst_file = os.path.join(dst_path, os.path.basename(src_file))
+    if os.path.exists(dst_file) and not force:
+        if not click.confirm(f'{dst_file} already exists. Overwrite?'):
+            return
+    if verbose:
+        click.secho(f"copying file {dst_file}", fg='yellow')
+    shutil.copy(src_file, dst_path)
+
 
 def copy_files(src, dst, force=False, verbose=True):
     if not os.path.exists(dst):
@@ -68,7 +81,6 @@ def copy_files(src, dst, force=False, verbose=True):
                 click.secho(f"copying file {dst_file}", fg='yellow')
             shutil.copy(src_file, dst_file)
 
-
 def copy_example(example, dest, verbose):
     example_dir = os.path.join(EXAMPLE_PATH, example)
     dst_dir = dest if dest is not None else example
@@ -88,3 +100,34 @@ def copy_example(example, dest, verbose):
             f.write(".git\n")
             f.write("venv\n")
     return dst_dir
+
+def move_files(src, dst, verbose=False):
+    """
+    Function to move files from one folder to another, removing it from its original location
+    Args:
+        src (string): Folder location to move files from
+        dst (string): Folder location to move files to
+        verbose (bool, optional): Verbosity for the operation. Defaults to True.
+    """
+    for item in os.listdir(src):
+        src_path = os.path.join(src, item)
+        dir_to_ignore=''
+        if verbose:
+            click.secho(f'Moving to destination: {dst}')
+
+        # Exception if the dst folder is a subfolder of the src folder
+        if os.path.commonpath([src_path, dst]) == src_path:
+            dir_to_ignore=src_path
+        
+        # Move the files and folders
+        if os.path.isdir(src_path) and src_path != dir_to_ignore:
+            click.secho(f'Moving directory: {src_path}')
+            shutil.copytree(src_path, os.path.join(dst, item))
+            shutil.rmtree(src_path)   
+        elif os.path.isfile(src_path):
+            shutil.copy(src_path, dst)
+            os.remove(src_path)
+        if verbose:
+            click.secho(f'Moved file: {src_path}')
+
+

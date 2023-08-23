@@ -9,7 +9,11 @@ import click
 
 from numerai.cli.constants import *
 from numerai.cli.util.debug import root_cause
-from numerai.cli.util.keys import sanitize_message, get_aws_keys, load_or_init_keys
+from numerai.cli.util.keys import sanitize_message, get_aws_keys, load_or_init_keys , get_azure_keys
+from azure.mgmt.containerregistry import ContainerRegistryManagementClient
+from azure.containerregistry import ContainerRegistryClient, ArtifactManifestOrder
+from azure.identity import ClientSecretCredential 
+
 
 
 def check_for_dockerfile(path):
@@ -105,20 +109,23 @@ def format_if_docker_toolbox(path, verbose):
         return new_path
     return path
 
-
-def build_tf_cmd(tf_cmd, env_vars, inputs, version, verbose):
+# Added variable to take in different providers
+def build_tf_cmd(tf_cmd, provider, env_vars, inputs, version, verbose):
     cmd = f"docker run"
     if env_vars:
         cmd += ' '.join([f' -e "{key}={val}"' for key, val in env_vars.items()])
     cmd += f' --rm -it -v {format_if_docker_toolbox(CONFIG_PATH, verbose)}:/opt/plan'
-    cmd += f' -w /opt/plan hashicorp/terraform:{version} {tf_cmd}'
+    cmd += f' -w /opt/plan hashicorp/terraform:{version}'
+    # Added provider to pick the correct provider directory before tf command
+    cmd += ' '.join([f' -chdir={provider}'])
+    cmd += f' {tf_cmd}'
     if inputs:
         cmd += ' '.join([f' -var="{key}={val}"' for key, val in inputs.items()])
     return cmd
 
-
-def terraform(tf_cmd, verbose, env_vars=None, inputs=None, version='0.14.3'):
-    cmd = build_tf_cmd(tf_cmd, env_vars, inputs, version, verbose)
+# Added variable to take in different providers
+def terraform(tf_cmd, verbose, provider, env_vars=None, inputs=None, version='0.14.3'):
+    cmd = build_tf_cmd(tf_cmd, provider, env_vars, inputs, version, verbose)
     stdout, stderr = execute(cmd, verbose)
     # if user accidently deleted a resource, refresh terraform and try again
     if b'ResourceNotFoundException' in stdout or b'NoSuchEntity' in stdout:
@@ -150,8 +157,7 @@ def build(node_config, node, verbose):
     build_arg_str += f' --build-arg NODE={node}'
 
     cmd = f'docker build --platform=linux/amd64 -t {node_config["docker_repo"]}' \
-          f'{build_arg_str} -f {path}/Dockerfile .'
-
+        f'{build_arg_str} -f {path}/Dockerfile .'
     execute(cmd, verbose)
 
 
@@ -163,7 +169,9 @@ def run(node_config, verbose, command=''):
 def login(node_config, verbose):
     if node_config['provider'] == PROVIDER_AWS:
         username, password = login_aws()
-
+    elif node_config['provider'] == PROVIDER_AZURE:
+        username, password = login_azure(node_config['registry_rg_name'], 
+                                         node_config['registry_name'])
     else:
         raise ValueError(f"Unsupported provider: '{node_config['provider']}'")
 
@@ -198,16 +206,37 @@ def login_aws():
     return username, password
 
 
+def login_azure(resource_group_name,registry_name):
+    azure_subs_id, azure_client, azure_tenant , azure_secret = get_azure_keys()
+    credentials = ClientSecretCredential(client_id=azure_client, 
+                                        tenant_id=azure_tenant,
+                                        client_secret=azure_secret)
+    username_password = ContainerRegistryManagementClient(credentials, azure_subs_id)\
+                                                        .registries\
+                                                        .list_credentials(resource_group_name, registry_name)
+    username = username_password.username
+    password = username_password.passwords[0].value
+    return username, password
+
+
 def push(docker_repo, verbose):
     cmd = f'docker push {docker_repo}'
     execute(cmd, verbose=verbose)
 
+def pull(docker_image, verbose):
+    cmd = f'docker pull {docker_image}'
+    execute(cmd, verbose=verbose)
+    
+def tag(original_image, new_image_tag, verbose):
+    cmd = f'docker tag {original_image} {new_image_tag}'
+    execute(cmd, verbose=verbose)
 
 def cleanup(node_config):
     provider = node_config['provider']
     if provider == PROVIDER_AWS:
         imageIds = cleanup_aws(node_config['docker_repo'])
-
+    elif provider == PROVIDER_AZURE:
+        imageIds = cleanup_azure(node_config)
     else:
         raise ValueError(f"Unsupported provider: '{provider}'")
 
@@ -237,3 +266,32 @@ def cleanup_aws(docker_repo):
         imageIds=imageIds)
 
     return resp['imageIds']
+
+def cleanup_azure(node_config):
+    _, azure_client, azure_tenant , azure_secret = get_azure_keys()
+    credentials = ClientSecretCredential(client_id=azure_client, 
+                                         tenant_id=azure_tenant,
+                                         client_secret=azure_secret)
+    acr_client=ContainerRegistryClient(node_config['acr_login_server'],
+                                        credentials)
+    docker_repo=node_config['docker_repo']
+    node_repo_name=[repo_name for repo_name in acr_client.list_repository_names() \
+                              if repo_name==docker_repo.split("/")[-1]][0]
+    
+    # get all manifests, ordered by last update time
+    manifest_list=[repo_detail for repo_detail in \
+                   acr_client.list_manifest_properties(node_repo_name,
+                                                       order_by=ArtifactManifestOrder.LAST_UPDATED_ON_DESCENDING)]
+    # Remove all but the latest manifest
+    removed_manifests=[]
+    for manifest in manifest_list[1:]:
+        acr_client.update_manifest_properties(
+                            node_repo_name,
+                            manifest.digest,
+                            can_write=True,
+                            can_delete=True
+                            )
+        removed_manifests.append(manifest.digest)
+        acr_client.delete_manifest(node_repo_name, 
+                                   manifest.digest)
+    return removed_manifests

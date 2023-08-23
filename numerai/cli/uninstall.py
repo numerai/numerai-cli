@@ -19,7 +19,7 @@ def uninstall():
     Removes cloud resources, local config, and python package.
     """
     click.secho(
-    '''DANGER WILL ROBINSON, This will:
+        '''DANGER WILL ROBINSON, This will:
     - Destroy all nodes in the cloud
     - Remove all docker images on your computer
     - Delete the .numerai configuration directory on your computer
@@ -48,9 +48,10 @@ def uninstall():
             for provider in PROVIDERS:
                 if provider in all_keys.keys():
                     provider_keys.update(all_keys[provider])
-            terraform('destroy -auto-approve',
-                      verbose=True, env_vars=provider_keys,
-                      inputs={'node_config_file': 'nodes.json'})
+                    terraform('destroy -auto-approve',
+                              provider=provider,
+                              verbose=True, env_vars=provider_keys,
+                              inputs={'node_config_file': 'nodes.json'})
 
             click.secho('cleaning up docker images...')
             subprocess.run('docker system prune -f -a --volumes', shell=True)
@@ -78,4 +79,5 @@ def uninstall():
         else:
             click.secho(f'Unexpected error occurred:\n{res.stderr}', fg='red')
 
-    click.secho("All those moments will be lost in time, like tears in rain.", fg='red')
+    click.secho(
+        "All those moments will be lost in time, like tears in rain.", fg='red')

@@ -107,7 +107,9 @@ venv.bak/
 .numerai*
 */node_modules
 .terraform*
-terraform.tfstate
+terraform.tfstate*
+*.tfplan
+.vscode
 
 .idea/
 .DS_STORE

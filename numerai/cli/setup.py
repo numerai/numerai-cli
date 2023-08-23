@@ -1,4 +1,6 @@
+"""Setup command for Numerai CLI"""
 import click
+import logging
 
 from numerai.cli.constants import *
 from numerai.cli.util.docker import terraform
@@ -12,16 +14,23 @@ from numerai.cli.util.keys import \
 
 @click.command()
 @click.option(
-    '--provider', '-p', type=str, default=DEFAULT_PROVIDER,
-    help=f"Initialize with this providers API keys. Defaults to {DEFAULT_PROVIDER}.")
+    '--provider', '-p', type=str, prompt=True,
+    help=f"Initialize with this providers API keys.")
 @click.option('--verbose', '-v', is_flag=True)
 def setup(provider, verbose):
     """
     Initializes cli and provider API keys.
     """
-    # check for old format, tell user to run numerai upgrade first
-    if os.path.isfile(CONFIG_PATH) or os.path.isdir('.numerai'):
-        click.secho('It looks like you have an old configuration of numerai-cli,'
+
+    logger = logging.getLogger('azure')
+    if verbose:
+        logger.setLevel(logging.INFO)
+    else:
+        logger.setLevel(logging.ERROR)
+
+
+    if os.path.isdir(CONFIG_PATH) and not os.path.isdir(os.path.join(CONFIG_PATH, 'azure')):
+        click.secho('Looks like you have an old configuration of numerai-cli (<=0.3).'
                     'run `numerai upgrade` first.')
         return
 
@@ -40,11 +49,11 @@ def setup(provider, verbose):
     click.secho("copying terraform files...")
     copy_files(TERRAFORM_PATH, CONFIG_PATH, force=True, verbose=True)
 
-    # terraform init
+    # terraform init, added provider to init at the specified provider's tf directory
     click.secho("initializing terraform to provision cloud infrastructure...")
-    terraform("init -upgrade", verbose)
+    terraform("init -upgrade ", verbose, provider)
 
     click.secho("Numerai API Keys setup and working", fg='green')
     click.secho(f"{provider} API Keys setup and working", fg='green')
     click.secho(f"Terraform files copied to {CONFIG_PATH}", fg='green')
-    click.echo('succesfully initialized numerai-cli')
+    click.echo('Successfully initialized numerai-cli')

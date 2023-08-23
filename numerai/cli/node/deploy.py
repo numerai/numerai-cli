@@ -1,7 +1,5 @@
-import os
-
+"""Deploy command for Numerai CLI"""
 import click
-
 from numerai.cli.util import files, docker
 
 
@@ -9,7 +7,7 @@ from numerai.cli.util import files, docker
 @click.option('--verbose', '-v', is_flag=True)
 @click.pass_context
 def deploy(ctx, verbose):
-    """Builds and pushes your docker image to the AWS ECR repo"""
+    """Builds and pushes your docker image to the AWS ECR / Azure ACR repo"""
     ctx.ensure_object(dict)
     model = ctx.obj['model']
     node = model['name']

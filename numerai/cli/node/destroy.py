@@ -1,3 +1,4 @@
+"""Destroy command for Numerai CLI"""
 import click
 from numerapi import base_api
 
@@ -5,7 +6,8 @@ from numerai.cli.constants import *
 from numerai.cli.util.docker import terraform
 from numerai.cli.util.files import \
     load_or_init_nodes, \
-    store_config
+    store_config, \
+    copy_file
 from numerai.cli.util.keys import get_provider_keys, get_numerai_keys
 
 
@@ -25,27 +27,27 @@ def destroy(ctx, verbose):
     model = ctx.obj['model']
     node = model['name']
     if not os.path.exists(CONFIG_PATH):
-        click.secho(f".numerai directory not setup, run `numerai setup`...", fg='red')
+        click.secho(".numerai directory not setup, run `numerai setup`...", fg='red')
         return
 
     try:
         nodes_config = load_or_init_nodes()
         node_config = nodes_config[node]
         provider_keys = get_provider_keys(node)
+        provider = node_config['provider']
     except (KeyError, FileNotFoundError) as e:
         click.secho(f"make sure you run `numerai setup` and "
                     f"`numerai node -n {node} config` first...", fg='red')
         return
 
     try:
-        click.secho(f"deleting node configuration...")
+        click.secho("deleting node configuration...")
         del nodes_config[node]
         store_config(NODES_PATH, nodes_config)
+        copy_file(NODES_PATH, f'{CONFIG_PATH}/{provider}/', force=True, verbose=True)
 
-        click.secho(f"deleting cloud resources for node...")
-        terraform(f'apply -auto-approve', verbose,
-                  env_vars=provider_keys,
-                  inputs={'node_config_file': 'nodes.json'})
+        click.secho("deleting cloud resources for node...")
+        terraform('apply -auto-approve', verbose, provider, env_vars=provider_keys, inputs={'node_config_file': 'nodes.json'})
 
     except Exception as e:
         click.secho(e.__str__(), fg='red')

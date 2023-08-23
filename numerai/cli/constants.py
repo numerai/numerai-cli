@@ -1,7 +1,7 @@
+"""Constants for Numerai CLI"""
 import os
 import json
 from pathlib import Path
-
 
 TOURNAMENT_NUMERAI = 8
 TOURNAMENT_SIGNALS = 11
@@ -15,10 +15,10 @@ EXAMPLE_PATH = os.path.join(PACKAGE_PATH, "..", "examples")
 EXAMPLES = os.listdir(EXAMPLE_PATH)
 
 PROVIDER_AWS = "aws"
-# PROVIDER_GCP = "gcp"
+PROVIDER_AZURE = "azure"
 PROVIDERS = [
     PROVIDER_AWS,
-    # PROVIDER_GCP
+    PROVIDER_AZURE
 ]
 
 LOG_TYPE_WEBHOOK = 'webhook'

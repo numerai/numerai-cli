@@ -1,18 +1,18 @@
-variable "region" {
+variable "aws_region" {
   description = "The AWS region to create things in."
   type        = string
   default     = "us-east-1"
 }
 
 variable "az_count" {
-  description = "Number of AZs to cover in a given region"
+  description = "Number of AWS Available Zones to cover in a given AWS region"
   type        = string
   default     = "1"
 }
 
-variable "node_config_file" {
-  description = "Path to the json file used to configure nodes"
-  type        = string
+variable "nodes" {
+  description = "Map of node names to their configurations"
+  type        = map(map(any))
 }
 
 variable "node_container_port" {

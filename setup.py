@@ -26,6 +26,13 @@ setup(
         "numerapi>=2.4.5",
         "colorama",
         "requests",
+        "azure-identity",
+        "azure-mgmt-subscription",
+        "azure-mgmt-containerregistry",
+        "azure-containerregistry",
+        "azure-data-tables",
+        "azure-mgmt-storage"
+        #"azure.monitor.query"
     ],
     entry_points={
         'console_scripts': ['numerai=numerai:main'],

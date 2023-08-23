@@ -2,7 +2,7 @@
 ### Lambda
 resource "aws_lambda_layer_version" "node_modules" {
   layer_name = "node_modules"
-  filename = "layer.zip"
+  filename   = "layer.zip"
 }
 
 resource "aws_lambda_function" "submission" {
@@ -18,7 +18,7 @@ resource "aws_lambda_function" "submission" {
   # source_code_hash = "${base64sha256(file("lambda_function_payload.zip"))}"
   source_code_hash = filebase64sha256("lambda.zip")
 
-  runtime    = "nodejs14.x"
+  runtime = "nodejs14.x"
   depends_on = [
     aws_iam_role_policy_attachment.lambda_logs,
     aws_iam_role_policy_attachment.lambda_ecsTaskExecutionRole,
@@ -34,7 +34,7 @@ resource "aws_lambda_function" "submission" {
       security_group = aws_security_group.ecs_tasks.id
       subnet         = aws_subnet.public.*.id[0]
       ecs_cluster    = aws_ecs_cluster.main.id
-      ecs_task_arn  = aws_ecs_task_definition.node[each.key].arn
+      ecs_task_arn   = aws_ecs_task_definition.node[each.key].arn
     }
   }
 }
@@ -58,62 +58,62 @@ resource "aws_cloudwatch_log_group" "gateway" {
 resource "aws_cloudwatch_event_rule" "cron_trigger" {
   for_each = {
     for name, config in var.nodes :
-      name => lookup(config, "cron", null)
-      if lookup(config, "cron", null) != null
+    name => lookup(config, "cron", null)
+    if lookup(config, "cron", null) != null
   }
 
-  name = "${each.key}-cron-trigger"
-  description = "Cron-based trigger for lambda ${aws_lambda_function.submission[each.key].arn}"
+  name                = "${each.key}-cron-trigger"
+  description         = "Cron-based trigger for lambda ${aws_lambda_function.submission[each.key].arn}"
   schedule_expression = "cron(${trim(each.value, "\"")})"
 }
 resource "aws_cloudwatch_event_target" "cron_target" {
   for_each = {
     for name, config in var.nodes :
-      name => lookup(config, "cron", null)
-      if lookup(config, "cron", null) != null
+    name => lookup(config, "cron", null)
+    if lookup(config, "cron", null) != null
   }
 
-  rule  = aws_cloudwatch_event_rule.cron_trigger[each.key].name
-  arn   = aws_lambda_function.submission[each.key].arn
+  rule = aws_cloudwatch_event_rule.cron_trigger[each.key].name
+  arn  = aws_lambda_function.submission[each.key].arn
 }
 resource "aws_lambda_permission" "cron_permission" {
   for_each = {
     for name, config in var.nodes :
-      name => lookup(config, "cron", null)
-      if lookup(config, "cron", null) != null
+    name => lookup(config, "cron", null)
+    if lookup(config, "cron", null) != null
   }
-  statement_id   = "AllowExecutionFromCloudWatch"
-  action         = "lambda:InvokeFunction"
-  function_name  = aws_lambda_function.submission[each.key].function_name
-  principal      = "events.amazonaws.com"
-  source_arn     = aws_cloudwatch_event_rule.cron_trigger[each.key].arn
+  statement_id  = "AllowExecutionFromCloudWatch"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.submission[each.key].function_name
+  principal     = "events.amazonaws.com"
+  source_arn    = aws_cloudwatch_event_rule.cron_trigger[each.key].arn
 }
 
 
 ### API Gateway
 resource "aws_apigatewayv2_api" "submit" {
-  name        = "${local.node_prefix}-gateway"
-  description = "API Gateway for Numerai webhook"
+  name          = "${local.node_prefix}-gateway"
+  description   = "API Gateway for Numerai webhook"
   protocol_type = "HTTP"
 }
 
 resource "aws_apigatewayv2_integration" "submit" {
   for_each = { for name, config in var.nodes : name => config }
 
-  api_id = aws_apigatewayv2_api.submit.id
+  api_id           = aws_apigatewayv2_api.submit.id
   integration_type = "AWS_PROXY"
 
-  connection_type           = "INTERNET"
-  description               = "Serverless Prediction Node Trigger for ${each.key}"
-  integration_method        = "POST"
-  integration_uri           = aws_lambda_function.submission[each.key].invoke_arn
+  connection_type    = "INTERNET"
+  description        = "Serverless Prediction Node Trigger for ${each.key}"
+  integration_method = "POST"
+  integration_uri    = aws_lambda_function.submission[each.key].invoke_arn
 
 }
 
 resource "aws_apigatewayv2_route" "submit" {
   for_each = { for name, config in var.nodes : name => config }
 
-  api_id = aws_apigatewayv2_api.submit.id
+  api_id    = aws_apigatewayv2_api.submit.id
   route_key = "POST /${each.key}"
 
   target = "integrations/${aws_apigatewayv2_integration.submit[each.key].id}"
@@ -141,7 +141,7 @@ resource "aws_apigatewayv2_deployment" "submit" {
 
 resource "aws_apigatewayv2_stage" "submit" {
   api_id = aws_apigatewayv2_api.submit.id
-  name = "predict"
+  name   = "predict"
 
   access_log_settings {
     destination_arn = aws_cloudwatch_log_group.gateway.arn
@@ -174,22 +174,22 @@ resource "aws_lambda_permission" "gateway" {
   source_arn = "${replace(
     aws_apigatewayv2_stage.submit.execution_arn,
     aws_apigatewayv2_stage.submit.name,
-    "")}*/*${split(" ", aws_apigatewayv2_route.submit[each.key].route_key)[1]}"
+  "")}*/*${split(" ", aws_apigatewayv2_route.submit[each.key].route_key)[1]}"
 }
 
 resource "aws_iam_role" "iam_for_lambda" {
   name = "${local.node_prefix}-lambda"
 
   assume_role_policy = jsonencode({
-    "Version": "2012-10-17",
-    "Statement": [
+    "Version" : "2012-10-17",
+    "Statement" : [
       {
-        Action: "sts:AssumeRole",
-        Principal: {
-          "Service": "lambda.amazonaws.com"
+        Action : "sts:AssumeRole",
+        Principal : {
+          "Service" : "lambda.amazonaws.com"
         },
-        Effect: "Allow",
-        Sid: ""
+        Effect : "Allow",
+        Sid : ""
       }
     ]
   })
@@ -202,25 +202,25 @@ resource "aws_iam_policy" "lambda_logging" {
   description = "IAM policy for logging from a lambda"
 
   policy = jsonencode({
-    "Version": "2012-10-17",
-    "Statement": [
+    "Version" : "2012-10-17",
+    "Statement" : [
       {
-        Action: [
+        Action : [
           "logs:CreateLogStream",
           "logs:PutLogEvents"
         ],
-        Resource: "arn:aws:logs:*:*:*",
-        Effect: "Allow"
+        Resource : "arn:aws:logs:*:*:*",
+        Effect : "Allow"
       },
       {
-        Effect: "Allow",
-        Action: "ecs:RunTask",
-        Resource: "*"
+        Effect : "Allow",
+        Action : "ecs:RunTask",
+        Resource : "*"
       },
       {
-        Effect: "Allow",
-        Action: "iam:PassRole",
-        Resource: aws_iam_role.ecsTaskExecutionRole.arn
+        Effect : "Allow",
+        Action : "iam:PassRole",
+        Resource : aws_iam_role.ecsTaskExecutionRole.arn
       }
     ]
   })
