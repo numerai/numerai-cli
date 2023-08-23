@@ -14,8 +14,8 @@ from numerai.cli.util.keys import \
 
 @click.command()
 @click.option(
-    '--provider', '-p', type=str, default=DEFAULT_PROVIDER,
-    help=f"Initialize with this providers API keys. Defaults to {DEFAULT_PROVIDER}.")
+    '--provider', '-p', type=str, prompt=True,
+    help=f"Initialize with this providers API keys.")
 @click.option('--verbose', '-v', is_flag=True)
 def setup(provider, verbose):
     """
