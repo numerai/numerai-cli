@@ -5,10 +5,11 @@ import click
 from numerapi import base_api
 
 from numerai.cli.constants import *
-from numerai.cli.util.keys import \
-    load_or_init_keys, \
-    load_or_init_nodes, \
-    get_numerai_keys
+from numerai.cli.util.keys import (
+    load_or_init_keys,
+    load_or_init_nodes,
+    get_numerai_keys,
+)
 from numerai.cli.util.docker import terraform
 from numerai.cli.util.debug import root_cause
 
@@ -19,15 +20,16 @@ def uninstall():
     Removes cloud resources, local config, and python package.
     """
     click.secho(
-        '''DANGER WILL ROBINSON, This will:
+        """DANGER WILL ROBINSON, This will:
     - Destroy all nodes in the cloud
     - Remove all docker images on your computer
     - Delete the .numerai configuration directory on your computer
     - Uninstall the numerai-cli python package
     - Leave Python and Docker installed on your computer
-    ''', fg='red'
+    """,
+        fg="red",
     )
-    if not click.confirm('Are you absolutely sure you want to uninstall?'):
+    if not click.confirm("Are you absolutely sure you want to uninstall?"):
         return
 
     if os.path.exists(CONFIG_PATH):
@@ -38,46 +40,48 @@ def uninstall():
             napi = base_api.Api(*get_numerai_keys())
 
             node_config = load_or_init_nodes()
-            click.secho('deregistering all webhooks...')
+            click.secho("deregistering all webhooks...")
             for node, config in node_config.items():
-                napi.set_submission_webhook(config['model_id'], None)
+                napi.set_submission_webhook(config["model_id"], None)
 
-            click.secho('destroying cloud resources...')
+            click.secho("destroying cloud resources...")
             all_keys = load_or_init_keys()
             provider_keys = {}
             for provider in PROVIDERS:
                 if provider in all_keys.keys():
                     provider_keys.update(all_keys[provider])
-                    terraform('destroy -auto-approve',
-                              provider=provider,
-                              verbose=True, env_vars=provider_keys,
-                              inputs={'node_config_file': 'nodes.json'})
+                    terraform(
+                        "destroy -auto-approve",
+                        provider=provider,
+                        verbose=True,
+                        env_vars=provider_keys,
+                        inputs={"node_config_file": "nodes.json"},
+                    )
 
-            click.secho('cleaning up docker images...')
-            subprocess.run('docker system prune -f -a --volumes', shell=True)
+            click.secho("cleaning up docker images...")
+            subprocess.run("docker system prune -f -a --volumes", shell=True)
             try:
                 shutil.rmtree(CONFIG_PATH)
             except PermissionError as e:
-                root_cause('', str(e))
+                root_cause("", str(e))
 
-    click.secho('uninstalling python package...')
+    click.secho("uninstalling python package...")
     res = subprocess.run(
-        'pip3 uninstall numerai-cli -y',
+        "pip3 uninstall numerai-cli -y",
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        shell=True
+        shell=True,
     )
 
     if res.returncode != 0:
-        if b'PermissionError' in res.stderr:
+        if b"PermissionError" in res.stderr:
             click.secho(
-                'uninstall failed due to permissions, '
+                "uninstall failed due to permissions, "
                 'run "pip3 uninstall numerai-cli -y" manually '
-                'to ensure the package was uninstalled',
-                fg='red'
+                "to ensure the package was uninstalled",
+                fg="red",
             )
         else:
-            click.secho(f'Unexpected error occurred:\n{res.stderr}', fg='red')
+            click.secho(f"Unexpected error occurred:\n{res.stderr}", fg="red")
 
-    click.secho(
-        "All those moments will be lost in time, like tears in rain.", fg='red')
+    click.secho("All those moments will be lost in time, like tears in rain.", fg="red")

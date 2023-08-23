@@ -2,6 +2,7 @@ import logging
 
 import pandas as pd
 import numpy as np
+
 # a fork of yfinance that implements retries nicely, see requirements.txt
 import yfinance
 
@@ -14,12 +15,11 @@ TICKER_MAP = pd.read_csv(
 
 def map_tickers(tickers, from_ticker, to_ticker):
     # create two maps for bbg -> yahoo and yahoo -> bbg
-    ticker_map = dict(zip(
-        TICKER_MAP[from_ticker],
-        TICKER_MAP[to_ticker]
-    ))
+    ticker_map = dict(zip(TICKER_MAP[from_ticker], TICKER_MAP[to_ticker]))
     new_tickers = tickers.map(ticker_map).dropna()
-    logging.info(f"Number of tickers in {from_ticker} -> {to_ticker} map: {len(ticker_map)}")
+    logging.info(
+        f"Number of tickers in {from_ticker} -> {to_ticker} map: {len(ticker_map)}"
+    )
     return new_tickers
 
 
@@ -27,8 +27,7 @@ def download_yahoo_data(yfinance_tickers):
     # download data
     n = 1000  # chunk row size
     chunk_df = [
-        yfinance_tickers.iloc[i : i + n]
-        for i in range(0, len(yfinance_tickers), n)
+        yfinance_tickers.iloc[i : i + n] for i in range(0, len(yfinance_tickers), n)
     ]
 
     concat_dfs = []
@@ -37,9 +36,7 @@ def download_yahoo_data(yfinance_tickers):
             # threads=True -> faster; tickers fail, script hangs
             # threads=False -> slower; more tickers will succeed
             temp_df = yfinance.download(
-                df.str.cat(sep=" "),
-                start="2005-12-01",
-                threads=False
+                df.str.cat(sep=" "), start="2005-12-01", threads=False
             )
             temp_df = temp_df["Adj Close"].stack().reset_index()
             concat_dfs.append(temp_df)
@@ -87,7 +84,7 @@ def get_rsi_feature_names(num_days):
 
 def generate_rsi_features(full_data, num_days):
     # add Relative Strength Index
-    logging.info('generating RSI for each price...')
+    logging.info("generating RSI for each price...")
     ticker_groups = full_data.groupby("ticker")
     full_data["RSI"] = ticker_groups["price"].transform(
         lambda x: relative_strength_index(x)
@@ -95,23 +92,25 @@ def generate_rsi_features(full_data, num_days):
     full_data.dropna(inplace=True)
 
     # group by era (date)
-    logging.info('grouping by dates...')
+    logging.info("grouping by dates...")
     date_groups = full_data.groupby(full_data.index)
 
     # create quintile labels within each era, useful for learning relative ranking
-    logging.info('generating RSI quintiles...')
+    logging.info("generating RSI quintiles...")
     full_data["RSI_quintile"] = date_groups["RSI"].transform(
         lambda group: pd.qcut(group, 5, labels=False, duplicates="drop")
     )
 
-    feat_quintile_lag, feat_rsi_diff, feat_rsi_diff_abs = get_rsi_feature_names(num_days)
+    feat_quintile_lag, feat_rsi_diff, feat_rsi_diff_abs = get_rsi_feature_names(
+        num_days
+    )
 
     # create lagged features grouped by ticker
-    logging.info('grouping by ticker...')
+    logging.info("grouping by ticker...")
     ticker_groups = full_data.groupby("ticker")
 
     # lag 0 is that day's value, lag 1 is yesterday's value, etc
-    logging.info('generating lagged RSI quintiles...')
+    logging.info("generating lagged RSI quintiles...")
     for day in range(num_days + 1):
         full_data[feat_quintile_lag[day]] = ticker_groups["RSI_quintile"].transform(
             lambda group: group.shift(day)
@@ -119,7 +118,7 @@ def generate_rsi_features(full_data, num_days):
 
     # create difference of the lagged features and
     # absolute difference of the lagged features (change in RSI quintile by day)
-    logging.info('generating lagged RSI diffs...')
+    logging.info("generating lagged RSI diffs...")
     for day in range(num_days):
         full_data[feat_rsi_diff[day]] = (
             full_data[feat_quintile_lag[day]] - full_data[feat_quintile_lag[day + 1]]
@@ -130,7 +129,7 @@ def generate_rsi_features(full_data, num_days):
 
 
 def add_targets_and_split(full_data):
-    logging.info('adding targets...')
+    logging.info("adding targets...")
     # read in Signals targets and format the date
     targets = pd.read_csv(
         "https://numerai-signals-public-data.s3-us-west-2.amazonaws.com/"
@@ -144,14 +143,11 @@ def add_targets_and_split(full_data):
     full_data["date"] = full_data["date"].astype(str)
 
     # merge our feature data with Numerai targets
-    logging.info('generating dataset...')
-    ml_data = pd.merge(
-        full_data, targets,
-        on=["date", "bloomberg_ticker"]
-    )
+    logging.info("generating dataset...")
+    ml_data = pd.merge(full_data, targets, on=["date", "bloomberg_ticker"])
 
     # convert date to datetime and index on it
-    ml_data["date"] = pd.to_datetime(targets['date'], format='%Y-%m-%d')
+    ml_data["date"] = pd.to_datetime(targets["date"], format="%Y-%m-%d")
     ml_data = ml_data.set_index("date")
 
     # for training and testing we want clean, complete data only

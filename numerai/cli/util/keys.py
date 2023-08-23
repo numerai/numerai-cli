@@ -1,7 +1,5 @@
 import json
-from configparser import \
-    ConfigParser, \
-    MissingSectionHeaderError
+from configparser import ConfigParser, MissingSectionHeaderError
 
 import boto3
 import click
@@ -15,11 +13,12 @@ from azure.mgmt.subscription import SubscriptionClient
 from numerai.cli.constants import *
 from numerai.cli.constants import KEYS_PATH
 from numerai.cli.util.debug import exception_with_msg
-from numerai.cli.util.files import \
-    load_or_init_nodes, \
-    store_config, \
-    maybe_create, \
-    load_config
+from numerai.cli.util.files import (
+    load_or_init_nodes,
+    store_config,
+    maybe_create,
+    load_config,
+)
 
 
 def reformat_keys():
@@ -27,21 +26,21 @@ def reformat_keys():
     try:
         config = ConfigParser()
         config.read(KEYS_PATH)
-        click.secho(f"Old keyfile format found, reformatting...", fg='yellow')
+        click.secho(f"Old keyfile format found, reformatting...", fg="yellow")
 
         new_config = {
-            'aws': {
-                'AWS_ACCESS_KEY_ID': config['default']['AWS_ACCESS_KEY_ID'],
-                'AWS_SECRET_ACCESS_KEY': config['default']['AWS_SECRET_ACCESS_KEY']
+            "aws": {
+                "AWS_ACCESS_KEY_ID": config["default"]["AWS_ACCESS_KEY_ID"],
+                "AWS_SECRET_ACCESS_KEY": config["default"]["AWS_SECRET_ACCESS_KEY"],
             },
-            'numerai': {
-                'NUMERAI_PUBLIC_ID': config['default']['NUMERAI_PUBLIC_ID'],
-                'NUMERAI_SECRET_KEY': config['default']['NUMERAI_SECRET_KEY']
-            }
+            "numerai": {
+                "NUMERAI_PUBLIC_ID": config["default"]["NUMERAI_PUBLIC_ID"],
+                "NUMERAI_SECRET_KEY": config["default"]["NUMERAI_SECRET_KEY"],
+            },
         }
 
-        del config['default']
-        with open(os.open(KEYS_PATH, os.O_CREAT | os.O_WRONLY, 0o600), 'w') as f:
+        del config["default"]
+        with open(os.open(KEYS_PATH, os.O_CREAT | os.O_WRONLY, 0o600), "w") as f:
             config.write(f)
             json.dump(new_config, f, indent=2)
 
@@ -65,8 +64,10 @@ def load_or_init_keys(provider=None):
 def get_numerai_keys():
     keys = load_or_init_keys()
     try:
-        return keys['numerai']['NUMERAI_PUBLIC_ID'],\
-            keys['numerai']['NUMERAI_SECRET_KEY']
+        return (
+            keys["numerai"]["NUMERAI_PUBLIC_ID"],
+            keys["numerai"]["NUMERAI_SECRET_KEY"],
+        )
     except KeyError:
         return None, None
 
@@ -82,14 +83,14 @@ def prompt_for_key(name, default):
 def config_numerai_keys():
     numerai_public, numerai_secret = get_numerai_keys()
 
-    numerai_public = prompt_for_key('NUMERAI_PUBLIC_ID', numerai_public)
-    numerai_secret = prompt_for_key('NUMERAI_SECRET_KEY', numerai_secret)
+    numerai_public = prompt_for_key("NUMERAI_PUBLIC_ID", numerai_public)
+    numerai_secret = prompt_for_key("NUMERAI_SECRET_KEY", numerai_secret)
     check_numerai_validity(numerai_public, numerai_secret)
 
     keys_config = load_or_init_keys()
-    keys_config.setdefault('numerai', {})
-    keys_config['numerai']['NUMERAI_PUBLIC_ID'] = numerai_public
-    keys_config['numerai']['NUMERAI_SECRET_KEY'] = numerai_secret
+    keys_config.setdefault("numerai", {})
+    keys_config["numerai"]["NUMERAI_PUBLIC_ID"] = numerai_public
+    keys_config["numerai"]["NUMERAI_SECRET_KEY"] = numerai_secret
     store_config(KEYS_PATH, keys_config)
 
 
@@ -98,20 +99,21 @@ def check_numerai_validity(key_id, secret):
         napi = numerapi.NumerAPI(key_id, secret)
         napi.get_account()
     except Exception:
-        raise exception_with_msg("Numerai keys seem to be invalid. "
-                                 "Make sure you've entered them correctly.")
+        raise exception_with_msg(
+            "Numerai keys seem to be invalid. "
+            "Make sure you've entered them correctly."
+        )
 
 
 def get_provider_keys(node):
-    provider = load_or_init_nodes(node)['provider']
+    provider = load_or_init_nodes(node)["provider"]
     return load_or_init_keys(provider)
 
 
 def get_aws_keys():
     keys = load_or_init_keys()
     try:
-        return keys['aws']['AWS_ACCESS_KEY_ID'],\
-            keys['aws']['AWS_SECRET_ACCESS_KEY']
+        return keys["aws"]["AWS_ACCESS_KEY_ID"], keys["aws"]["AWS_SECRET_ACCESS_KEY"]
     except KeyError:
         return None, None
 
@@ -119,10 +121,12 @@ def get_aws_keys():
 def get_azure_keys():
     keys = load_or_init_keys()
     try:
-        return keys['azure']['ARM_SUBSCRIPTION_ID'],\
-            keys['azure']['ARM_CLIENT_ID'],\
-            keys['azure']['ARM_TENANT_ID'],\
-            keys['azure']['ARM_CLIENT_SECRET']
+        return (
+            keys["azure"]["ARM_SUBSCRIPTION_ID"],
+            keys["azure"]["ARM_CLIENT_ID"],
+            keys["azure"]["ARM_TENANT_ID"],
+            keys["azure"]["ARM_CLIENT_SECRET"],
+        )
 
     except KeyError:
         return None, None, None, None
@@ -130,47 +134,48 @@ def get_azure_keys():
 
 def config_aws_keys():
     aws_public, aws_secret = get_aws_keys()
-    aws_public = prompt_for_key('AWS_ACCESS_KEY_ID', aws_public)
-    aws_secret = prompt_for_key('AWS_SECRET_ACCESS_KEY', aws_secret)
+    aws_public = prompt_for_key("AWS_ACCESS_KEY_ID", aws_public)
+    aws_secret = prompt_for_key("AWS_SECRET_ACCESS_KEY", aws_secret)
     check_aws_validity(aws_public, aws_secret)
 
     keys_config = load_or_init_keys()
-    keys_config.setdefault('aws', {})
-    keys_config['aws']['AWS_ACCESS_KEY_ID'] = aws_public
-    keys_config['aws']['AWS_SECRET_ACCESS_KEY'] = aws_secret
+    keys_config.setdefault("aws", {})
+    keys_config["aws"]["AWS_ACCESS_KEY_ID"] = aws_public
+    keys_config["aws"]["AWS_SECRET_ACCESS_KEY"] = aws_secret
     store_config(KEYS_PATH, keys_config)
 
 
 def config_azure_keys():
     azure_subs_id, azure_client, azure_tenant, azure_secret = get_azure_keys()
     azure_subs_id = prompt_for_key(
-        'Azure Subscription ID [ARM_SUBSCRIPTION_ID]', azure_subs_id)
-    azure_client = prompt_for_key(
-        'Azure Client ID [ARM_CLIENT_ID]', azure_client)
-    azure_tenant = prompt_for_key(
-        'Azure Tenant ID [ARM_TENANT_ID]', azure_tenant)
+        "Azure Subscription ID [ARM_SUBSCRIPTION_ID]", azure_subs_id
+    )
+    azure_client = prompt_for_key("Azure Client ID [ARM_CLIENT_ID]", azure_client)
+    azure_tenant = prompt_for_key("Azure Tenant ID [ARM_TENANT_ID]", azure_tenant)
     azure_secret = prompt_for_key(
-        'Azure Client Secret [ARM_CLIENT_SECRET]', azure_secret)
-    check_azure_validity(azure_subs_id, azure_client,
-                         azure_tenant, azure_secret)
+        "Azure Client Secret [ARM_CLIENT_SECRET]", azure_secret
+    )
+    check_azure_validity(azure_subs_id, azure_client, azure_tenant, azure_secret)
 
     keys_config = load_or_init_keys()
-    keys_config.setdefault('azure', {})
+    keys_config.setdefault("azure", {})
     # Renaming the keys to match the environment variables that TF would recognize
     # https://developer.hashicorp.com/terraform/language/settings/backends/azurerm#environment
-    keys_config['azure']['ARM_SUBSCRIPTION_ID'] = azure_subs_id
-    keys_config['azure']['ARM_CLIENT_ID'] = azure_client
-    keys_config['azure']['ARM_TENANT_ID'] = azure_tenant
-    keys_config['azure']['ARM_CLIENT_SECRET'] = azure_secret
+    keys_config["azure"]["ARM_SUBSCRIPTION_ID"] = azure_subs_id
+    keys_config["azure"]["ARM_CLIENT_ID"] = azure_client
+    keys_config["azure"]["ARM_TENANT_ID"] = azure_tenant
+    keys_config["azure"]["ARM_CLIENT_SECRET"] = azure_secret
     store_config(KEYS_PATH, keys_config)
 
 
 def check_aws_validity(key_id, secret):
     try:
-        client = boto3.client('s3', aws_access_key_id=key_id, aws_secret_access_key=secret)
+        client = boto3.client(
+            "s3", aws_access_key_id=key_id, aws_secret_access_key=secret
+        )
         client.list_buckets()
     except Exception as e:
-        if 'NotSignedUp' in str(e):
+        if "NotSignedUp" in str(e):
             raise exception_with_msg(
                 f"Your AWS keys are valid, but the account is not finished signing up. "
                 f"You either need to update your credit card in AWS at "
@@ -184,41 +189,38 @@ def check_aws_validity(key_id, secret):
             f"https://github.com/numerai/numerai-cli/wiki/Amazon-Web-Services)."
         )
 
+
 # TODO: add azure keys checks with azure-cli
 
 
 def check_azure_validity(subs_id, client_id, tenant_id, secret):
     try:
-        credentials = ClientSecretCredential(client_id=client_id,
-                                             tenant_id=tenant_id,
-                                             client_secret=secret)
+        credentials = ClientSecretCredential(
+            client_id=client_id, tenant_id=tenant_id, client_secret=secret
+        )
         sub_client = SubscriptionClient(credentials)
         subs = [sub.as_dict() for sub in sub_client.subscriptions.list()]
-        all_subs_ids = [subs_details['subscription_id']
-                        for subs_details in subs]
+        all_subs_ids = [subs_details["subscription_id"] for subs_details in subs]
         if subs_id not in all_subs_ids:
-            raise Exception('Invalid Subscription ID')
+            raise Exception("Invalid Subscription ID")
 
     except Exception as e:
-        error_msg = f"Make sure you follow the instructions in the wiki page: " +\
-            f"<INSERT_LINK> to set up the Client ID, Tenant ID and Client Secret correctly."
-        if 'AADSTS700016' in str(e):
+        error_msg = (
+            f"Make sure you follow the instructions in the wiki page: "
+            + f"<INSERT_LINK> to set up the Client ID, Tenant ID and Client Secret correctly."
+        )
+        if "AADSTS700016" in str(e):
+            raise exception_with_msg(f"Invalid Client ID. " + error_msg)
+        elif "double check your tenant name" in str(e):
+            raise exception_with_msg(f"Invalid Tenant ID. " + error_msg)
+        elif "Invalid client secret" in str(e):
+            raise exception_with_msg(f"Invalid Client Secret. " + error_msg)
+        elif "Invalid Subscription ID" in str(e):
             raise exception_with_msg(
-                f"Invalid Client ID. "+error_msg
-            )
-        elif 'double check your tenant name' in str(e):
-            raise exception_with_msg(
-                f"Invalid Tenant ID. "+error_msg
-            )
-        elif 'Invalid client secret' in str(e):
-            raise exception_with_msg(
-                f"Invalid Client Secret. "+error_msg)
-        elif 'Invalid Subscription ID' in str(e):
-            raise exception_with_msg(
-                f"Azure Subscription ID is invalid, or IAM is NOT set up correctly. " +
-                f"Your Azure Client ID, Tenant ID and Client Secret are valid. " +
-                f"Make sure to follow the instructions in the wiki page: " +
-                f"https://github.com/numerai/numerai-cli/tree/master/docs/configure_azure.md"
+                f"Azure Subscription ID is invalid, or IAM is NOT set up correctly. "
+                + f"Your Azure Client ID, Tenant ID and Client Secret are valid. "
+                + f"Make sure to follow the instructions in the wiki page: "
+                + f"https://github.com/numerai/numerai-cli/tree/master/docs/configure_azure.md"
             )
 
 
@@ -236,12 +238,9 @@ def sanitize_message(message, censor_substr=None):
     for key in all_keys:
         if key:
             try:
-                message = message.replace(key, f'...{key[-5:]}')
+                message = message.replace(key, f"...{key[-5:]}")
             except AttributeError:
                 continue
     if censor_substr:
-        message = message.replace(
-            censor_substr,
-            f'...{censor_substr[-5:]}'
-        )
+        message = message.replace(censor_substr, f"...{censor_substr[-5:]}")
     return message

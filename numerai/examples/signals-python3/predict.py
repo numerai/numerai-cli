@@ -3,12 +3,13 @@ import logging
 from datetime import datetime, timedelta
 import configparser
 
-from data import \
-    download_yahoo_data,\
-    map_tickers,\
-    generate_rsi_features,\
-    add_targets_and_split, \
-    get_rsi_feature_names
+from data import (
+    download_yahoo_data,
+    map_tickers,
+    generate_rsi_features,
+    add_targets_and_split,
+    get_rsi_feature_names,
+)
 
 import joblib
 import numerapi
@@ -18,11 +19,11 @@ from dateutil.relativedelta import relativedelta, FR
 
 TARGET_NAME = "target_4d"
 PREDICTION_NAME = "signal"
-TRAINED_MODEL_PREFIX = './trained_model'
+TRAINED_MODEL_PREFIX = "./trained_model"
 
 # Pull model id from "MODEL_ID" environment variable
 # defaults to None, change to a model id from
-MODEL_ID = os.getenv('MODEL_ID', None)
+MODEL_ID = os.getenv("MODEL_ID", None)
 MODEL = GradientBoostingRegressor(subsample=0.1)
 
 napi = numerapi.SignalsAPI()
@@ -36,8 +37,8 @@ def download_data(live_data_date):
     logging.info(f"Number of yahoo tickers: {len(yfinance_tickers)}")
 
     num_days_lag = 5
-    if os.path.exists('full_data.csv'):
-        full_data = pd.read_csv('full_data.csv')
+    if os.path.exists("full_data.csv"):
+        full_data = pd.read_csv("full_data.csv")
         quintile_lag, rsi_diff, rsi_diff_abs = get_rsi_feature_names(num_days_lag)
         feature_names = quintile_lag + rsi_diff + rsi_diff_abs
 
@@ -45,14 +46,18 @@ def download_data(live_data_date):
         full_data = download_yahoo_data(yfinance_tickers)
 
         full_data["bloomberg_ticker"] = map_tickers(
-            full_data.ticker, "yahoo", "bloomberg_ticker")
+            full_data.ticker, "yahoo", "bloomberg_ticker"
+        )
         logging.info(
-            f"Num tickers with data: {len(full_data.bloomberg_ticker.unique())}")
+            f"Num tickers with data: {len(full_data.bloomberg_ticker.unique())}"
+        )
         logging.info(f"data size: {full_data.shape}")
 
-        full_data, feature_names = generate_rsi_features(full_data, num_days=num_days_lag)
+        full_data, feature_names = generate_rsi_features(
+            full_data, num_days=num_days_lag
+        )
         logging.info(f"Features for training:\n {feature_names}")
-        full_data.to_csv('full_data.csv')
+        full_data.to_csv("full_data.csv")
 
     # add numerai targets and do train/test split
     train_data, test_data = add_targets_and_split(full_data)
@@ -91,15 +96,15 @@ def train(train_data, feature_names, model_id, model, force_training=False):
 
     # load a model if we have a trained model already and we aren't forcing a training session
     if os.path.exists(model_name) and not force_training:
-        logging.info('loading existing trained model')
+        logging.info("loading existing trained model")
         model = joblib.load(model_name)
         return model
 
-    logging.info('training model')
+    logging.info("training model")
     model.fit(train_data[feature_names], train_data[TARGET_NAME])
     del train_data
 
-    logging.info('saving model')
+    logging.info("saving model")
     joblib.dump(model, model_name)
 
     return model
@@ -122,22 +127,19 @@ def predict(test_data, live_data, live_data_date, feature_names, model):
     ).astype(int)
     diagnostic_df["data_type"] = diagnostic_df.data_type.fillna("live")
 
-    return diagnostic_df[[
-        "bloomberg_ticker",
-        "friday_date",
-        "data_type",
-        "signal"
-    ]].reset_index(drop=True)
+    return diagnostic_df[
+        ["bloomberg_ticker", "friday_date", "data_type", "signal"]
+    ].reset_index(drop=True)
 
 
 def submit(predictions, predict_output_path, model_id=None):
-    logging.info('writing predictions to file')
+    logging.info("writing predictions to file")
     # numerai doesn't want the index, so don't write it to our file
     predictions.to_csv(predict_output_path, index=False)
 
     # Numerai API uses Environment variables NUMERAI_PUBLIC_ID and NUMERAI_SECRET_KEY
     # these are set by docker via the numerai cli; see README for more info
-    logging.info(f'submitting for {model_id}')
+    logging.info(f"submitting for {model_id}")
     napi.upload_predictions(predict_output_path, model_id=model_id)
 
 

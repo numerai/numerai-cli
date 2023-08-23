@@ -1,19 +1,8 @@
 import click
 from colorama import init
 
-from numerai.cli import \
-    constants, \
-    doctor, \
-    node, \
-    setup, \
-    uninstall, \
-    upgrade, \
-    misc
-from numerai.cli.util import \
-    debug, \
-    docker, \
-    files, \
-    keys
+from numerai.cli import constants, doctor, node, setup, uninstall, upgrade, misc
+from numerai.cli.util import debug, docker, files, keys
 
 
 @click.group()

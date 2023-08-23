@@ -15,18 +15,21 @@ from numerai.cli.util.keys import get_numerai_keys
 # Setting azure's logging level "ERROR" to avoid spamming the terminal
 
 
-
-
 @click.group()
-@click.option('--verbose', '-v', is_flag=True)
+@click.option("--verbose", "-v", is_flag=True)
 @click.option(
-    '--model-name', '-m', type=str, prompt=True,
+    "--model-name",
+    "-m",
+    type=str,
+    prompt=True,
     help="The name of one of your models to configure the Prediction Node for."
-         "It defaults to the first model returned from your account."
+    "It defaults to the first model returned from your account.",
 )
 @click.option(
-    '--signals', '-s', is_flag=True,
-    help="Target a signals model with this name. Defaults to false."
+    "--signals",
+    "-s",
+    is_flag=True,
+    help="Target a signals model with this name. Defaults to false.",
 )
 @click.pass_context
 def node(ctx, verbose, model_name, signals):
@@ -34,11 +37,12 @@ def node(ctx, verbose, model_name, signals):
     Commands to manage and test Prediction Nodes.
     """
     if not os.path.exists(CONFIG_PATH):
-        click.secho('cannot find .numerai config directory, '
-                    'run `numerai setup`', fg='red')
+        click.secho(
+            "cannot find .numerai config directory, " "run `numerai setup`", fg="red"
+        )
         exit(1)
 
-    logger = logging.getLogger('azure')
+    logger = logging.getLogger("azure")
     if verbose:
         logger.setLevel(logging.INFO)
     else:
@@ -46,28 +50,28 @@ def node(ctx, verbose, model_name, signals):
 
     if signals:
         tournament = TOURNAMENT_SIGNALS
-        name_prefix = 'signals'
+        name_prefix = "signals"
     else:
         tournament = TOURNAMENT_NUMERAI
-        name_prefix = 'numerai'
+        name_prefix = "numerai"
     napi = base_api.Api(*get_numerai_keys())
     models = napi.get_models(tournament)
 
     try:
         model_id = models[model_name]
         ctx.ensure_object(dict)
-        ctx.obj['model'] = {
-            'id': model_id,
-            'name': f'{name_prefix}-{model_name}',
-            'is_signals': signals
+        ctx.obj["model"] = {
+            "id": model_id,
+            "name": f"{name_prefix}-{model_name}",
+            "is_signals": signals,
         }
 
     except KeyError:
         click.secho(
             f'No tournament {tournament} model with name "{model_name}" '
-            f'found in list of models:\n{json.dumps(models, indent=2)}'
+            f"found in list of models:\n{json.dumps(models, indent=2)}"
             f'\n(use the "-s" flag for signals models)',
-            fg='red'
+            fg="red",
         )
         exit(1)
 
