@@ -1,4 +1,4 @@
-# Configuring Azure
+# Azure Setup Guide
 
 Numerai CLI will create several resources in your Azure account to deploy and run your models.
 Follow the steps below to give the Numerai CLI access to your Azure account.

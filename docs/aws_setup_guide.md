@@ -1,4 +1,4 @@
-# Configuring AWS
+# AWS Setup Guide
 
 Numerai CLI will create several resources in your AWS account to deploy your model. Follow the steps below to configure
 your AWS account for use with the Numerai CLI.

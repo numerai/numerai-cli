@@ -39,7 +39,7 @@ but should theoretically work anywhere that Docker and Python 3 are available.
 To use this tool you need:
 
 - Numerai API keys
-- AWS API keys
+- Paid cloud provider account
 - Python
 - Docker
 
@@ -50,7 +50,10 @@ To use this tool you need:
     4. Enter your password and click "Confirm"
     5. Copy your secret public key and secret key somewhere safe
   
-2. If using AWS, follow the guide in [Configure AWS](./docs/configure_aws.md). If using Azure, follow the guide in [Configure Azure](./docs/configure_azure.md)
+2. Choose your cloud provider and follow the corresponding guide:
+
+    - [AWS Setup Guide](./docs/aws_setup_guide.md)
+    - [Azure Setup Guide](./docs/azure_setup_guide.md)
 
 3. Install Docker and Python for your Operating System (if you encounter errors or your
     OS is not supported, please see [Troubleshooting and Feedback](#troubleshooting-and-feedback)):
@@ -90,7 +93,7 @@ To use this tool you need:
     For AWS run:
 
     ```shell
-    numerai setup
+    numerai setup --provider aws
     ```
 
     For Azure users run:
@@ -192,8 +195,8 @@ numerai uninstall
 Please review this entire section and check github issues before asking questions.
 If you've exhausted this document, then join us on Discord
 
-If you still cannot find a solution or answer, please join us on the
-[RocketChat #support Channel](https://rocketchat.numer.ai/channel/support)
+If you still cannot find a solution or answer, please join us on
+[Discord](https://discord.gg/numerai)
 and include the following information with your issue/message:
 
 - The commands you ran that caused the error (even previous commands)
