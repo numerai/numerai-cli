@@ -117,8 +117,7 @@ def build_tf_cmd(tf_cmd, provider, env_vars, inputs, version, verbose):
     cmd += f' --rm -it -v {format_if_docker_toolbox(CONFIG_PATH, verbose)}:/opt/plan'
     cmd += f' -w /opt/plan hashicorp/terraform:{version}'
     # Added provider to pick the correct provider directory before tf command
-    if provider and "-chdir=" not in tf_cmd :
-        cmd += ' '.join([f' -chdir={provider}'])
+    cmd += ' '.join([f' -chdir={provider}'])
     cmd += f' {tf_cmd}'
     if inputs:
         cmd += ' '.join([f' -var="{key}={val}"' for key, val in inputs.items()])

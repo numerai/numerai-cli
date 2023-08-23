@@ -96,12 +96,8 @@ def test(ctx, local, command, verbose):
         return
 
     click.secho("checking task status...")
-    if node_config['provider'] == 'aws':
-        monitor(node, node_config, verbose, 15,
-                LOG_TYPE_CLUSTER, follow_tail=True)
-    elif node_config['provider'] == 'azure':
-        monitor(node, node_config, verbose, 15,
-                LOG_TYPE_CLUSTER, follow_tail=True)
+    monitor(node, node_config, verbose, 15, LOG_TYPE_CLUSTER, follow_tail=True)
+    if node_config['provider'] == 'azure':
         time.sleep(5)
 
     if node_config['provider'] == 'azure':

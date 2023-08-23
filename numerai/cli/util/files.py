@@ -101,14 +101,6 @@ def copy_example(example, dest, verbose):
             f.write("venv\n")
     return dst_dir
 
-def copy_node_config_to_provider_tf_dir():
-    nodes = load_or_init_nodes()
-    for node in nodes:
-        if node['provider'] == 'aws':
-            copy_files('nodes.json','aws/nodes.json',force=True)
-        elif node['provider'] == 'azure':
-            copy_files('nodes.json','azure/nodes.json',force=True)
-
 def move_files(src, dst, verbose=False):
     """
     Function to move files from one folder to another, removing it from its original location
