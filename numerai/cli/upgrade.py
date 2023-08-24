@@ -21,25 +21,26 @@ from numerai.cli.util.keys import (
 @click.option("--verbose", "-v", is_flag=True)
 def upgrade(verbose):
     """
-    Upgrades configuration from <=0.2 format to >=0.3 format.
+    Upgrades configuration from 0.1/0.2 to 0.3 format and 0.3 to 0.4.
     """
+    if str(os.getcwd()) == str(Path.home()):
+        click.secho("You cannot run this command from your home directory.")
+        return
+
     home = str(Path.home())
     old_key_path = os.path.join(home, ".numerai")
     old_config_path = os.path.join(os.getcwd(), ".numerai/")
 
-    click.secho(str(old_key_path))
-    click.secho(str(old_config_path))
+    needs_03_upgrade = os.path.exists(old_config_path)
+    needs_04_upgrade = not os.path.isdir(os.path.join(CONFIG_PATH, "azure"))
 
-    if str(old_key_path) == str(old_config_path):
-        click.secho("You cannot run this command from your home directory.")
-        return
-
-    if not os.path.exists(old_config_path):
+    if not needs_03_upgrade and not needs_04_upgrade:
         click.secho(
-            "Run this command from the directory in which you first ran `numerai setup`"
-            " for CLI version 0.1 and 0.2 (it should have the .numerai folder in it)."
+            "Cannot detect any necessary upgrades. If you're trying to upgrade from 0.1 or 0.2 to 0.3,"
+            " run this command from the directory in which you first ran `numerai setup`"
+            " (it should have the .numerai folder in it and not your home directory)."
             " If instead you're trying to upgrade from 0.3 to 0.4,"
-            " then run this in your home directory."
+            " there appears to already be an azure directory so you're all good!."
         )
         return
 
@@ -105,7 +106,7 @@ def upgrade(verbose):
 
     # Upgrade to 0.4
     # create "/aws" directory, then copy all of the old config over (except .keys and nodes.json)
-    if not os.path.isdir(os.path.join(CONFIG_PATH, "azure")):
+    if needs_04_upgrade:
         click.secho("Upgrading from 0.3 to 0.4...", fg="yellow")
         # Create the temp folder if it doesn't exist already
         temp_folder_path = os.path.join(CONFIG_PATH, "temp")
@@ -121,19 +122,13 @@ def upgrade(verbose):
             exit(1)
 
         # Move all files and folders in the config folder to the temp folder
-        move_files(CONFIG_PATH, temp_folder_path)
-
-        # Move .keys and nodes.json back to the config folder
-        unchange_files = [".keys", "nodes.json"]
-        for file in unchange_files:
-            try:
-                src_path = os.path.join(temp_folder_path, file)
-                dst_path = os.path.join(CONFIG_PATH, file)
-                shutil.move(src_path, dst_path)
-                click.secho(f"Move {src_path} to {dst_path}")
-
-            except FileNotFoundError:
-                click.secho(f"File {file} not found in {temp_folder_path}", fg="yellow")
+        #  and delete the old files
+        move_files(
+            CONFIG_PATH,
+            temp_folder_path,
+            verbose,
+            exclude_files=[".keys", "nodes.json"],
+        )
 
         # Create /aws directory
         aws_path = os.path.join(CONFIG_PATH, "aws")
@@ -141,7 +136,7 @@ def upgrade(verbose):
             os.makedirs(aws_path)
 
         # Move all files and folders from the temp folder to the aws folder
-        move_files(temp_folder_path, aws_path)
+        move_files(temp_folder_path, aws_path, verbose)
         os.rmdir(temp_folder_path)
 
     # UPGRADE, RENAME, AND UPDATE TERRAFORM FILES
@@ -178,7 +173,7 @@ def upgrade(verbose):
         return
 
     # Rename terraform files, only for v0.2 -> v0.3 upgrade
-    try:
+    if needs_03_upgrade:
         tf_files_map = {
             "main.tf": "-main.tf",
             "variables.tf": "-inputs.tf",
@@ -196,15 +191,14 @@ def upgrade(verbose):
                 shutil.move(old_file, new_file)
             else:
                 os.remove(old_file)
-    except FileNotFoundError:
-        pass
+
     copy_files(TERRAFORM_PATH, CONFIG_PATH, force=True, verbose=verbose)
 
     # terraform init
     click.secho("Re-initializing terraform...", fg="yellow")
     terraform("init -upgrade", verbose=verbose, provider="aws")
 
-    if click.confirm(
+    if needs_03_upgrade and click.confirm(
         "It's recommended you destroy your current Compute Node. Continue?"
     ):
         click.secho("Removing old cloud infrastructure...", fg="yellow")
