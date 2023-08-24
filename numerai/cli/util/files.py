@@ -105,7 +105,7 @@ def copy_example(example, dest, verbose):
     return dst_dir
 
 
-def move_files(src, dst, verbose=False):
+def move_files(src, dst, verbose=False, exclude_files=[]):
     """
     Function to move files from one folder to another, removing it from its original location
     Args:
@@ -115,16 +115,13 @@ def move_files(src, dst, verbose=False):
     """
     for item in os.listdir(src):
         src_path = os.path.join(src, item)
-        dir_to_ignore = ""
+        if item in exclude_files:
+            continue
         if verbose:
-            click.secho(f"Moving to destination: {dst}")
+            click.secho(f"Moving {src_path} to {dst}")
 
-        # Exception if the dst folder is a subfolder of the src folder
-        if os.path.commonpath([src_path, dst]) == src_path:
-            dir_to_ignore = src_path
-
-        # Move the files and folders
-        if os.path.isdir(src_path) and src_path != dir_to_ignore:
+        # Move the files and folders unless dst is a subfolder of src
+        if os.path.isdir(src_path) and os.path.commonpath([src_path, dst]) != src_path:
             click.secho(f"Moving directory: {src_path}")
             shutil.copytree(src_path, os.path.join(dst, item))
             shutil.rmtree(src_path)
