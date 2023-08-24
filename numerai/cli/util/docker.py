@@ -124,7 +124,7 @@ def build_tf_cmd(tf_cmd, provider, env_vars, inputs, version, verbose):
 
 
 # Added variable to take in different providers
-def terraform(tf_cmd, verbose, provider, env_vars=None, inputs=None, version="0.14.3"):
+def terraform(tf_cmd, verbose, provider, env_vars=None, inputs=None, version="1.5.6"):
     cmd = build_tf_cmd(tf_cmd, provider, env_vars, inputs, version, verbose)
     stdout, stderr = execute(cmd, verbose)
     # if user accidently deleted a resource, refresh terraform and try again
