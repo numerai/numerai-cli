@@ -67,9 +67,6 @@ def copy_file(src_file, dst_path, force=False, verbose=True):
 def copy_files(src, dst, force=False, verbose=True):
     if not os.path.exists(dst):
         os.mkdir(dst)
-    click.secho(src)
-    click.secho(str(os.listdir(src)))
-    click.secho(dst)
     for filename in os.listdir(src):
         src_file = os.path.join(src, filename)
         dst_file = os.path.join(dst, filename)
@@ -124,7 +121,6 @@ def move_files(src, dst, verbose=False, exclude_files=[]):
             click.secho(f"Moving {src_path} to {dst}")
 
         # Move the files and folders unless dst is a subfolder of src
-        click.secho(os.path.commonpath([src_path, dst]))
         if os.path.isdir(src_path) and os.path.commonpath([src_path, dst]) != src_path:
             click.secho(f"Moving directory: {src_path}")
             shutil.copytree(src_path, os.path.join(dst, item))
