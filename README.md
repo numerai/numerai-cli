@@ -44,95 +44,98 @@ To use this tool you need:
 - Docker
 
 1. Sign up a Numerai Account, get your Numerai API Keys, and your first Model:
-    1. Sign up at <https://numer.ai/signup> and log in to your new account
-    2. Go to <https://numer.ai/account> > "Your API keys" section > click "Add"
-    3. Name your key and check all boxes under "Scope this key will have"
-    4. Enter your password and click "Confirm"
-    5. Copy your secret public key and secret key somewhere safe
-  
+
+   1. Sign up at <https://numer.ai/signup> and log in to your new account
+   2. Go to <https://numer.ai/account> > "Your API keys" section > click "Add"
+   3. Name your key and check all boxes under "Scope this key will have"
+   4. Enter your password and click "Confirm"
+   5. Copy your secret public key and secret key somewhere safe
+
 2. Choose your cloud provider and follow the corresponding guide:
 
-    - [AWS Setup Guide](./docs/aws_setup_guide.md)
-    - [Azure Setup Guide](./docs/azure_setup_guide.md)
+   - [AWS Setup Guide](./docs/aws_setup_guide.md)
+   - [Azure Setup Guide](./docs/azure_setup_guide.md)
 
 3. Install Docker and Python for your Operating System (if you encounter errors or your
-    OS is not supported, please see [Troubleshooting and Feedback](#troubleshooting-and-feedback)):
+   OS is not supported, please see [Troubleshooting and Feedback](#troubleshooting-and-feedback)):
 
-    - Mac Terminal (cmd + space, type `terminal`, select `terminal.app`):
+   - Mac Terminal (cmd + space, type `terminal`, select `terminal.app`):
 
-        ```shell
-        curl https://raw.githubusercontent.com/numerai/numerai-cli/master/scripts/setup-mac.sh | bash
-        ```
+     ```shell
+     curl https://raw.githubusercontent.com/numerai/numerai-cli/master/scripts/setup-mac.sh | bash
+     ```
 
-    - Ubuntu 18/20 Terminal (ctrl + alt + t):
+   - Ubuntu 18/20 Terminal (ctrl + alt + t):
 
-        ```shell
-        sudo apt update && sudo apt install -y libcurl4 curl && sudo curl https://raw.githubusercontent.com/numerai/numerai-cli/master/scripts/setup-ubu.sh | sudo bash
-        ```
+     ```shell
+     sudo apt update && sudo apt install -y libcurl4 curl && sudo curl https://raw.githubusercontent.com/numerai/numerai-cli/master/scripts/setup-ubu.sh | sudo bash
+     ```
 
-    - Windows 10 Command Prompt (windows key, type `cmd`, select Command Prompt):
+   - Windows 10 Command Prompt (windows key, type `cmd`, select Command Prompt):
 
-        ```powershell
-        powershell -command "$Script = Invoke-WebRequest 'https://raw.githubusercontent.com/numerai/numerai-cli/master/scripts/setup-win10.ps1'; $ScriptBlock = [ScriptBlock]::Create($Script.Content); Invoke-Command -ScriptBlock $ScriptBlock"
-      ```
+     ```powershell
+     powershell -command "$Script = Invoke-WebRequest 'https://raw.githubusercontent.com/numerai/numerai-cli/master/scripts/setup-win10.ps1'; $ScriptBlock = [ScriptBlock]::Create($Script.Content); Invoke-Command -ScriptBlock $ScriptBlock"
+     ```
 
 4. After the setup script confirms Python and Docker, install `numerai-cli` via:
 
-    ```shell
-    pip3 install --upgrade numerai-cli --user
-    ```
+   ```shell
+   pip3 install --upgrade numerai-cli --user
+   ```
 
-    NOTES:
-    - This command will also work to update to new versions of the package in the future.
-    - If you are using python venv then drop the --user option.
-      If you don't know what that is, disregard this note.
+   NOTES:
+
+   - This command will also work to update to new versions of the package in the future.
+   - If you are using python venv then drop the --user option.
+     If you don't know what that is, disregard this note.
 
 5. Run these commands on your personal computer (not a temporary instance)
    to get an example node running in minutes:
 
-    For AWS run:
+   For AWS run:
 
-    ```shell
-    numerai setup --provider aws
-    ```
+   ```shell
+   numerai setup --provider aws
+   ```
 
-    For Azure users run:
+   For Azure users run:
 
-    ```shell
-    numerai setup --provider azure
-    ```
+   ```shell
+   numerai setup --provider azure
+   ```
 
-    ```shell
-    numerai node config --example tournament-python3
-    numerai node deploy
-    numerai node test
-    ```
+   ```shell
+   numerai node config --example tournament-python3
+   numerai node deploy
+   numerai node test
+   ```
 
-    If you want to use larger instances to generate your predictions first run `numerai list-constants`
-    to list the vCPU/mem presets available, then you can configure a node to use one of the presets via:
+   If you want to use larger instances to generate your predictions first run `numerai list-constants`
+   to list the vCPU/mem presets available, then you can configure a node to use one of the presets via:
 
-    ```shell
-    numerai node config -s mem-lg
-    ```
+   ```shell
+   numerai node config -s mem-lg
+   ```
 
-    Your compute node is now setup and ready to run! When you make changes to your code or re-train your model,
-    simply deploy and test your node again:
+   Your compute node is now setup and ready to run! When you make changes to your code or re-train your model,
+   simply deploy and test your node again:
 
-    ```shell
-    numerai node deploy
-    numerai node test
-    ```
+   ```shell
+   numerai node deploy
+   numerai node test
+   ```
 
-    NOTES:
-    - These commands have stored configuration files in `$USER_HOME/.numerai/`. DO NOT LOSE THIS FILE!
-      or else you will have to manually delete every cloud resource by hand.
-    - The example node trains a model in the cloud, which is bad. You should train locally, pickle the
-      trained model, deploy your node, then unpickle your model to do the live predictions
-    - The default example does _not_ make stake changes; please refer to the [numerapi docs](https://numerapi.readthedocs.io/en/latest/api/numerapi.html#module-numerapi.numerapi)
-      for the methods you must call to do this.
-    - You can view resources and logs in the AWS Console (region us-east-1) for your
-      [ECS Cluster](https://console.aws.amazon.com/ecs/home?region=us-east-1#/clusters/numerai-submission-ecs-cluster/tasks)
-      and [other resources](https://console.aws.amazon.com/cloudwatch/home?region=us-east-1#logsV2:log-groups)
+   NOTES:
+
+   - These commands have stored configuration files in `$USER_HOME/.numerai/`. DO NOT LOSE THIS FILE!
+     or else you will have to manually delete every cloud resource by hand.
+   - The example node trains a model in the cloud, which is bad. You should train locally, pickle the
+     trained model, deploy your node, then unpickle your model to do the live predictions
+   - The default example does _not_ make stake changes; please refer to the [numerapi docs](https://numerapi.readthedocs.io/en/latest/api/numerapi.html#module-numerapi.numerapi)
+     for the methods you must call to do this.
+   - You can view resources and logs in the AWS Console (region us-east-1) for your
+     [ECS Cluster](https://console.aws.amazon.com/ecs/home?region=us-east-1#/clusters/numerai-submission-ecs-cluster/tasks)
+     and [other resources](https://console.aws.amazon.com/cloudwatch/home?region=us-east-1#logsV2:log-groups)
 
 ### List of Commands
 
@@ -164,16 +167,34 @@ Upgrading numerai-cli will always require you to update the package itself using
 
 ```shell
 pip install --upgrade numerai-cli --user
+numerai upgrade
 ```
 
-#### Upgrading from 0.1/0.2 to 0.3.0
+#### 0.1/0.2 to 0.3
 
-CLI 0.3.0 uses a new configuration format that is incompatible with versions 0.1 and 0.2,
+CLI 0.3 uses a new configuration format that is incompatible with versions 0.1 and 0.2,
 but a command to migrate you configuration is provided for you. Run this in the directory
 you ran `numerai setup` from the previous version:
 
 ```shell
 numerai upgrade
+```
+
+#### 0.3 to 0.4
+
+CLI 0.4 introduces a new provider option (Microsoft Azure) and moves the default aws
+terraform into a subdirectory. You'll need to run `upgrade`:
+
+```shell
+numerai upgrade
+```
+
+If you want to use azure, follow the [setup guide for azure](./docs/azure_setup_guide.md)
+then run:
+
+```shell
+numerai setup --provider azure
+numerai node config --provider azure
 ```
 
 #### Beyond
@@ -306,7 +327,7 @@ Solutions:
 ```
 
 ```shell
-Error: 
+Error:
 error calling sts:GetCallerIdentity: InvalidClientTokenId: The security token included in the request is invalid.
 ...
 Command 'docker run -e "AWS_ACCESS_KEY_ID=..." -e "AWS_SECRET_ACCESS_KEY=..." --rm -it -v /home/jason/tmp/.numerai:/opt/plan -w /opt/planhashicorp/terraform:light apply -auto-approve' returned non-zero exit status 1.
@@ -359,7 +380,6 @@ numerai-python3
 - `train.py`: This is an extra entry point specifically for training, it's used when running `numerai node test --local --command "python train.py"`
 
 - `requirements.txt`: Defines python packages required to run the code.
-  
 - `predict.py`: Gets run by default locally and in the cloud when running `numerai test` without the `--command|-c` option.
 
 ### RLang Example
@@ -377,7 +397,6 @@ numerai-rlang
 - `.dockerignore`: This file uses regex to match files that should not be included in the Docker image.
 
 - `install_packages.R`: Installs dependencies necessary for running the example.
-  
 - `main.R`: Ran by default locally and in the cloud and when running `numerai test` without the `--command|-c` option.
 
 ### The Dockerfile
@@ -409,24 +428,26 @@ If you want to learn more about how to customize this file [checkout the Dockerf
 The CLI uses [Terraform](https://www.terraform.io/) to provision cloud resources. Each component and the related cloud resource(s) are listed below. The links will take you to the AWS console where you can monitor any of these resources for a given node; just visit the link and select the resource with the same name as the node you want to monitor (further directions are given for each resource below).
 
 - `Trigger`: A small function that schedules a "task" on your `Compute Cluster`. This "task" handles pulling the image that was created by the `Dockerfile` and running it as a `Container` on your `Compute Cluster`. This is handled by two resources:
+
   - **[API Gateway](https://console.aws.amazon.com/apigateway/main/apis)**:
-      Hosts the webhook (HTTP endpoint) that Numerai calls to trigger your nodes.
-      After clicking the link and selecting the resource, use the left sidebar to access metrics and logging.
+    Hosts the webhook (HTTP endpoint) that Numerai calls to trigger your nodes.
+    After clicking the link and selecting the resource, use the left sidebar to access metrics and logging.
   - **[Lambda](https://console.aws.amazon.com/lambda/home#/functions)**:
-      Schedules your compute job when you call your Webhook URL.
-      After clicking the link and selecting the resource, use the "Monitor" tab below the "Function Overview" section.
+    Schedules your compute job when you call your Webhook URL.
+    After clicking the link and selecting the resource, use the "Monitor" tab below the "Function Overview" section.
 
 - `Container`: The thing that actually contains and runs your code on a computer provisioned by the `Compute Cluster`. The `--size` (or `-s`) flag on the `numerai node config` sets the CPU and Memory limits for a `Container`. This is stored in one place:
+
   - **[ECR (Elastic Container Repository)](https://console.aws.amazon.com/ecr/repositories)**:
-      Used for storing docker images. This is the location to which `numerai docker deploy` will push your image.
-      There is not much monitoring here, but you can view your images and when they were uploaded.
+    Used for storing docker images. This is the location to which `numerai docker deploy` will push your image.
+    There is not much monitoring here, but you can view your images and when they were uploaded.
 
 - `Compute Cluster`: A handler that accepts scheduled "tasks" and spins up and down computers to run `Containers`. This is handled by ECS:
   - **[ECS (Elastic Container Service)](https://console.aws.amazon.com/ecs/home#/clusters)**:
-        This is where your containers will actually run and where you'll want to look if your containers don't seem to be scheduled/running.
-        After clicking the link, you'll be able to scroll and monitor the top-level metrics of each cluster.
-        After selecting a specific cluster, you can use the various tabs to view different components of the cluster (tasks are the runnable jobs
-        that the Lambda schedules, instances are the computers the tasks run on, and metrics will show cluster-wide information)
+    This is where your containers will actually run and where you'll want to look if your containers don't seem to be scheduled/running.
+    After clicking the link, you'll be able to scroll and monitor the top-level metrics of each cluster.
+    After selecting a specific cluster, you can use the various tabs to view different components of the cluster (tasks are the runnable jobs
+    that the Lambda schedules, instances are the computers the tasks run on, and metrics will show cluster-wide information)
 
 ## Special Thanks
 
