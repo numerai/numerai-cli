@@ -454,3 +454,4 @@ The CLI uses [Terraform](https://www.terraform.io/) to provision cloud resources
 - Thanks to [uuazed](https://github.com/uuazed) for their work on [numerapi](https://github.com/uuazed/numerapi)
 - Thanks to [hellno](https://github.com/hellno) for starting the Signals [ticker map](https://github.com/hellno/numerai-signals-tickermap)
 - Thanks to tit_BTCQASH ([numerai profile](https://numer.ai/tit_btcqash) and [twitter profile](https://twitter.com/tit_BTCQASH)) for debugging the environment setup process on Windows 8
+- Thanks to [eses-wk](https://github.com/eses-wk) for implementing Azure support
