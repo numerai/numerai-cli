@@ -3,11 +3,16 @@ from configparser import ConfigParser, MissingSectionHeaderError
 
 import boto3
 import click
+import shutil
 import numerapi
 
 
 from azure.identity import ClientSecretCredential  # DefaultAzureCredential
 from azure.mgmt.subscription import SubscriptionClient
+
+from google.oauth2 import service_account
+from google.cloud import storage
+
 
 
 from numerai.cli.constants import *
@@ -17,7 +22,7 @@ from numerai.cli.util.files import (
     load_or_init_nodes,
     store_config,
     maybe_create,
-    load_config,
+    load_config
 )
 
 
@@ -131,6 +136,14 @@ def get_azure_keys():
     except KeyError:
         return None, None, None, None
 
+def get_gcp_keys():
+    keys = load_or_init_keys()
+    try:
+        return (
+            keys["gcp"]["GCP_KEYS_PATH"]
+        )
+    except KeyError:
+        return None
 
 def config_aws_keys():
     aws_public, aws_secret = get_aws_keys()
@@ -167,6 +180,20 @@ def config_azure_keys():
     keys_config["azure"]["ARM_CLIENT_SECRET"] = azure_secret
     store_config(KEYS_PATH, keys_config)
 
+def config_gcp_keys():
+    gcp_keys_path = get_gcp_keys()
+    gcp_keys_path_new = prompt_for_key(f"Path to GCP keys file (will be copied to {GCP_KEYS_PATH})", gcp_keys_path)
+    if gcp_keys_path_new != gcp_keys_path:
+        # copy_files(gcp_keys_path_new, GCP_KEYS_PATH, True)
+        shutil.copy(gcp_keys_path_new, GCP_KEYS_PATH)
+
+    check_gcp_validity()
+
+    keys_config = load_or_init_keys()
+    keys_config.setdefault("gcp", {})
+    keys_config["gcp"]["GCP_KEYS_PATH"] = GCP_KEYS_PATH
+    store_config(KEYS_PATH, keys_config)
+
 
 def check_aws_validity(key_id, secret):
     try:
@@ -189,10 +216,6 @@ def check_aws_validity(key_id, secret):
             f"https://github.com/numerai/numerai-cli/wiki/Amazon-Web-Services)."
         )
 
-
-# TODO: add azure keys checks with azure-cli
-
-
 def check_azure_validity(subs_id, client_id, tenant_id, secret):
     try:
         credentials = ClientSecretCredential(
@@ -207,7 +230,8 @@ def check_azure_validity(subs_id, client_id, tenant_id, secret):
     except Exception as e:
         error_msg = (
             f"Make sure you follow the instructions in the wiki page: "
-            + f"<INSERT_LINK> to set up the Client ID, Tenant ID and Client Secret correctly."
+            + f"https://github.com/numerai/numerai-cli/blob/master/docs/azure_setup_guide.md"
+            + f"to set up the Client ID, Tenant ID and Client Secret correctly."
         )
         if "AADSTS700016" in str(e):
             raise exception_with_msg(f"Invalid Client ID. " + error_msg)
@@ -223,12 +247,31 @@ def check_azure_validity(subs_id, client_id, tenant_id, secret):
                 + f"https://github.com/numerai/numerai-cli/blob/master/docs/azure_setup_guide.md"
             )
 
+def check_gcp_validity():
+    try:
+        credentials = service_account.Credentials.from_service_account_file(GCP_KEYS_PATH)
+        client = storage.Client(credentials=credentials)
+        response = client.list_buckets()
+        print(response)
+    except Exception as e:
+        error_msg = (
+            f"Make sure you follow the instructions in the wiki page: "
+            + f"https://github.com/numerai/numerai-cli/blob/master/docs/gcp_setup_guide.md"
+            + f"to set up the keys file correctly."
+        )
+        if "Request had invalid authentication credentials." in str(e):
+            raise exception_with_msg(f"Invalid credentials. " + error_msg)
+        else:
+            raise e
+
 
 def config_provider_keys(cloud_provider):
     if cloud_provider == PROVIDER_AWS:
         config_aws_keys()
     elif cloud_provider == PROVIDER_AZURE:
         config_azure_keys()
+    elif cloud_provider == PROVIDER_GCP:
+        config_gcp_keys()
 
 
 def sanitize_message(message, censor_substr=None):

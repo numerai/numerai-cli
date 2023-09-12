@@ -8,6 +8,7 @@ TOURNAMENT_SIGNALS = 11
 PACKAGE_PATH = os.path.dirname(__file__)
 CONFIG_PATH = os.path.join(str(Path.home()), ".numerai")
 KEYS_PATH = os.path.join(CONFIG_PATH, ".keys")
+GCP_KEYS_PATH = os.path.join(CONFIG_PATH, ".gcp_keys")
 NODES_PATH = os.path.join(CONFIG_PATH, "nodes.json")
 TERRAFORM_PATH = os.path.join(PACKAGE_PATH, "..", "terraform")
 EXAMPLE_PATH = os.path.join(PACKAGE_PATH, "..", "examples")
@@ -16,7 +17,8 @@ EXAMPLES = os.listdir(EXAMPLE_PATH)
 
 PROVIDER_AWS = "aws"
 PROVIDER_AZURE = "azure"
-PROVIDERS = [PROVIDER_AWS, PROVIDER_AZURE]
+PROVIDER_GCP = "gcp"
+PROVIDERS = [PROVIDER_AWS, PROVIDER_AZURE, PROVIDER_GCP]
 
 LOG_TYPE_WEBHOOK = "webhook"
 LOG_TYPE_CLUSTER = "cluster"

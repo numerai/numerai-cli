@@ -159,9 +159,28 @@ def config(ctx, verbose, provider, size, path, example, cron, register_webhook):
         node_conf.update(provider_registry_conf)
         node_conf["docker_repo"] = f'{node_conf["acr_login_server"]}/{node}'
         docker.login(node_conf, verbose)
-        docker.pull("hello-world:linux", verbose)
-        docker.tag("hello-world:linux", node_conf["docker_repo"], verbose)
-        docker.push(node_conf["docker_repo"], verbose)
+        try:
+            docker.manifest_inspect(node_conf["docker_repo"], verbose)
+        except Exception as e:
+            print(e)
+            docker.pull("hello-world:linux", verbose)
+            docker.tag("hello-world:linux", node_conf["docker_repo"], verbose)
+            docker.push(node_conf["docker_repo"], verbose)
+        nodes_config[node] = node_conf
+    elif provider == "gcp":
+        provider_registry_conf = create_gcp_registry(provider, verbose=verbose)
+        node_conf.update(provider_registry_conf)
+        registry_parts = node_conf["registry_id"].split("/")
+        node_conf["artifact_registry_login_url"] = f'https://{registry_parts[3]}-docker.pkg.dev/'
+        node_conf["docker_repo"] = f'{registry_parts[3]}-docker.pkg.dev/{registry_parts[1]}/numerai-container-registry/{node}:latest'
+        docker.login(node_conf, verbose)
+        try:
+            docker.manifest_inspect(node_conf["docker_repo"], verbose)
+        except Exception as e:
+            print(e)
+            docker.pull("hello-world:linux", verbose)
+            docker.tag("hello-world:linux", node_conf["docker_repo"], verbose)
+            docker.push(node_conf["docker_repo"], verbose)
         nodes_config[node] = node_conf
 
     store_config(NODES_PATH, nodes_config)
@@ -169,7 +188,7 @@ def config(ctx, verbose, provider, size, path, example, cron, register_webhook):
     # Apply terraform for any affected provider
     for affected_provider in affected_providers:
 
-        if affected_provider == "aws" or affected_provider == "azure":
+        if affected_provider in PROVIDERS:
             click.secho(f"Updating resources in {affected_provider}")
             terraform(
                 "apply -auto-approve",
@@ -226,4 +245,22 @@ def create_azure_registry(provider, provider_keys, verbose):
         inputs={"node_config_file": "nodes.json"},
     )
     res = terraform("output -json acr_repo_details", True, provider).decode("utf-8")
+    return json.loads(res)
+
+def create_gcp_registry(provider, verbose):
+    """Creates a registry for GCP"""
+    terraform("init -upgrade", verbose, provider)
+    terraform(
+        'apply -target="google_project_service.cloud_resource_manager" -auto-approve ',
+        verbose,
+        "gcp",
+        inputs={"node_config_file":"nodes.json"}
+    )
+    terraform(
+        'apply -target="google_artifact_registry_repository.registry[0]" -auto-approve ',
+        verbose,
+        "gcp",
+        inputs={"node_config_file":"nodes.json"}
+    )
+    res = terraform("output -json artifact_registry_details", True, provider).decode("utf-8")
     return json.loads(res)

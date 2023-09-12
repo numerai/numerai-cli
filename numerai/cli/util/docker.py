@@ -14,6 +14,7 @@ from numerai.cli.util.keys import (
     get_aws_keys,
     load_or_init_keys,
     get_azure_keys,
+    get_gcp_keys
 )
 from azure.mgmt.containerregistry import ContainerRegistryManagementClient
 from azure.containerregistry import ContainerRegistryClient, ArtifactManifestOrder
@@ -114,6 +115,9 @@ def build_tf_cmd(tf_cmd, provider, env_vars, inputs, version, verbose):
     if env_vars:
         cmd += " ".join([f' -e "{key}={val}"' for key, val in env_vars.items()])
     cmd += f" --rm -it -v {format_if_docker_toolbox(CONFIG_PATH, verbose)}:/opt/plan"
+    if provider == PROVIDER_GCP:
+        cmd += f" --mount type=bind,source={GCP_KEYS_PATH},target=/tmp/gcp_keys/keys.json"
+        cmd += f" -e GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp_keys/keys.json"
     cmd += f" -w /opt/plan hashicorp/terraform:{version}"
     # Added provider to pick the correct provider directory before tf command
     cmd += " ".join([f" -chdir={provider}"])
@@ -127,7 +131,7 @@ def build_tf_cmd(tf_cmd, provider, env_vars, inputs, version, verbose):
 def terraform(tf_cmd, verbose, provider, env_vars=None, inputs=None, version="1.5.6"):
     cmd = build_tf_cmd(tf_cmd, provider, env_vars, inputs, version, verbose)
     stdout, stderr = execute(cmd, verbose)
-    # if user accidently deleted a resource, refresh terraform and try again
+    # if user accidentally deleted a resource, refresh terraform and try again
     if b"ResourceNotFoundException" in stdout or b"NoSuchEntity" in stdout:
         refresh = build_tf_cmd("refresh", env_vars, inputs, version, verbose)
         execute(refresh, verbose)
@@ -171,10 +175,15 @@ def run(node_config, verbose, command=""):
 def login(node_config, verbose):
     if node_config["provider"] == PROVIDER_AWS:
         username, password = login_aws()
+        login_url = node_config['docker_repo']
     elif node_config["provider"] == PROVIDER_AZURE:
         username, password = login_azure(
             node_config["registry_rg_name"], node_config["registry_name"]
         )
+        login_url = node_config['docker_repo']
+    elif node_config["provider"] == PROVIDER_GCP:
+        username, password = login_gcp()
+        login_url = node_config['artifact_registry_login_url']
     else:
         raise ValueError(f"Unsupported provider: '{node_config['provider']}'")
 
@@ -187,7 +196,7 @@ def login(node_config, verbose):
         echo_cmd + f" | docker login"
         f" -u {username}"
         f" --password-stdin"
-        f" {node_config['docker_repo']}"
+        f" {login_url}"
     )
 
     execute(cmd, verbose, censor_substr=password)
@@ -225,8 +234,22 @@ def login_azure(resource_group_name, registry_name):
     return username, password
 
 
-def push(docker_repo, verbose):
-    cmd = f"docker push {docker_repo}"
+def login_gcp():
+    gcp_keys_path = get_gcp_keys()
+    gcp_keys_file = open(gcp_keys_path, "r")
+    gcp_keys = gcp_keys_file.read()
+    username = "_json_key_base64"
+    password = base64.b64encode(gcp_keys.encode()).decode("utf-8")
+    return username, password
+
+
+def manifest_inspect(docker_image, verbose):
+    cmd = f"docker manifest inspect {docker_image}"
+    execute(cmd, verbose=verbose)
+
+
+def push(docker_image, verbose):
+    cmd = f"docker push {docker_image}"
     execute(cmd, verbose=verbose)
 
 
