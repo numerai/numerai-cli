@@ -123,9 +123,9 @@ resource "aws_apigatewayv2_deployment" "submit" {
   api_id = aws_apigatewayv2_api.submit.id
 
   triggers = {
-    redeployment = sha1(join(",", list(
+    redeployment = sha1(join(",", tolist([
       jsonencode(aws_apigatewayv2_integration.submit),
-      jsonencode(aws_apigatewayv2_route.submit),
+      jsonencode(aws_apigatewayv2_route.submit)]
     )))
   }
 
