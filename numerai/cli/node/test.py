@@ -83,11 +83,8 @@ def test(ctx, local, command, verbose):
                 },
                 authorization=True,
             )
-            if provider == "aws":
+            if provider in ["aws", "azure", "gcp"]:
                 trigger_id = res["data"]["triggerModelWebhook"]
-            elif provider == "azure":
-                trigger_id = res["data"]["triggerModelWebhook"]
-
             else:
                 click.secho(f"Unsupported provider: '{provider}'", fg="red")
                 exit(1)

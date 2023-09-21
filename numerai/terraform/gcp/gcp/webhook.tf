@@ -1,7 +1,6 @@
 resource "google_storage_bucket" "webhook" {
   for_each = { for name, config in var.nodes : name => config }
   name     = replace(each.key, "_", "-")
-  project  = var.project
   location = var.gcp_region
 }
 
@@ -12,9 +11,38 @@ resource "google_storage_bucket_object" "webhook" {
   source   = "cloud-function.zip"
 }
 
+resource "google_workflows_workflow" "webhook" {
+  for_each = { for name, config in var.nodes : name => config }
+  name     = replace(each.key, "_", "-")
+  region   = var.gcp_region
+  project  = var.project
+
+  source_contents = <<-EOF
+    main:
+        params: [event]
+        steps:
+            - init:
+                assign:
+                    - trigger_id: $${event.trigger_id}
+            - run_job:
+                call: googleapis.run.v1.namespaces.jobs.run
+                args:
+                    name: namespaces/${var.project}/jobs/${replace(each.key, "_", "-")}
+                    location: ${var.gcp_region}
+                    body:
+                        overrides:
+                            containerOverrides:
+                                env:
+                                    - name: TRIGGER_ID
+                                      value: $${trigger_id}
+                result: job_execution
+            - finish:
+                return: $${job_execution}
+  EOF
+}
+
 resource "google_cloudfunctions_function" "webhook" {
   for_each = { for name, config in var.nodes : name => config }
-  project  = var.project
   name     = replace(each.key, "_", "-")
 
   runtime               = "python39"
@@ -26,13 +54,12 @@ resource "google_cloudfunctions_function" "webhook" {
   environment_variables = {
     PROJECT  = var.project
     LOCATION = var.gcp_region
-    JOB      = replace(each.key, "_", "-")
+    WORKFLOW = replace(each.key, "_", "-")
   }
 }
 
 resource "google_cloudfunctions_function_iam_binding" "webhook" {
   for_each       = { for name, config in var.nodes : name => config }
-  project        = var.project
   cloud_function = google_cloudfunctions_function.webhook[each.key].name
   role           = "roles/cloudfunctions.invoker"
   members = [

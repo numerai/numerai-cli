@@ -269,6 +269,8 @@ def cleanup(node_config):
         imageIds = cleanup_aws(node_config["docker_repo"])
     elif provider == PROVIDER_AZURE:
         imageIds = cleanup_azure(node_config)
+    elif provider == PROVIDER_GCP:
+        imageIds = cleanup_gcp(node_config)
     else:
         raise ValueError(f"Unsupported provider: '{provider}'")
 
@@ -334,3 +336,7 @@ def cleanup_azure(node_config):
         removed_manifests.append(manifest.digest)
         acr_client.delete_manifest(node_repo_name, manifest.digest)
     return removed_manifests
+
+def cleanup_gcp(node_config):
+    # Nothing to do
+    return []

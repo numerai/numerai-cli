@@ -33,6 +33,7 @@ module "gcp" {
     google_project_service.artifact_registry,
     google_project_service.cloudbuild,
     google_project_service.cloudfunctions,
-    google_project_service.storage
+    google_project_service.storage,
+    google_project_service.workflows
   ]
 }
