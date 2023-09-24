@@ -11,7 +11,12 @@ from numerai.cli.constants import *
 from numerai.cli.util import docker
 from numerai.cli.util.debug import exception_with_msg
 from numerai.cli.util.files import load_or_init_nodes
-from numerai.cli.util.keys import get_aws_keys, get_numerai_keys, get_azure_keys
+from numerai.cli.util.keys import (
+    get_aws_keys, 
+    get_numerai_keys, 
+    get_azure_keys,
+    get_gcp_keys
+    )
 
 from azure.identity import ClientSecretCredential
 from azure.mgmt.storage import StorageManagementClient
@@ -20,6 +25,7 @@ from azure.data.tables import TableServiceClient, TableClient
 from datetime import datetime, timedelta, timezone
 import pandas as pd
 import json
+import google.cloud.run_v2 as run_v2
 
 
 @click.command()
@@ -102,7 +108,7 @@ def test(ctx, local, command, verbose):
         return
 
     click.secho("checking task status...")
-    monitor(node, node_config, verbose, 15, LOG_TYPE_CLUSTER, follow_tail=True)
+    monitor(node, node_config, verbose, 15, LOG_TYPE_CLUSTER, follow_tail=True, trigger_id=trigger_id)
     if node_config["provider"] == "azure":
         time.sleep(5)
 
@@ -163,7 +169,7 @@ def test(ctx, local, command, verbose):
     click.secho("Test complete, your model now submits automatically!", fg="green")
 
 
-def monitor(node, config, verbose, num_lines, log_type, follow_tail):
+def monitor(node, config, verbose, num_lines, log_type, follow_tail, trigger_id):
     if log_type not in LOG_TYPES:
         raise exception_with_msg(
             f"Unknown log type '{log_type}', " f"must be one of {LOG_TYPES}"
@@ -173,6 +179,8 @@ def monitor(node, config, verbose, num_lines, log_type, follow_tail):
         monitor_aws(node, config, num_lines, log_type, follow_tail, verbose)
     elif config["provider"] == PROVIDER_AZURE:
         monitor_azure(node, config, verbose)
+    elif config["provider"] == PROVIDER_GCP:
+        monitor_gcp(node, config, verbose, trigger_id)
     else:
         click.secho(f"Unsupported provider: '{config['provider']}'", fg="red")
         return
@@ -494,6 +502,63 @@ def azure_refresh_and_print_log(
                 monitoring_done = True
 
     return monitoring_done, shown_log_row_key
+
+
+def monitor_gcp(node, config, verbose, trigger_id):
+    ## Write a function that uses the gcloud runv2 executions SDK to get executions that are currently running
+    monitor_start_time = datetime.now(timezone.utc) - timedelta(minutes=1)
+
+    gcp_key_path = get_gcp_keys()
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = gcp_key_path
+    client = run_v2.ExecutionsClient()
+
+    time_lapse = datetime.now(timezone.utc) - monitor_start_time
+    monitoring_done = False
+    while time_lapse <= timedelta(minutes=15) and monitoring_done == False:
+        executions = get_gcp_job_executions(client, config["job_id"], trigger_id)
+        if len(executions) == 0:
+            click.secho(f"No job executions yet, still waiting...\r", fg="yellow")
+        else:
+            monitoring_done, status = check_gcp_execution_status(executions[0])
+            click.secho(f"Current status is {status}...\r", fg="yellow")
+            if monitoring_done or status == "unknown":
+                break
+        time.sleep(15)
+
+    if time_lapse >= timedelta(minutes=15):
+        click.secho(
+            f"Monitor timeout after 15 minutes, container run status cannot be determined. Recommended to check ran status directly on Google Cloud Console",
+            fg="red",
+        )
+        exit(1) 
+
+
+def get_gcp_job_executions(client, job_id, trigger_id):
+    # Initialize request argument(s)
+    request = run_v2.ListExecutionsRequest(
+        parent=job_id,
+    )
+
+    page_result = client.list_executions(request=request)
+    executions = []
+    # Handle the response
+    for response in page_result:
+        env = response.template.containers[0].env
+        for env_var in env:
+            if env_var.name == "TRIGGER_ID" and env_var.value == trigger_id:
+                executions.append(response)
+
+    return executions
+
+def check_gcp_execution_status(execution):
+    for condition in execution.conditions:
+        if condition.type_ == "Completed":
+            if condition.state == run_v2.types.Condition.State.CONDITION_SUCCEEDED:
+                return True, "succeeded"
+            elif condition.state == run_v2.types.Condition.State.CONDITION_RECONCILING or condition.state == run_v2.types.Condition.State.CONDITION_PENDING:
+                return False, "pending"
+            else:
+                return False, "unknown"
 
 
 @click.command()

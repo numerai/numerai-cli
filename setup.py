@@ -32,7 +32,8 @@ setup(
         "azure-containerregistry",
         "azure-data-tables",
         "azure-mgmt-storage",
-        "google-cloud-storage"
+        "google-cloud-storage",
+        "google-cloud-run"
     ],
     entry_points={
         "console_scripts": ["numerai=numerai:main"],

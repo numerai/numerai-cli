@@ -184,7 +184,6 @@ def config_gcp_keys():
     gcp_keys_path = get_gcp_keys()
     gcp_keys_path_new = prompt_for_key(f"Path to GCP keys file (will be copied to {GCP_KEYS_PATH})", gcp_keys_path)
     if gcp_keys_path_new != gcp_keys_path:
-        # copy_files(gcp_keys_path_new, GCP_KEYS_PATH, True)
         shutil.copy(gcp_keys_path_new, GCP_KEYS_PATH)
 
     check_gcp_validity()
