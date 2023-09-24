@@ -520,7 +520,6 @@ def monitor_gcp(node, config, verbose, trigger_id):
             click.secho(f"No job executions yet, still waiting...\r", fg="yellow")
         else:
             monitoring_done, status = check_gcp_execution_status(executions[0])
-            click.secho(f"Current status is {status}...\r", fg="yellow")
             if monitoring_done or status == "unknown":
                 break
         time.sleep(15)
@@ -554,10 +553,13 @@ def check_gcp_execution_status(execution):
     for condition in execution.conditions:
         if condition.type_ == "Completed":
             if condition.state == run_v2.types.Condition.State.CONDITION_SUCCEEDED:
+                click.secho(f"Job execution succeeded!\r", fg="green")
                 return True, "succeeded"
             elif condition.state == run_v2.types.Condition.State.CONDITION_RECONCILING or condition.state == run_v2.types.Condition.State.CONDITION_PENDING:
+                click.secho(f"Waiting for job to complete...\r", fg="yellow")
                 return False, "pending"
             else:
+                click.secho(f"Job status unknown! Exiting test.\r", fg="red")
                 return False, "unknown"
 
 
