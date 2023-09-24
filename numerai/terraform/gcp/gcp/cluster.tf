@@ -12,8 +12,8 @@ resource "google_cloud_run_v2_job" "node" {
 
         resources {
           limits = {
-            memory = "16Gi"
-            cpu    = "4000m"
+            memory = "${each.value.memory / 1024}Gi"
+            cpu    = "${1000 * each.value.cpu / 1024}m"
           }
         }
       }
