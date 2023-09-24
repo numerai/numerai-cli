@@ -2,6 +2,7 @@ resource "google_storage_bucket" "webhook" {
   for_each = { for name, config in var.nodes : name => config }
   name     = replace(each.key, "_", "-")
   location = var.gcp_region
+  project  = var.project
 }
 
 resource "google_storage_bucket_object" "webhook" {
@@ -44,6 +45,7 @@ resource "google_workflows_workflow" "webhook" {
 resource "google_cloudfunctions_function" "webhook" {
   for_each = { for name, config in var.nodes : name => config }
   name     = replace(each.key, "_", "-")
+  project  = var.project
 
   runtime               = "python39"
   available_memory_mb   = 128
@@ -62,6 +64,7 @@ resource "google_cloudfunctions_function_iam_binding" "webhook" {
   for_each       = { for name, config in var.nodes : name => config }
   cloud_function = google_cloudfunctions_function.webhook[each.key].name
   role           = "roles/cloudfunctions.invoker"
+  project        = var.project
   members = [
     "allUsers",
   ]
