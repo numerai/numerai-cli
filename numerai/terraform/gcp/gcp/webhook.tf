@@ -18,28 +18,11 @@ resource "google_workflows_workflow" "webhook" {
   region   = var.gcp_region
   project  = var.project
 
-  source_contents = <<-EOF
-    main:
-        params: [event]
-        steps:
-            - init:
-                assign:
-                    - trigger_id: $${event.trigger_id}
-            - run_job:
-                call: googleapis.run.v1.namespaces.jobs.run
-                args:
-                    name: namespaces/${var.project}/jobs/${replace(each.key, "_", "-")}
-                    location: ${var.gcp_region}
-                    body:
-                        overrides:
-                            containerOverrides:
-                                env:
-                                    - name: TRIGGER_ID
-                                      value: $${trigger_id}
-                result: job_execution
-            - finish:
-                return: $${job_execution}
-  EOF
+  source_contents = templatefile("${path.module}/workflow-source.yaml", {
+    project = var.project
+    job     = replace(each.key, "_", "-")
+    region  = var.gcp_region
+  })
 }
 
 resource "google_cloudfunctions_function" "webhook" {
