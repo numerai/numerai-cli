@@ -14,11 +14,13 @@ from numerai.cli.util.keys import (
     get_aws_keys,
     load_or_init_keys,
     get_azure_keys,
-    get_gcp_keys
+    get_gcp_keys,
+    get_gcp_project
 )
 from azure.mgmt.containerregistry import ContainerRegistryManagementClient
 from azure.containerregistry import ContainerRegistryClient, ArtifactManifestOrder
 from azure.identity import ClientSecretCredential
+import google.cloud.artifactregistry_v1 as artifactregistry_v1
 
 
 def check_for_dockerfile(path):
@@ -118,6 +120,7 @@ def build_tf_cmd(tf_cmd, provider, env_vars, inputs, version, verbose):
     if provider == PROVIDER_GCP:
         cmd += f" --mount type=bind,source={GCP_KEYS_PATH},target=/tmp/gcp_keys/keys.json"
         cmd += f" -e GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp_keys/keys.json"
+        cmd += f" -e GOOGLE_PROJECT={get_gcp_project()}"
     cmd += f" -w /opt/plan hashicorp/terraform:{version}"
     # Added provider to pick the correct provider directory before tf command
     cmd += " ".join([f" -chdir={provider}"])
@@ -338,5 +341,30 @@ def cleanup_azure(node_config):
     return removed_manifests
 
 def cleanup_gcp(node_config):
+    print(node_config)
+    gcp_key_path = get_gcp_keys()
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = gcp_key_path
+
+    node_name = node_config["docker_repo"].split("/")[-1]
+
+    client = artifactregistry_v1.ArtifactRegistryClient()
+    list_images_request = artifactregistry_v1.ListDockerImagesRequest(parent = node_config["registry_id"])
+    page_result = client.list_docker_images(request=list_images_request)
+
+    latest_image_name = ""
+    for response in page_result:
+        if "latest" in response.tags:
+            latest_image_name = response.name
+                              
+    versions = artifactregistry_v1.ListVersionsRequest(parent = f"{node_config['registry_id']}/packages/{node_name}")
+    page_result = client.list_versions(request = versions)
+    versions_to_delete = []
+    for response in page_result:
+        if response.metadata["name"] != latest_image_name:
+            versions_to_delete.append(response.name)
+
+    for version in versions_to_delete:
+        result = client.delete_version(name=version)
+
     # Nothing to do
-    return []
+    return versions_to_delete

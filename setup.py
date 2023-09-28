@@ -33,7 +33,8 @@ setup(
         "azure-data-tables",
         "azure-mgmt-storage",
         "google-cloud-storage",
-        "google-cloud-run"
+        "google-cloud-run",
+        "google-cloud-artifact-registry"
     ],
     entry_points={
         "console_scripts": ["numerai=numerai:main"],

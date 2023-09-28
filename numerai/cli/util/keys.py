@@ -144,6 +144,11 @@ def get_gcp_keys():
         )
     except KeyError:
         return None
+    
+def get_gcp_project():
+    with open(get_gcp_keys(), "r") as gcp_keys:
+        gcp_keys_content = json.loads(gcp_keys.read())
+        return gcp_keys_content["project_id"]
 
 def config_aws_keys():
     aws_public, aws_secret = get_aws_keys()
