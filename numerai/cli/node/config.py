@@ -5,6 +5,7 @@ import click
 from numerapi import base_api
 from numerai.cli.constants import (
     DEFAULT_PROVIDER,
+    DEFAULT_SIZE_GCP,
     PROVIDERS,
     DEFAULT_SIZE,
     EXAMPLES,
@@ -131,8 +132,8 @@ def config(ctx, verbose, provider, size, path, example, cron, register_webhook):
         node_conf["cpu"] = SIZE_PRESETS[size][0]
         node_conf["memory"] = SIZE_PRESETS[size][1]
     elif node_conf["provider"] == PROVIDER_GCP and using_defaults:
-        node_conf["cpu"] = SIZE_PRESETS["cpu-md"][0]
-        node_conf["memory"] = SIZE_PRESETS["cpu-md"][1]
+        node_conf["cpu"] = SIZE_PRESETS[DEFAULT_SIZE_GCP][0]
+        node_conf["memory"] = SIZE_PRESETS[DEFAULT_SIZE_GCP][1]
 
     
     if path:
