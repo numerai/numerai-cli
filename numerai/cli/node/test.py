@@ -26,6 +26,7 @@ from datetime import datetime, timedelta, timezone
 import pandas as pd
 import json
 import google.cloud.run_v2 as run_v2
+import google.cloud.logging_v2 as logging_v2
 
 
 @click.command()
@@ -511,18 +512,25 @@ def monitor_gcp(node, config, verbose, trigger_id):
     gcp_key_path = get_gcp_keys()
     os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = gcp_key_path
     client = run_v2.ExecutionsClient()
+    
+    # Setup logging if necessary
+    previous_insert_id = "0"
+    logging_client = None
+    if verbose:
+        logging_client = logging_v2.Client()
 
     time_lapse = datetime.now(timezone.utc) - monitor_start_time
     monitoring_done = False
+    
     while time_lapse <= timedelta(minutes=15) and monitoring_done == False:
         executions = get_gcp_job_executions(client, config["job_id"], trigger_id)
         if len(executions) == 0:
             click.secho(f"No job executions yet, still waiting...\r", fg="yellow")
         else:
-            monitoring_done, status = check_gcp_execution_status(executions[0])
+            monitoring_done, status, previous_insert_id = check_gcp_execution_status(logging_client, executions[0], verbose, previous_insert_id)
             if monitoring_done or status == "unknown":
                 break
-        time.sleep(15)
+        time.sleep(5 if verbose else 15)
 
     if time_lapse >= timedelta(minutes=15):
         click.secho(
@@ -549,18 +557,37 @@ def get_gcp_job_executions(client, job_id, trigger_id):
 
     return executions
 
-def check_gcp_execution_status(execution):
+def check_gcp_execution_status(logging_client, execution, verbose, previous_insert_id):
     for condition in execution.conditions:
         if condition.type_ == "Completed":
             if condition.state == run_v2.types.Condition.State.CONDITION_SUCCEEDED:
                 click.secho(f"Job execution succeeded!\r", fg="green")
-                return True, "succeeded"
+                return True, "succeeded", previous_insert_id
             elif condition.state == run_v2.types.Condition.State.CONDITION_RECONCILING or condition.state == run_v2.types.Condition.State.CONDITION_PENDING:
-                click.secho(f"Waiting for job to complete...\r", fg="yellow")
-                return False, "pending"
+                if verbose:
+                    previous_insert_id = print_gcp_execution_logs(logging_client, execution, previous_insert_id)
+                else:
+                    click.secho(f"Waiting for job to complete...\r", fg="yellow")
+                return False, "pending", previous_insert_id
             else:
                 click.secho(f"Job status unknown! Exiting test.\r", fg="red")
-                return False, "unknown"
+                return False, "unknown", previous_insert_id
+
+
+def print_gcp_execution_logs(logging_client, execution, previous_insert_id):
+    execution_name = execution.name.split("/")[-1]
+
+    filter = f'resource.type = "cloud_run_job" resource.labels.job_name = "numerai-ethan-numerai-new" labels."run.googleapis.com/execution_name" = "{execution_name}" labels."run.googleapis.com/task_index" = "0" resource.labels.location = "us-east1" insertId > "{previous_insert_id}"'
+    page_response = logging_client.list_entries(filter_ = filter)
+    insert_id = previous_insert_id
+    for log in page_response:
+        print(log.payload)
+        insert_id = log.insert_id
+
+    if insert_id == "0":
+        click.secho(f"Waiting for logs to begin...\r", fg="yellow")
+
+    return insert_id
 
 
 @click.command()

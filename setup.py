@@ -34,7 +34,8 @@ setup(
         "azure-mgmt-storage",
         "google-cloud-storage",
         "google-cloud-run",
-        "google-cloud-artifact-registry"
+        "google-cloud-artifact-registry",
+        "google-cloud-logging"
     ],
     entry_points={
         "console_scripts": ["numerai=numerai:main"],
