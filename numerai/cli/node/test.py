@@ -170,7 +170,7 @@ def test(ctx, local, command, verbose):
     click.secho("Test complete, your model now submits automatically!", fg="green")
 
 
-def monitor(node, config, verbose, num_lines, log_type, follow_tail, trigger_id):
+def monitor(node, config, verbose, num_lines, log_type, follow_tail, trigger_id = None):
     if log_type not in LOG_TYPES:
         raise exception_with_msg(
             f"Unknown log type '{log_type}', " f"must be one of {LOG_TYPES}"
@@ -181,7 +181,7 @@ def monitor(node, config, verbose, num_lines, log_type, follow_tail, trigger_id)
     elif config["provider"] == PROVIDER_AZURE:
         monitor_azure(node, config, verbose)
     elif config["provider"] == PROVIDER_GCP:
-        monitor_gcp(node, config, verbose, trigger_id)
+        monitor_gcp(node, config, verbose, log_type, trigger_id)
     else:
         click.secho(f"Unsupported provider: '{config['provider']}'", fg="red")
         return
@@ -505,7 +505,7 @@ def azure_refresh_and_print_log(
     return monitoring_done, shown_log_row_key
 
 
-def monitor_gcp(node, config, verbose, trigger_id):
+def monitor_gcp(node, config, verbose, log_type, trigger_id):
     ## Write a function that uses the gcloud runv2 executions SDK to get executions that are currently running
     monitor_start_time = datetime.now(timezone.utc) - timedelta(minutes=1)
 
@@ -521,13 +521,16 @@ def monitor_gcp(node, config, verbose, trigger_id):
 
     time_lapse = datetime.now(timezone.utc) - monitor_start_time
     monitoring_done = False
+
+    if verbose and log_type == LOG_TYPE_WEBHOOK:
+        print_gcp_webhook_logs(logging_client, config["job_id"])
     
     while time_lapse <= timedelta(minutes=15) and monitoring_done == False:
         executions = get_gcp_job_executions(client, config["job_id"], trigger_id)
         if len(executions) == 0:
             click.secho(f"No job executions yet, still waiting...\r", fg="yellow")
         else:
-            monitoring_done, status, previous_insert_id = check_gcp_execution_status(logging_client, executions[0], verbose, previous_insert_id)
+            monitoring_done, status, previous_insert_id = check_gcp_execution_status(logging_client, executions[0], verbose if log_type == LOG_TYPE_CLUSTER else False, previous_insert_id)
             if monitoring_done or status == "unknown":
                 break
         time.sleep(5 if verbose else 15)
@@ -554,13 +557,21 @@ def get_gcp_job_executions(client, job_id, trigger_id):
         for env_var in env:
             if env_var.name == "TRIGGER_ID" and env_var.value == trigger_id:
                 executions.append(response)
+            elif trigger_id == None:
+                executions.append(response)
 
+    if trigger_id == None:
+        executions = [executions[0]]
     return executions
+
 
 def check_gcp_execution_status(logging_client, execution, verbose, previous_insert_id):
     for condition in execution.conditions:
         if condition.type_ == "Completed":
             if condition.state == run_v2.types.Condition.State.CONDITION_SUCCEEDED:
+                if verbose and previous_insert_id == "0":
+                    # Print logs for this as no logs were ever printed or this is a status request
+                    previous_insert_id = print_gcp_execution_logs(logging_client, execution, previous_insert_id)
                 click.secho(f"Job execution succeeded!\r", fg="green")
                 return True, "succeeded", previous_insert_id
             elif condition.state == run_v2.types.Condition.State.CONDITION_RECONCILING or condition.state == run_v2.types.Condition.State.CONDITION_PENDING:
@@ -569,25 +580,56 @@ def check_gcp_execution_status(logging_client, execution, verbose, previous_inse
                 else:
                     click.secho(f"Waiting for job to complete...\r", fg="yellow")
                 return False, "pending", previous_insert_id
+            elif condition.state == run_v2.types.Condition.State.CONDITION_FAILED:
+                if verbose:
+                    previous_insert_id = print_gcp_execution_logs(logging_client, execution, previous_insert_id)
+                click.secho(f"Job failed!\r", fg="red")
+                return True, "failed", previous_insert_id
             else:
-                click.secho(f"Job status unknown! Exiting test.\r", fg="red")
-                return False, "unknown", previous_insert_id
+                click.secho(f"Unknown job status! Exiting test.\r", fg="red")
+                click.secho(f"Job status: {condition.state}\r", fg="red")
+                return True, "unknown", previous_insert_id
 
 
 def print_gcp_execution_logs(logging_client, execution, previous_insert_id):
     execution_name = execution.name.split("/")[-1]
 
-    filter = f'resource.type = "cloud_run_job" resource.labels.job_name = "numerai-ethan-numerai-new" labels."run.googleapis.com/execution_name" = "{execution_name}" labels."run.googleapis.com/task_index" = "0" resource.labels.location = "us-east1" insertId > "{previous_insert_id}"'
+    filter = f'resource.type = "cloud_run_job" resource.labels.job_name = "numerai-ethan-numerai-new" labels."run.googleapis.com/execution_name" = "{execution_name}" labels."run.googleapis.com/task_index" = "0" insertId > "{previous_insert_id}"'
     page_response = logging_client.list_entries(filter_ = filter)
     insert_id = previous_insert_id
     for log in page_response:
-        print(log.payload)
+        click.secho(f"{log.timestamp}: {log.payload}")
         insert_id = log.insert_id
 
     if insert_id == "0":
         click.secho(f"Waiting for logs to begin...\r", fg="yellow")
 
     return insert_id
+
+
+def print_gcp_webhook_logs(logging_client, job_id):
+    monitor_start_time = datetime.now(timezone.utc) - timedelta(minutes=30)
+    click.secho("Looking for most recent webhook execution...\r", fg="yellow")
+
+    page_response = logging_client.list_entries(
+        filter_=f'resource.type = "cloud_function" resource.labels.function_name = "{job_id.split("/")[-1]}" Timestamp>="{monitor_start_time.isoformat()}"'
+    )
+
+    execution_id = ""
+    log_entries = []
+    for result in page_response:
+        log_entries.append(
+            {"payload": result.payload, "execution_id": result.labels["execution_id"], "timestamp": result.timestamp}
+        )
+        execution_id = result.labels["execution_id"]
+
+    for log in log_entries:
+        if log["execution_id"] == execution_id:
+            click.secho(f"{log['timestamp']}: {log['payload']}")
+
+    if len(log_entries) == 0:
+        click.secho("No webhook logs in the past 30 minutes.\r", fg="yellow")
+        click.secho("Try executing your webhook again or run numerai node deploy to make sure your webhook URL is up to date\r", fg="yellow")
 
 
 @click.command()
