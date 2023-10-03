@@ -55,6 +55,7 @@ To use this tool you need:
 
    - [AWS Setup Guide](./docs/aws_setup_guide.md)
    - [Azure Setup Guide](./docs/azure_setup_guide.md)
+   - [GCP Setup Guide](./docs/gcp_setup_guide.md)
 
 3. Install Docker and Python for your Operating System (if you encounter errors or your
    OS is not supported, please see [Troubleshooting and Feedback](#troubleshooting-and-feedback)):
@@ -98,11 +99,23 @@ To use this tool you need:
    numerai setup --provider aws
    ```
 
+   and enter your user's keys when prompted.
+
    For Azure users run:
 
    ```shell
    numerai setup --provider azure
    ```
+
+   and enter your application's keys when prompted.
+
+   For GCP users run:
+
+   ```shell
+   numerai setup --provider gcp
+   ```
+
+   and enter the complete path to your downloaded key when prompted.
 
    ```shell
    numerai node config --example tournament-python3
