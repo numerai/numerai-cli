@@ -612,7 +612,7 @@ def print_gcp_webhook_logs(logging_client, job_id):
     click.secho("Looking for most recent webhook execution...\r", fg="yellow")
 
     page_response = logging_client.list_entries(
-        filter_=f'resource.type = "cloud_function" resource.labels.function_name = "{job_id.split("/")[-1]}" Timestamp>="{monitor_start_time.isoformat()}"'
+        filter_=f'resource.type = "cloud_function" resource.labels.function_name = "{job_id.split("/")[-1]}" Timestamp>="{monitor_start_time.isoformat()}" severity="DEBUG"'
     )
 
     execution_id = ""
@@ -644,7 +644,7 @@ def print_gcp_webhook_logs(logging_client, job_id):
     default=LOG_TYPE_CLUSTER,
     help=f"The log type to lookup. One of {LOG_TYPES}. Default is {LOG_TYPE_CLUSTER}.",
 )
-@click.option("--follow-tail", "-f", is_flag=True, help="tail the logs constantly")
+@click.option("--follow-tail", "-f", is_flag=True, help="tail the logs of a running task (AWS only)")
 @click.pass_context
 def status(ctx, verbose, num_lines, log_type, follow_tail):
     """

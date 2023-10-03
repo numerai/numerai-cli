@@ -68,6 +68,7 @@ from numerai.cli.util.keys import get_provider_keys, get_numerai_keys, load_or_i
     "Check the Azure docs for more info about cron expressions: "
     "https://learn.microsoft.com/en-us/azure/azure-functions/functions-bindings-timer?tabs=python-v2%2Cin-process&pivots=programming-language-python#ncrontab-expressions",
 )
+@click.option("--timeout-minutes",type=str,help="Maximum time to allow this node to run when triggered. Defaults to 60 minutes. Valid for GCP only.")
 @click.option(
     "--register-webhook",
     "-r",
@@ -76,7 +77,7 @@ from numerai.cli.util.keys import get_provider_keys, get_numerai_keys, load_or_i
     "Use in conjunction with options that prevent webhook auto-registering.",
 )
 @click.pass_context
-def config(ctx, verbose, provider, size, path, example, cron, register_webhook):
+def config(ctx, verbose, provider, size, path, example, cron, timeout_minutes, register_webhook):
     """
     Uses Terraform to create a full Numerai Compute cluster in your desired provider.
     Prompts for your cloud provider and Numerai API keys on first run, caches them in $HOME/.numerai.
@@ -123,10 +124,18 @@ def config(ctx, verbose, provider, size, path, example, cron, register_webhook):
     # update node as needed
     node_conf = nodes_config[node]
 
+    if timeout_minutes:
+        node_conf["timeout_minutes"] = timeout_minutes
+
     if provider:
         node_conf["provider"] = provider
     else:
         provider = node_conf["provider"]
+
+    if provider == PROVIDER_GCP and size is not None and "mem-" in size:
+        click.secho("Invalid size: mem sizes are invalid for GCP due to sizing constraints with Google Cloud Run.", fg="red")
+        click.secho("Visit https://cloud.google.com/run/docs/configuring/services/memory-limits to learn more.", fg="red")
+        exit(1)
 
     if size:
         node_conf["cpu"] = SIZE_PRESETS[size][0]

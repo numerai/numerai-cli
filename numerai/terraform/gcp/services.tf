@@ -23,7 +23,6 @@ resource "google_project_service" "artifact_registry" {
 
 resource "google_project_service" "storage" {
   service = "storage.googleapis.com"
-  project = split("/", google_project_service.cloud_resource_manager.id)[0]
 
   timeouts {
     create = "30m"
@@ -35,7 +34,6 @@ resource "google_project_service" "storage" {
 
 resource "google_project_service" "cloudfunctions" {
   service = "cloudfunctions.googleapis.com"
-  project = split("/", google_project_service.cloud_resource_manager.id)[0]
 
   timeouts {
     create = "30m"
@@ -47,7 +45,6 @@ resource "google_project_service" "cloudfunctions" {
 
 resource "google_project_service" "cloudbuild" {
   service = "cloudbuild.googleapis.com"
-  project = split("/", google_project_service.cloud_resource_manager.id)[0]
 
   timeouts {
     create = "30m"
@@ -59,7 +56,6 @@ resource "google_project_service" "cloudbuild" {
 
 resource "google_project_service" "workflows" {
   service = "workflows.googleapis.com"
-  project = split("/", google_project_service.cloud_resource_manager.id)[0]
 
   timeouts {
     create = "30m"
@@ -71,7 +67,6 @@ resource "google_project_service" "workflows" {
 
 resource "google_project_service" "run" {
   service = "run.googleapis.com"
-  project = split("/", google_project_service.cloud_resource_manager.id)[0]
 
   timeouts {
     create = "30m"

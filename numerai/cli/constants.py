@@ -55,11 +55,13 @@ DEFAULT_SIZE = "mem-md"
 DEFAULT_SIZE_GCP = "cpu-md"
 DEFAULT_PROVIDER = PROVIDER_AWS
 DEFAULT_PATH = os.getcwd()
+DEFAULT_TIMEOUT_MINUTES = 60
 DEFAULT_SETTINGS = {
     "provider": DEFAULT_PROVIDER,
     "cpu": SIZE_PRESETS[DEFAULT_SIZE][0],
     "memory": SIZE_PRESETS[DEFAULT_SIZE][1],
     "path": DEFAULT_PATH,
+    "timeout_minutes": DEFAULT_TIMEOUT_MINUTES
 }
 
 CONSTANTS_STR = f"""Default values (not your configured node values):

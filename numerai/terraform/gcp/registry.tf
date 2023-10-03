@@ -2,7 +2,6 @@ resource "google_artifact_registry_repository" "registry" {
   count         = length(local.gcp_nodes) > 0 ? 1 : 0
   repository_id = "numerai-container-registry"
   format        = "DOCKER"
-  project       = split("/", google_project_service.cloud_resource_manager.id)[0]
   depends_on = [
     google_project_service.artifact_registry,
     google_project_service.cloud_resource_manager

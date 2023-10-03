@@ -17,7 +17,7 @@ resource "google_cloud_run_v2_job" "node" {
           }
         }
       }
-      timeout     = "3600s"
+      timeout     = "${each.value.timeout_minutes * 60}s"
       max_retries = 0
     }
   }
