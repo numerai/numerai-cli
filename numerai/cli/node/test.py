@@ -90,7 +90,7 @@ def test(ctx, local, command, verbose):
                 },
                 authorization=True,
             )
-            if provider in ["aws", "azure", "gcp"]:
+            if provider in PROVIDERS:
                 trigger_id = res["data"]["triggerModelWebhook"]
             else:
                 click.secho(f"Unsupported provider: '{provider}'", fg="red")
@@ -239,6 +239,7 @@ def monitor_aws(node, config, num_lines, log_type, follow_tail, verbose):
                     exit(1)
                 else:
                     click.secho(f"{msg} Checking for log events...", fg="green")
+                    name = streams[-1]["logStreamName"]
                     break
 
             elif len(streams) == 0:
@@ -321,7 +322,8 @@ def get_recent_task_status_aws(ecs_client, node, verbose):
     tasks = ecs_client.describe_tasks(
         cluster="numerai-submission", tasks=tasks["taskArns"]
     )
-    return tasks["tasks"][0]
+    
+    return tasks["tasks"][-1]
 
 
 def get_name_and_print_logs(
