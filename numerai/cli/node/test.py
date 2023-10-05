@@ -614,7 +614,7 @@ def print_gcp_webhook_logs(logging_client, job_id):
     click.secho("Looking for most recent webhook execution...\r", fg="yellow")
 
     page_response = logging_client.list_entries(
-        filter_=f'resource.type = "cloud_function" resource.labels.function_name = "{job_id.split("/")[-1]}" Timestamp>="{monitor_start_time.isoformat()}" severity="DEBUG"'
+        filter_=f'resource.type = "cloud_function" resource.labels.function_name = "{job_id.split("/")[-1]}" Timestamp>="{monitor_start_time.isoformat()}"'
     )
 
     execution_id = ""
