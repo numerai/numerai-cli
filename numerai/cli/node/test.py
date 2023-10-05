@@ -532,7 +532,7 @@ def monitor_gcp(node, config, verbose, log_type, trigger_id):
         if len(executions) == 0:
             click.secho(f"No job executions yet, still waiting...\r", fg="yellow")
         else:
-            monitoring_done, status, previous_insert_id = check_gcp_execution_status(logging_client, executions[0], verbose if log_type == LOG_TYPE_CLUSTER else False, previous_insert_id)
+            monitoring_done, status, previous_insert_id = check_gcp_execution_status(logging_client, config["job_id"], executions[0], verbose if log_type == LOG_TYPE_CLUSTER else False, previous_insert_id)
             if monitoring_done or status == "unknown":
                 break
         time.sleep(5 if verbose else 15)
@@ -567,24 +567,24 @@ def get_gcp_job_executions(client, job_id, trigger_id):
     return executions
 
 
-def check_gcp_execution_status(logging_client, execution, verbose, previous_insert_id):
+def check_gcp_execution_status(logging_client, job_id, execution, verbose, previous_insert_id):
     for condition in execution.conditions:
         if condition.type_ == "Completed":
             if condition.state == run_v2.types.Condition.State.CONDITION_SUCCEEDED:
                 if verbose and previous_insert_id == "0":
                     # Print logs for this as no logs were ever printed or this is a status request
-                    previous_insert_id = print_gcp_execution_logs(logging_client, execution, previous_insert_id)
+                    previous_insert_id = print_gcp_execution_logs(logging_client, job_id, execution, previous_insert_id)
                 click.secho(f"Job execution succeeded!\r", fg="green")
                 return True, "succeeded", previous_insert_id
             elif condition.state == run_v2.types.Condition.State.CONDITION_RECONCILING or condition.state == run_v2.types.Condition.State.CONDITION_PENDING:
                 if verbose:
-                    previous_insert_id = print_gcp_execution_logs(logging_client, execution, previous_insert_id)
+                    previous_insert_id = print_gcp_execution_logs(logging_client, job_id, execution, previous_insert_id)
                 else:
                     click.secho(f"Waiting for job to complete...\r", fg="yellow")
                 return False, "pending", previous_insert_id
             elif condition.state == run_v2.types.Condition.State.CONDITION_FAILED:
                 if verbose:
-                    previous_insert_id = print_gcp_execution_logs(logging_client, execution, previous_insert_id)
+                    previous_insert_id = print_gcp_execution_logs(logging_client, job_id, execution, previous_insert_id)
                 click.secho(f"Job failed!\r", fg="red")
                 return True, "failed", previous_insert_id
             else:
@@ -593,10 +593,10 @@ def check_gcp_execution_status(logging_client, execution, verbose, previous_inse
                 return True, "unknown", previous_insert_id
 
 
-def print_gcp_execution_logs(logging_client, execution, previous_insert_id):
+def print_gcp_execution_logs(logging_client, job_id, execution, previous_insert_id):
     execution_name = execution.name.split("/")[-1]
 
-    filter = f'resource.type = "cloud_run_job" resource.labels.job_name = "numerai-ethan-numerai-new" labels."run.googleapis.com/execution_name" = "{execution_name}" labels."run.googleapis.com/task_index" = "0" insertId > "{previous_insert_id}"'
+    filter = f'resource.type = "cloud_run_job" resource.labels.job_name = "{job_id.split("/")[-1]}" labels."run.googleapis.com/execution_name" = "{execution_name}" labels."run.googleapis.com/task_index" = "0" insertId > "{previous_insert_id}"'
     page_response = logging_client.list_entries(filter_ = filter)
     insert_id = previous_insert_id
     for log in page_response:
