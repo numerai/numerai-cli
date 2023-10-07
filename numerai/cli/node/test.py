@@ -539,7 +539,7 @@ def monitor_gcp(node, config, verbose, log_type, trigger_id):
 
     if time_lapse >= timedelta(minutes=15):
         click.secho(
-            f"Monitor timeout after 15 minutes, container run status cannot be determined. Recommended to check ran status directly on Google Cloud Console",
+            f"Monitoring timed out after 15 minutes without determining the status of your container. Check the status of your container in the Google Cloud console.",
             fg="red",
         )
         exit(1) 
@@ -596,7 +596,13 @@ def check_gcp_execution_status(logging_client, job_id, execution, verbose, previ
 def print_gcp_execution_logs(logging_client, job_id, execution, previous_insert_id):
     execution_name = execution.name.split("/")[-1]
 
-    filter = f'resource.type = "cloud_run_job" resource.labels.job_name = "{job_id.split("/")[-1]}" labels."run.googleapis.com/execution_name" = "{execution_name}" labels."run.googleapis.com/task_index" = "0" insertId > "{previous_insert_id}"'
+    filter =  ' '.join([
+        'resource.type = "cloud_run_job"',
+        f'resource.labels.job_name = "{job_id.split("/")[-1]}"',
+        f'labels."run.googleapis.com/execution_name" = "{execution_name}"',
+        'labels."run.googleapis.com/task_index" = "0"',
+        f'insertId > "{previous_insert_id}"'
+    ])
     page_response = logging_client.list_entries(filter_ = filter)
     insert_id = previous_insert_id
     for log in page_response:
@@ -613,9 +619,13 @@ def print_gcp_webhook_logs(logging_client, job_id):
     monitor_start_time = datetime.now(timezone.utc) - timedelta(minutes=30)
     click.secho("Looking for most recent webhook execution...\r", fg="yellow")
 
-    page_response = logging_client.list_entries(
-        filter_=f'resource.type = "cloud_function" resource.labels.function_name = "{job_id.split("/")[-1]}" Timestamp>="{monitor_start_time.isoformat()}"'
-    )
+    filter = ' '.join([
+        'resource.type = "cloud_function"',
+        f'resource.labels.function_name = "{job_id.split("/")[-1]}"',
+        f'Timestamp>="{monitor_start_time.isoformat()}"'
+    ])
+
+    page_response = logging_client.list_entries(filter_ = filter)
 
     execution_id = ""
     log_entries = []
