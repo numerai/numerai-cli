@@ -533,7 +533,7 @@ def monitor_gcp(node, config, verbose, log_type, trigger_id):
             click.secho(f"No job executions yet, still waiting...\r", fg="yellow")
         else:
             monitoring_done, message, color = check_gcp_execution_status(executions[0])
-            if verbose:
+            if verbose and log_type == LOG_TYPE_CLUSTER:
                 previous_insert_id = print_gcp_execution_logs(logging_client,  config["job_id"], executions[0], previous_insert_id)
             elif not monitoring_done:
                 click.secho(message, fg=color)
