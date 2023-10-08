@@ -110,6 +110,7 @@ venv.bak/
 terraform.tfstate*
 *.tfplan
 .vscode
+.prettierrc.json
 
 .idea/
 .DS_STORE
