@@ -14,7 +14,7 @@ from numerai.cli.constants import (
     SIZE_PRESETS,
     NODES_PATH,
     CONFIG_PATH,
-    PROVIDER_GCP
+    PROVIDER_GCP,
 )
 from numerai.cli.util.docker import terraform, check_for_dockerfile
 from numerai.cli.util import docker
@@ -33,8 +33,7 @@ from numerai.cli.util.keys import get_provider_keys, get_numerai_keys, load_or_i
     "--provider",
     "-P",
     type=str,
-    help=f"Select a cloud provider. One of {PROVIDERS}. "
-    f"Defaults to {DEFAULT_PROVIDER}.",
+    help=f"Select a cloud provider. One of {PROVIDERS}. " f"Defaults to {DEFAULT_PROVIDER}.",
 )
 @click.option(
     "--size",
@@ -68,7 +67,11 @@ from numerai.cli.util.keys import get_provider_keys, get_numerai_keys, load_or_i
     "Check the Azure docs for more info about cron expressions: "
     "https://learn.microsoft.com/en-us/azure/azure-functions/functions-bindings-timer?tabs=python-v2%2Cin-process&pivots=programming-language-python#ncrontab-expressions",
 )
-@click.option("--timeout-minutes",type=str,help="Maximum time to allow this node to run when triggered. Defaults to 60 minutes. Valid for GCP only.")
+@click.option(
+    "--timeout-minutes",
+    type=str,
+    help="Maximum time to allow this node to run when triggered. Defaults to 60 minutes. Valid for GCP only.",
+)
 @click.option(
     "--register-webhook",
     "-r",
@@ -107,7 +110,7 @@ def config(ctx, verbose, provider, size, path, example, cron, timeout_minutes, r
 
     # Find any providers that will be affected by this config update
     affected_providers = [provider]
-    
+
     if nodes_config[node] is not None and "provider" in nodes_config[node]:
         affected_providers.append(nodes_config[node]["provider"])
     elif provider is None:
@@ -115,11 +118,7 @@ def config(ctx, verbose, provider, size, path, example, cron, timeout_minutes, r
     affected_providers = set(filter(None, affected_providers))
 
     nodes_config[node].update(
-        {
-            key: default
-            for key, default in DEFAULT_SETTINGS.items()
-            if key not in nodes_config[node]
-        }
+        {key: default for key, default in DEFAULT_SETTINGS.items() if key not in nodes_config[node]}
     )
     # update node as needed
     node_conf = nodes_config[node]
@@ -133,8 +132,12 @@ def config(ctx, verbose, provider, size, path, example, cron, timeout_minutes, r
         provider = node_conf["provider"]
 
     if provider == PROVIDER_GCP and size is not None and "mem-" in size:
-        click.secho("Invalid size: mem sizes are invalid for GCP due to sizing constraints with Google Cloud Run.", fg="red")
-        click.secho("Visit https://cloud.google.com/run/docs/configuring/services/memory-limits to learn more.", fg="red")
+        click.secho(
+            "Invalid size: mem sizes are invalid for GCP due to sizing constraints with Google Cloud Run.", fg="red"
+        )
+        click.secho(
+            "Visit https://cloud.google.com/run/docs/configuring/services/memory-limits to learn more.", fg="red"
+        )
         exit(1)
 
     if size:
@@ -144,7 +147,6 @@ def config(ctx, verbose, provider, size, path, example, cron, timeout_minutes, r
         node_conf["cpu"] = SIZE_PRESETS[DEFAULT_SIZE_GCP][0]
         node_conf["memory"] = SIZE_PRESETS[DEFAULT_SIZE_GCP][1]
 
-    
     if path:
         node_conf["path"] = os.path.abspath(path)
     if model_id:
@@ -174,9 +176,7 @@ def config(ctx, verbose, provider, size, path, example, cron, timeout_minutes, r
 
     # Azure only: Need to create a master Azure Container Registry and push a dummy placeholder image, before deploying the rest of the resources
     if provider == "azure":
-        provider_registry_conf = create_azure_registry(
-            provider, provider_keys, verbose=verbose
-        )
+        provider_registry_conf = create_azure_registry(provider, provider_keys, verbose=verbose)
         node_conf.update(provider_registry_conf)
         node_conf["docker_repo"] = f'{node_conf["acr_login_server"]}/{node}'
         docker.login(node_conf, verbose)
@@ -193,7 +193,9 @@ def config(ctx, verbose, provider, size, path, example, cron, timeout_minutes, r
         node_conf.update(provider_registry_conf)
         registry_parts = node_conf["registry_id"].split("/")
         node_conf["artifact_registry_login_url"] = f'https://{registry_parts[3]}-docker.pkg.dev/'
-        node_conf["docker_repo"] = f'{registry_parts[3]}-docker.pkg.dev/{registry_parts[1]}/numerai-container-registry/{node}:latest'
+        node_conf[
+            "docker_repo"
+        ] = f'{registry_parts[3]}-docker.pkg.dev/{registry_parts[1]}/numerai-container-registry/{node}:latest'
         docker.login(node_conf, verbose)
         try:
             docker.manifest_inspect(node_conf["docker_repo"], verbose)
@@ -207,7 +209,6 @@ def config(ctx, verbose, provider, size, path, example, cron, timeout_minutes, r
 
     # Apply terraform for any affected provider
     for affected_provider in affected_providers:
-
         if affected_provider in PROVIDERS:
             click.secho(f"Updating resources in {affected_provider}")
             terraform(
@@ -267,6 +268,7 @@ def create_azure_registry(provider, provider_keys, verbose):
     res = terraform("output -json acr_repo_details", True, provider).decode("utf-8")
     return json.loads(res)
 
+
 def create_gcp_registry(provider, verbose):
     """Creates a registry for GCP"""
     terraform("init -upgrade", verbose, provider)
@@ -274,13 +276,13 @@ def create_gcp_registry(provider, verbose):
         'apply -target="google_project_service.cloud_resource_manager" -auto-approve ',
         verbose,
         "gcp",
-        inputs={"node_config_file":"nodes.json"}
+        inputs={"node_config_file": "nodes.json"},
     )
     terraform(
         'apply -target="google_artifact_registry_repository.registry[0]" -auto-approve ',
         verbose,
         "gcp",
-        inputs={"node_config_file":"nodes.json"}
+        inputs={"node_config_file": "nodes.json"},
     )
     res = terraform("output -json artifact_registry_details", True, provider).decode("utf-8")
     return json.loads(res)

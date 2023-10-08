@@ -61,7 +61,7 @@ DEFAULT_SETTINGS = {
     "cpu": SIZE_PRESETS[DEFAULT_SIZE][0],
     "memory": SIZE_PRESETS[DEFAULT_SIZE][1],
     "path": DEFAULT_PATH,
-    "timeout_minutes": DEFAULT_TIMEOUT_MINUTES
+    "timeout_minutes": DEFAULT_TIMEOUT_MINUTES,
 }
 
 CONSTANTS_STR = f"""Default values (not your configured node values):

@@ -35,7 +35,7 @@ setup(
         "google-cloud-storage",
         "google-cloud-run",
         "google-cloud-artifact-registry",
-        "google-cloud-logging"
+        "google-cloud-logging",
     ],
     entry_points={
         "console_scripts": ["numerai=numerai:main"],
