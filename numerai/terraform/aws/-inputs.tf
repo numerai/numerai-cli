@@ -7,12 +7,13 @@ variable "region" {
 variable "az_count" {
   description = "Number of AZs to cover in a given region"
   type        = string
-  default     = "1"
+  default     = "2"
 }
 
 variable "node_config_file" {
   description = "Path to the json file used to configure nodes"
   type        = string
+  default     = "nodes.json"
 }
 
 variable "node_container_port" {
