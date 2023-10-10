@@ -3,6 +3,7 @@ import json
 from datetime import datetime, timedelta
 
 import boto3
+import botocore
 import click
 import requests
 from numerapi import base_api
@@ -168,7 +169,7 @@ def monitor(node, config, verbose, num_lines, log_type, follow_tail, trigger_id=
         raise exception_with_msg(f"Unknown log type '{log_type}', " f"must be one of {LOG_TYPES}")
 
     if config["provider"] == PROVIDER_AWS:
-        monitor_aws(node, config, num_lines, log_type, follow_tail, verbose)
+        monitor_aws(node, config, num_lines, log_type, follow_tail, verbose, trigger_id)
     elif config["provider"] == PROVIDER_AZURE:
         monitor_azure(node, config, verbose)
     elif config["provider"] == PROVIDER_GCP:
@@ -178,7 +179,7 @@ def monitor(node, config, verbose, num_lines, log_type, follow_tail, trigger_id=
         return
 
 
-def monitor_aws(node, config, num_lines, log_type, follow_tail, verbose):
+def monitor_aws(node, config, num_lines, log_type, follow_tail, verbose, trigger_id):
     aws_public, aws_secret = get_aws_keys()
     logs_client = boto3.client(
         "logs",
@@ -193,122 +194,92 @@ def monitor_aws(node, config, num_lines, log_type, follow_tail, verbose):
         aws_secret_access_key=aws_secret,
     )
 
-    if log_type == LOG_TYPE_WEBHOOK:
-        get_name_and_print_logs(logs_client, config["api_log_group"], num_lines)
-        get_name_and_print_logs(logs_client, config["webhook_log_group"], num_lines)
-        return
+    monitor_start_time = datetime.now(timezone.utc) - timedelta(minutes=1)
+    next_token = None
+    monitoring_done = False
+    time_lapse = datetime.now(timezone.utc) - monitor_start_time
 
-    if log_type == LOG_TYPE_CLUSTER:
-        family = config["cluster_log_group"]
+    if verbose and log_type == LOG_TYPE_WEBHOOK:
+        print_aws_webhook_logs(logs_client, config["webhook_log_group"], num_lines)
 
-        # wait until log stream has been created
-        i = 0
-        name = None
-        while name is None:
-            i += 1
-            task = get_recent_task_status_aws(ecs_client, node, verbose)
-            if task is None:
-                get_name_and_print_logs(logs_client, family, num_lines)
-                return
-            task_id = task["taskArn"].split("/")[-1]
-
-            streams = logs_client.describe_log_streams(logGroupName=family, logStreamNamePrefix=f"ecs/{node}/{task_id}")
-            streams = list(
-                filter(
-                    lambda s: s["logStreamName"].endswith(task_id),
-                    streams["logStreams"],
+    while time_lapse <= timedelta(minutes=5) and monitoring_done == False:
+        task, monitoring_done, message, color = get_recent_task_status_aws(
+            config["cluster_arn"], ecs_client, node, trigger_id
+        )
+        if task is None:
+            click.secho(f"No tasks yet, still waiting...\r", fg="yellow")
+        else:
+            if verbose and log_type == LOG_TYPE_CLUSTER:
+                next_token, _ = print_aws_logs(
+                    logs_client, config["cluster_log_group"], f'ecs/default/{task["taskArn"].split("/")[-1]}', next_token=next_token, fail_on_not_found=False
                 )
-            )
-
-            msg = f"Task status: {task['lastStatus']}."
-
-            if task["lastStatus"] == "STOPPED":
-                if len(streams) == 0:
-                    click.secho(f"{msg} No log file, did you deploy?", fg="yellow")
-                    exit(1)
-                else:
-                    click.secho(f"{msg} Checking for log events...", fg="green")
-                    name = streams[-1]["logStreamName"]
-                    break
-
-            elif len(streams) == 0:
-                click.secho(
-                    f"{msg} Waiting for log file to be created..." f"{'.' * i}\r",
-                    fg="yellow",
-                    nl=False,
-                )
-                time.sleep(2)
-
-            else:
-                name = streams[0]["logStreamName"]
-                click.secho(f"\n{msg} Log file created: {name}", fg="green")
+            elif not monitoring_done:
+                click.secho(message, fg=color)
+            if monitoring_done:
+                click.secho(message, fg=color)
                 break
 
-        # print out the logs
-        next_token, num_events = print_logs(logs_client, family, name, limit=num_lines)
-        total_events = num_events
-        while follow_tail:
-            next_token, num_events = print_logs(
-                logs_client,
-                family,
-                name,
-                next_token=(next_token if total_events > 0 else None),
-            )
-            total_events += num_events
-            if total_events == 0:
-                click.secho("Waiting for log events...\r", fg="yellow", nl=False)
+        time.sleep(5 if verbose else 15)
 
-            task = get_recent_task_status_aws(ecs_client, node, verbose)
-
-            if task["lastStatus"] == "STOPPED":
-                click.secho("\nTask is stopping...", fg="yellow")
-
-                if len(task["containers"]) and "reason" in task["containers"][0]:
-                    container = task["containers"][0]
-                    click.secho(
-                        f"Container Exit code: {container['exitCode']}\n" f"Reason: {container['reason']}",
-                        fg="red",
-                    )
-                break
-
-        start = time.time()
-        if total_events == 0:
-            while total_events == 0:
-                click.secho("No log events yet, still waiting...\r", fg="yellow", nl=False)
-                next_token, num_events = print_logs(logs_client, family, name)
-                total_events += num_events
-                if (time.time() - start) > 60 * 5:
-                    click.secho(
-                        f"\nTimeout after 5 minutes, please run the `numerai node status`"
-                        f"command for this model or visit the log console:\n"
-                        f"https://console.aws.amazon.com/cloudwatch/home?"
-                        f"region=us-east-1#logsV2:log-groups/log-group/$252Ffargate$252Fservice$252F{node}"
-                        f"/log-events/{name.replace('/', '$252F')}",
-                        fg="red",
-                    )
-                    break
-
-        return
+    if time_lapse >= timedelta(minutes=5) and not monitoring_done:
+        click.secho(
+            f"\nTimeout after 5 minutes, please run the `numerai node status`"
+            f"command for this model or visit the log console:\n"
+            f"https://console.aws.amazon.com/cloudwatch/home?"
+            f"region=us-east-1#logsV2:log-groups/log-group/$252Ffargate$252Fservice$252F{node}",
+            fg="red"
+        )
 
 
-# TODO: harden source of cluster arn
-def get_recent_task_status_aws(ecs_client, node, verbose):
-    tasks = ecs_client.list_tasks(cluster="numerai-submission", family=node)
+def get_recent_task_status_aws(cluster_arn, ecs_client, node, trigger_id):
+    tasks = ecs_client.list_tasks(cluster=cluster_arn, family=node)
+
+    pending_codes = ["PROVISIONING", "PENDING", "ACTIVATING"]
+    running_codes = ["RUNNING", "DEACTIVATING", "STOPPING"]
+    stopped_codes = ["DEPROVISIONING", "STOPPED", "DELETED"]
 
     # try to find stopped tasks
     if len(tasks["taskArns"]) == 0:
-        tasks = ecs_client.list_tasks(cluster="numerai-submission", desiredStatus="STOPPED", family=node)
+        tasks = ecs_client.list_tasks(cluster=cluster_arn, desiredStatus="STOPPED", family=node)
 
     if len(tasks["taskArns"]) == 0:
         click.secho(f"No recent tasks found...", fg="red")
         return None
 
-    tasks = ecs_client.describe_tasks(cluster="numerai-submission", tasks=tasks["taskArns"])
+    tasks = ecs_client.describe_tasks(cluster=cluster_arn, tasks=tasks["taskArns"])
 
-    return tasks["tasks"][-1]
+    matched_task = None
+
+    if trigger_id is not None:
+        for task in tasks["tasks"]:
+            matching_override = list(
+                filter(lambda e: e["value"] == trigger_id, task["overrides"]["containerOverrides"][0]["environment"])
+            )
+            if len(matching_override) == 1:
+                matched_task = task
+                break
+    else:
+        matched_task = tasks["tasks"][-1]
+
+    if matched_task == None:
+        return matched_task, False, 'Waiting for job to start...', 'yellow'
+    elif matched_task["lastStatus"] in stopped_codes and matched_task["containers"][0]["exitCode"] is not 0:
+        return (
+            matched_task,
+            True,
+            f'Job failed! Container exited with code {matched_task["containers"][0]["exitCode"]}\r',
+            'red',
+        )
+    elif matched_task["lastStatus"] in stopped_codes:
+        return matched_task, True, 'Job execution succeeded!\r', 'green'
+    elif matched_task["lastStatus"] in pending_codes:
+        return matched_task, False, 'Waiting for job to start...', 'yellow'
+    elif matched_task["lastStatus"] in running_codes:
+        return matched_task, False, 'Waiting for job to complete...', 'yellow'
+    return matched_task, False, 'Waiting for job to start...', 'yellow'
 
 
-def get_name_and_print_logs(logs_client, family, limit, next_token=None, raise_on_error=True):
+def print_aws_webhook_logs(logs_client, family, limit, next_token=None, raise_on_error=True):
     streams = logs_client.describe_log_streams(logGroupName=family, orderBy="LastEventTime", descending=True)
 
     if len(streams["logStreams"]) == 0:
@@ -322,18 +293,28 @@ def get_name_and_print_logs(logs_client, family, limit, next_token=None, raise_o
         )
 
     name = streams["logStreams"][0]["logStreamName"]
-    print_logs(logs_client, family, name, limit, next_token)
+    print_aws_logs(logs_client, family, name, limit, next_token)
     return True
 
 
-def print_logs(logs_client, family, name, limit=None, next_token=None):
+def print_aws_logs(logs_client, family, name, limit=None, next_token=None, fail_on_not_found=True):
     kwargs = {}  # boto is weird, and doesn't allow `None` for parameters
     if next_token is not None:
         kwargs["nextToken"] = next_token
     if limit is not None:
         kwargs["limit"] = limit
 
-    events = logs_client.get_log_events(logGroupName=family, logStreamName=name, **kwargs)
+    try:
+        events = logs_client.get_log_events(logGroupName=family, logStreamName=name, **kwargs)
+    except botocore.exceptions.ClientError as error:
+        if error.response['Error']['Code'] == 'ResourceNotFoundException':
+            if fail_on_not_found:
+                raise error
+            else:
+                return None, 0
+        else:
+            raise error
+
 
     if len(events["events"]) == limit:
         click.echo("...more log lines available: use -n option to get more...")
@@ -502,7 +483,7 @@ def monitor_gcp(node, config, verbose, log_type, trigger_id):
 
         time.sleep(5 if verbose else 15)
 
-    if time_lapse >= timedelta(minutes=15):
+    if time_lapse >= timedelta(minutes=15) and not monitoring_done:
         click.secho(
             f"Monitoring timed out after 15 minutes without determining the status of your container. Check the status of your container in the Google Cloud console.",
             fg="red",
