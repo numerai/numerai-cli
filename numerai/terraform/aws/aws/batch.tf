@@ -140,7 +140,7 @@ resource "aws_batch_job_definition" "node" {
   name = each.key
   type = "container"
   timeout {
-    attempt_duration_seconds = 3600
+    attempt_duration_seconds = each.value.timeout_minutes * 60
   }
 
   container_properties = jsonencode({
