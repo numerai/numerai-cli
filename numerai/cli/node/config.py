@@ -6,6 +6,7 @@ from numerapi import base_api
 from numerai.cli.constants import (
     DEFAULT_PROVIDER,
     DEFAULT_SIZE_GCP,
+    PROVIDER_AZURE,
     PROVIDERS,
     DEFAULT_SIZE,
     EXAMPLES,
@@ -123,13 +124,15 @@ def config(ctx, verbose, provider, size, path, example, cron, timeout_minutes, r
     # update node as needed
     node_conf = nodes_config[node]
 
-    if timeout_minutes:
-        node_conf["timeout_minutes"] = timeout_minutes
-
     if provider:
         node_conf["provider"] = provider
     else:
         provider = node_conf["provider"]
+
+    if timeout_minutes and provider == PROVIDER_AZURE:
+        click.secho("Timeout settings are unavailable for Azure and this input will be ignored.", fg="yellow")
+    elif timeout_minutes:
+        node_conf["timeout_minutes"] = timeout_minutes
 
     if provider == PROVIDER_GCP and size is not None and "mem-" in size:
         click.secho(
