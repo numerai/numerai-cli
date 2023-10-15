@@ -211,7 +211,11 @@ def monitor_aws(node, config, num_lines, log_type, follow_tail, verbose, trigger
         else:
             if verbose and log_type == LOG_TYPE_CLUSTER:
                 next_token, _ = print_aws_logs(
-                    logs_client, config["cluster_log_group"], f'ecs/default/{task["taskArn"].split("/")[-1]}', next_token=next_token, fail_on_not_found=False
+                    logs_client,
+                    config["cluster_log_group"],
+                    f'ecs/default/{task["taskArn"].split("/")[-1]}',
+                    next_token=next_token,
+                    fail_on_not_found=False,
                 )
             elif not monitoring_done:
                 click.secho(message, fg=color)
@@ -227,7 +231,7 @@ def monitor_aws(node, config, num_lines, log_type, follow_tail, verbose, trigger
             f"command for this model or visit the log console:\n"
             f"https://console.aws.amazon.com/cloudwatch/home?"
             f"region=us-east-1#logsV2:log-groups/log-group/$252Ffargate$252Fservice$252F{node}",
-            fg="red"
+            fg="red",
         )
 
 
@@ -243,8 +247,9 @@ def get_recent_task_status_aws(cluster_arn, ecs_client, node, trigger_id):
         tasks = ecs_client.list_tasks(cluster=cluster_arn, desiredStatus="STOPPED", family=node)
 
     if len(tasks["taskArns"]) == 0:
-        click.secho(f"No recent tasks found...", fg="red")
-        return None
+        message = "No recent tasks found..." if trigger_id is None else "No tasks yet, still waiting..."
+        color = "red" if trigger_id is None else "yellow"
+        return None, trigger_id is None, message, color
 
     tasks = ecs_client.describe_tasks(cluster=cluster_arn, tasks=tasks["taskArns"])
 
@@ -314,7 +319,6 @@ def print_aws_logs(logs_client, family, name, limit=None, next_token=None, fail_
                 return None, 0
         else:
             raise error
-
 
     if len(events["events"]) == limit:
         click.echo("...more log lines available: use -n option to get more...")

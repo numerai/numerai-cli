@@ -33,6 +33,33 @@ resource "aws_iam_role_policy_attachment" "ecs_task_execution_role" {
 #############################
 # Batch compute environment #
 #############################
+data "aws_iam_policy_document" "ec2_assume_role" {
+  statement {
+    effect = "Allow"
+
+    principals {
+      type        = "Service"
+      identifiers = ["ec2.amazonaws.com"]
+    }
+
+    actions = ["sts:AssumeRole"]
+  }
+}
+
+resource "aws_iam_role" "batch_ecs_instance_role" {
+  name               = "batch_ecs_instance_role"
+  assume_role_policy = data.aws_iam_policy_document.ec2_assume_role.json
+}
+
+resource "aws_iam_role_policy_attachment" "batch_ecs_instance_role" {
+  role       = aws_iam_role.batch_ecs_instance_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role"
+}
+
+resource "aws_iam_instance_profile" "batch_ecs_instance_role" {
+  name = "batch_ecs_instance_role"
+  role = aws_iam_role.batch_ecs_instance_role.name
+}
 
 data "aws_iam_policy_document" "batch_assume_role" {
   statement {
@@ -61,6 +88,8 @@ resource "aws_batch_compute_environment" "node" {
   compute_environment_name = local.node_prefix
 
   compute_resources {
+    instance_role = aws_iam_instance_profile.batch_ecs_instance_role.arn
+
     max_vcpus = 64
 
     security_group_ids = [
@@ -69,7 +98,9 @@ resource "aws_batch_compute_environment" "node" {
 
     subnets = [for s in aws_subnet.public : s.id]
 
-    type = "FARGATE"
+    type                = "EC2"
+    allocation_strategy = "BEST_FIT"
+    instance_type       = ["optimal"]
   }
 
   service_role = aws_iam_role.aws_batch_service_role.arn
@@ -85,7 +116,7 @@ resource "aws_batch_compute_environment" "node" {
 resource "aws_cloudwatch_log_group" "ecs" {
   for_each = { for name, config in var.nodes : name => config }
 
-  name              = "/fargate/service/${each.key}"
+  name              = "/ec2/service/${each.key}"
   retention_in_days = "14"
 }
 
@@ -112,17 +143,9 @@ resource "aws_batch_job_definition" "node" {
     attempt_duration_seconds = 3600
   }
 
-  platform_capabilities = [
-    "FARGATE"
-  ]
-
   container_properties = jsonencode({
     image            = aws_ecr_repository.node[each.key].repository_url
     executionRoleArn = aws_iam_role.ecs_task_execution_role.arn
-
-    fargatePlatformConfiguration = {
-      platformVersion = "LATEST"
-    }
 
     logConfiguration = {
       "logDriver" : "awslogs",
@@ -131,10 +154,6 @@ resource "aws_batch_job_definition" "node" {
         "awslogs-region" : var.aws_region,
         "awslogs-stream-prefix" : "ecs"
       }
-    }
-
-    networkConfiguration = {
-      assignPublicIp = "ENABLED"
     }
 
     resourceRequirements = [
