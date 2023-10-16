@@ -6,6 +6,7 @@ from numerapi import base_api
 from numerai.cli.constants import (
     DEFAULT_PROVIDER,
     DEFAULT_SIZE_GCP,
+    PROVIDER_AWS,
     PROVIDER_AZURE,
     PROVIDERS,
     DEFAULT_SIZE,
@@ -42,6 +43,17 @@ from numerai.cli.util.keys import get_provider_keys, get_numerai_keys, load_or_i
     type=str,
     help=f"CPU credits (cores * 1024) and Memory (in MiB) used in the deployed container. "
     f"Defaults to {DEFAULT_SIZE} (run `numerai list-constants` to see options).",
+)
+@click.option(
+    "--cpu",
+    type=str,
+    help=f"For AWS only, CPUs to allocate to your node" f"Defaults to 2 (run `numerai list-constants` to see options).",
+)
+@click.option(
+    "--memory",
+    type=str,
+    help=f"For AWS only, memory in GB to allocate to your node"
+    f"Defaults to 16 (run `numerai list-constants` to see options).",
 )
 @click.option(
     "--path",
@@ -81,7 +93,7 @@ from numerai.cli.util.keys import get_provider_keys, get_numerai_keys, load_or_i
     "Use in conjunction with options that prevent webhook auto-registering.",
 )
 @click.pass_context
-def config(ctx, verbose, provider, size, path, example, cron, timeout_minutes, register_webhook):
+def config(ctx, verbose, provider, size, cpu, memory, path, example, cron, timeout_minutes, register_webhook):
     """
     Uses Terraform to create a full Numerai Compute cluster in your desired provider.
     Prompts for your cloud provider and Numerai API keys on first run, caches them in $HOME/.numerai.
@@ -143,7 +155,29 @@ def config(ctx, verbose, provider, size, path, example, cron, timeout_minutes, r
         )
         exit(1)
 
-    if size:
+    if size and (cpu or memory):
+        click.secho("Cannot provide size and CPU or Memory. Either use size or provide CPU and Memory.", fg="red")
+        exit(1)
+    if (cpu or memory) and node_conf["provider"] != PROVIDER_AWS:
+        click.secho(
+            "Specifying CPU and Memory is only valid for AWS nodes. (run `numerai list-constants` to see options).",
+            fg="red",
+        )
+        exit(1)
+    elif (cpu or memory) and (not (cpu or node_conf["cpu"]) or not (memory or node_conf["memory"])):
+        click.secho(
+            "One of CPU and Memory is missing either from your options or from your node configuration."
+            "Provide both CPU and Memory to configure node size, or use size."
+            "(run `numerai list-constants` to see options).",
+            fg="red",
+        )
+        exit(1)
+    elif cpu or memory:
+        if cpu:
+            node_conf["cpu"] = int(cpu) * 1024
+        if memory:
+            node_conf["memory"] = int(memory) * 1024
+    elif size:
         node_conf["cpu"] = SIZE_PRESETS[size][0]
         node_conf["memory"] = SIZE_PRESETS[size][1]
     elif node_conf["provider"] == PROVIDER_GCP and using_defaults:
