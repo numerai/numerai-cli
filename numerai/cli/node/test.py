@@ -196,13 +196,15 @@ def monitor_aws(node, config, num_lines, log_type, follow_tail, verbose, trigger
 
     monitor_start_time = datetime.now(timezone.utc) - timedelta(minutes=1)
     next_token = None
+    log_lines = 0
     monitoring_done = False
     time_lapse = datetime.now(timezone.utc) - monitor_start_time
+    task = None
 
     if verbose and log_type == LOG_TYPE_WEBHOOK:
         print_aws_webhook_logs(logs_client, config["webhook_log_group"], num_lines)
 
-    while time_lapse <= timedelta(minutes=5) and monitoring_done == False:
+    while time_lapse <= timedelta(minutes=15) and monitoring_done == False:
         task, monitoring_done, message, color = get_recent_task_status_aws(
             config["cluster_arn"], ecs_client, node, trigger_id
         )
@@ -210,13 +212,16 @@ def monitor_aws(node, config, num_lines, log_type, follow_tail, verbose, trigger
             click.secho(f"No tasks yet, still waiting...\r", fg="yellow")
         else:
             if verbose and log_type == LOG_TYPE_CLUSTER:
-                next_token, _ = print_aws_logs(
+                next_token, new_log_lines = print_aws_logs(
                     logs_client,
                     config["cluster_log_group"],
                     f'ecs/default/{task["taskArn"].split("/")[-1]}',
                     next_token=next_token,
                     fail_on_not_found=False,
                 )
+                log_lines += new_log_lines
+                if log_lines == 0:
+                    next_token = None
             elif not monitoring_done:
                 click.secho(message, fg=color)
             if monitoring_done:
@@ -224,8 +229,31 @@ def monitor_aws(node, config, num_lines, log_type, follow_tail, verbose, trigger
                 break
 
         time.sleep(5 if verbose else 15)
+        time_lapse = datetime.now(timezone.utc) - monitor_start_time
 
-    if time_lapse >= timedelta(minutes=5) and not monitoring_done:
+    if monitoring_done and time_lapse <= timedelta(minutes=15) and verbose and log_lines == 0:
+        click.secho(
+            "Node executed successfully, but there are no logs yet.\n"
+            "You can safely exit at this time, or the  CLI will try to collect logs for the next 120 seconds.",
+            fg="yellow",
+        )
+        log_monitor_start_time = datetime.now(timezone.utc) - timedelta(minutes=0)
+        log_time_lapse = datetime.now(timezone.utc) - log_monitor_start_time
+        while log_time_lapse <= timedelta(minutes=2) and log_lines == 0:
+            time.sleep(5)
+            log_time_lapse <= datetime.now(timezone.utc) - log_monitor_start_time
+            next_token, new_log_lines = print_aws_logs(
+                logs_client,
+                config["cluster_log_group"],
+                f'ecs/default/{task["taskArn"].split("/")[-1]}',
+                next_token=next_token,
+                fail_on_not_found=False,
+            )
+            log_lines += new_log_lines
+            if log_lines == 0:
+                    next_token = None
+            
+    elif time_lapse >= timedelta(minutes=15) and not monitoring_done:
         click.secho(
             f"\nTimeout after 5 minutes, please run the `numerai node status`"
             f"command for this model or visit the log console:\n"
@@ -268,7 +296,7 @@ def get_recent_task_status_aws(cluster_arn, ecs_client, node, trigger_id):
 
     if matched_task == None:
         return matched_task, False, 'Waiting for job to start...', 'yellow'
-    elif matched_task["lastStatus"] in stopped_codes and matched_task["containers"][0]["exitCode"] is not 0:
+    elif matched_task["lastStatus"] in stopped_codes and "reason" in matched_task["containers"][0]:
         return (
             matched_task,
             True,
@@ -308,7 +336,6 @@ def print_aws_logs(logs_client, family, name, limit=None, next_token=None, fail_
         kwargs["nextToken"] = next_token
     if limit is not None:
         kwargs["limit"] = limit
-
     try:
         events = logs_client.get_log_events(logGroupName=family, logStreamName=name, **kwargs)
     except botocore.exceptions.ClientError as error:
