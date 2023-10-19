@@ -10,6 +10,7 @@ your AWS account for use with the Numerai CLI.
 5. Select the "JSON" tab and overwrite the existing values with the following policy document:
 
     ```json
+
     {
         "Version": "2012-10-17",
         "Statement": [
@@ -17,7 +18,6 @@ your AWS account for use with the Numerai CLI.
                 "Sid": "VisualEditor0",
                 "Effect": "Allow",
                 "Action": [
-                    "apigateway:*",
                     "logs:*",
                     "s3:List*",
                     "ecs:*",
@@ -25,7 +25,8 @@ your AWS account for use with the Numerai CLI.
                     "ecr:*",
                     "ec2:*",
                     "iam:*",
-                    "events:*"
+                    "events:*",
+                    "batch:*"
                 ],
                 "Resource": "*"
             }
@@ -37,10 +38,10 @@ your AWS account for use with the Numerai CLI.
 
 6. Click "Next" at the bottom until you reach "Review Policy"
 7. Name your policy (e.g. "compute-setup-policy") and remember this name, then hit "Create Policy"
-8. Give the user a name (like "numerai-compute") and select "Programmatic access"
-9. For permissions, click "Attach existing policies directly"
-10. Search for the Policy you just created and check the box next to it
-11. Continue through remaining pages and click "Create User"
+8. Create a [new IAM User](https://us-east-1.console.aws.amazon.com/iamv2/home?region=us-east-1#/users/create)
+9. Give your user a name (like "numerai-compute") and click "Next"
+10. Click "Attach policies directly" and search for the policy you created in the previous steps. Click the checkbox next to your policy and click "Next" and then "Create User"
+11. Click on the name of your user and then click the "Security credentials" tab. Scroll down to "Access keys", click "Create access key", click "Command Line Interface", check the confirmation box, and click "Next" and "Create access key".
 12. Record the "Access key ID" and "Secret access key" from the final step.
 
 [Return to main guide](../README.md#getting-started)
