@@ -143,6 +143,19 @@ resource "aws_batch_job_definition" "node" {
     attempt_duration_seconds = each.value.timeout_minutes * 60
   }
 
+  retry_strategy {
+    attempts = 2
+
+    evaluate_on_exit {
+      action    = "RETRY"
+      on_reason = "Task failed to start"
+    }
+    evaluate_on_exit {
+      action    = "EXIT"
+      on_reason = "*"
+    }
+  }
+
   container_properties = jsonencode({
     image            = aws_ecr_repository.node[each.key].repository_url
     executionRoleArn = aws_iam_role.ecs_task_execution_role.arn
