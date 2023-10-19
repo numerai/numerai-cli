@@ -209,7 +209,7 @@ def monitor_aws(node, config, num_lines, log_type, follow_tail, verbose, trigger
             config["cluster_arn"], ecs_client, node, trigger_id
         )
         if task is None:
-            click.secho(f"No tasks yet, still waiting...\r", fg="yellow")
+            click.secho(message, fg=color)
         else:
             if verbose and log_type == LOG_TYPE_CLUSTER:
                 next_token, new_log_lines = print_aws_logs(
@@ -222,16 +222,14 @@ def monitor_aws(node, config, num_lines, log_type, follow_tail, verbose, trigger
                 log_lines += new_log_lines
                 if log_lines == 0:
                     next_token = None
-            elif not monitoring_done:
+            else:
                 click.secho(message, fg=color)
-            if monitoring_done:
-                click.secho(message, fg=color)
-                break
 
-        time.sleep(5 if verbose else 15)
-        time_lapse = datetime.now(timezone.utc) - monitor_start_time
+        if not monitoring_done:
+            time.sleep(5 if verbose else 15)
+            time_lapse = datetime.now(timezone.utc) - monitor_start_time
 
-    if monitoring_done and time_lapse <= timedelta(minutes=15) and verbose and log_lines == 0:
+    if monitoring_done and time_lapse <= timedelta(minutes=15) and verbose and log_lines == 0 and task is not None:
         click.secho(
             "Node executed successfully, but there are no logs yet.\n"
             "You can safely exit at this time, or the  CLI will try to collect logs for the next 120 seconds.",
@@ -251,8 +249,8 @@ def monitor_aws(node, config, num_lines, log_type, follow_tail, verbose, trigger
             )
             log_lines += new_log_lines
             if log_lines == 0:
-                    next_token = None
-            
+                next_token = None
+
     elif time_lapse >= timedelta(minutes=15) and not monitoring_done:
         click.secho(
             f"\nTimeout after 5 minutes, please run the `numerai node status`"
@@ -275,7 +273,7 @@ def get_recent_task_status_aws(cluster_arn, ecs_client, node, trigger_id):
         tasks = ecs_client.list_tasks(cluster=cluster_arn, desiredStatus="STOPPED", family=node)
 
     if len(tasks["taskArns"]) == 0:
-        message = "No recent tasks found..." if trigger_id is None else "No tasks yet, still waiting..."
+        message = "No recent tasks found!" if trigger_id is None else "No tasks yet, still waiting..."
         color = "red" if trigger_id is None else "yellow"
         return None, trigger_id is None, message, color
 
