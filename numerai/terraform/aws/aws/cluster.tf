@@ -113,7 +113,7 @@ resource "aws_batch_compute_environment" "node" {
 # Job Setup #
 #############
 
-resource "aws_cloudwatch_log_group" "ecs" {
+resource "aws_cloudwatch_log_group" "ec2" {
   for_each = { for name, config in var.nodes : name => config }
 
   name              = "/ec2/service/${each.key}"
@@ -163,7 +163,7 @@ resource "aws_batch_job_definition" "node" {
     logConfiguration = {
       "logDriver" : "awslogs",
       "options" : {
-        "awslogs-group" : aws_cloudwatch_log_group.ecs[each.key].name,
+        "awslogs-group" : aws_cloudwatch_log_group.ec2[each.key].name,
         "awslogs-region" : var.aws_region,
         "awslogs-stream-prefix" : "ecs"
       }
