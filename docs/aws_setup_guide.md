@@ -42,3 +42,5 @@ your AWS account for use with the Numerai CLI.
 10. Search for the Policy you just created and check the box next to it
 11. Continue through remaining pages and click "Create User"
 12. Record the "Access key ID" and "Secret access key" from the final step.
+
+[Return to main guide](../README.md#getting-started)

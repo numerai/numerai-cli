@@ -47,12 +47,20 @@ def list_constants():
     click.secho("SIZE_PRESETS:", fg="green")
     for size, preset in SIZE_PRESETS.items():
         suffix = "(default)" if size == DEFAULT_SIZE else ""
+        suffix = "(default - gcp)" if size == DEFAULT_SIZE_GCP else suffix
         click.secho(
             f"  {size} -> cpus: {preset[0] / 1024}, "
             f"mem: {preset[1] / 1024} GB {suffix}",
-            fg="green" if size == DEFAULT_SIZE else "yellow",
+            fg="green"
+            if size == DEFAULT_SIZE or size == DEFAULT_SIZE_GCP
+            else "yellow",
         )
     click.secho(
-        "See https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-cpu-memory-error.html "
-        "for more info about size presets."
+        "Due to GCP Cloud Run size constraints, 'mem' sizes are not allowed when using GCP."
+    )
+    click.secho(
+        "See https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-cpu-memory-error.html for AWS,\n"
+        "https://learn.microsoft.com/en-us/azure/container-apps/containers#configuration for Azure,\n"
+        "or https://cloud.google.com/run/docs/configuring/services/memory-limits for GCP \n"
+        "to learn more info about allowed size presets for your provider."
     )

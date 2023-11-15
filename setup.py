@@ -31,8 +31,11 @@ setup(
         "azure-mgmt-containerregistry",
         "azure-containerregistry",
         "azure-data-tables",
-        "azure-mgmt-storage"
-        # "azure.monitor.query"
+        "azure-mgmt-storage",
+        "google-cloud-storage",
+        "google-cloud-run",
+        "google-cloud-artifact-registry",
+        "google-cloud-logging",
     ],
     entry_points={
         "console_scripts": ["numerai=numerai:main"],

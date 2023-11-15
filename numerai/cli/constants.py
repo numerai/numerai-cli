@@ -8,6 +8,7 @@ TOURNAMENT_SIGNALS = 11
 PACKAGE_PATH = os.path.dirname(__file__)
 CONFIG_PATH = os.path.join(str(Path.home()), ".numerai")
 KEYS_PATH = os.path.join(CONFIG_PATH, ".keys")
+GCP_KEYS_PATH = os.path.join(CONFIG_PATH, ".gcp_keys")
 NODES_PATH = os.path.join(CONFIG_PATH, "nodes.json")
 TERRAFORM_PATH = os.path.join(PACKAGE_PATH, "..", "terraform")
 EXAMPLE_PATH = os.path.join(PACKAGE_PATH, "..", "examples")
@@ -16,7 +17,8 @@ EXAMPLES = os.listdir(EXAMPLE_PATH)
 
 PROVIDER_AWS = "aws"
 PROVIDER_AZURE = "azure"
-PROVIDERS = [PROVIDER_AWS, PROVIDER_AZURE]
+PROVIDER_GCP = "gcp"
+PROVIDERS = [PROVIDER_AWS, PROVIDER_AZURE, PROVIDER_GCP]
 
 LOG_TYPE_WEBHOOK = "webhook"
 LOG_TYPE_CLUSTER = "cluster"
@@ -50,13 +52,16 @@ SIZE_PRESETS = {
 
 DEFAULT_EXAMPLE = "tournament-python3"
 DEFAULT_SIZE = "mem-md"
+DEFAULT_SIZE_GCP = "cpu-md"
 DEFAULT_PROVIDER = PROVIDER_AWS
 DEFAULT_PATH = os.getcwd()
+DEFAULT_TIMEOUT_MINUTES = 60
 DEFAULT_SETTINGS = {
     "provider": DEFAULT_PROVIDER,
     "cpu": SIZE_PRESETS[DEFAULT_SIZE][0],
     "memory": SIZE_PRESETS[DEFAULT_SIZE][1],
     "path": DEFAULT_PATH,
+    "timeout_minutes": DEFAULT_TIMEOUT_MINUTES,
 }
 
 CONSTANTS_STR = f"""Default values (not your configured node values):

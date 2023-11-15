@@ -14,3 +14,5 @@ Follow the steps below to give the Numerai CLI access to your Azure account.
 9. We need to give your app access to your subscription. Navigate back to [Subscriptions](https://portal.azure.com/#view/Microsoft_Azure_Billing/SubscriptionsBlade) and select the subscription you created earlier.
 10. Select `Access control (IAM)` from the menu on the left, click `+ Add`, and from the drop down menu select `Add role assignment`. Under `Role`, select `Privileged administrator roles`, and then `Owner`.
 11. Next we will assign Owner permissions to your app. Select `Members` and then click `+ Select members`. In the search box, type the name of the app you created earlier and hit the return key. When your app appears, select your app and then click the `Select` button at the bottom of the screen. Finally, click `Review and assign`.
+
+[Return to main guide](../README.md#getting-started)

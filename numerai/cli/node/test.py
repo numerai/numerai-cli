@@ -11,7 +11,12 @@ from numerai.cli.constants import *
 from numerai.cli.util import docker
 from numerai.cli.util.debug import exception_with_msg
 from numerai.cli.util.files import load_or_init_nodes
-from numerai.cli.util.keys import get_aws_keys, get_numerai_keys, get_azure_keys
+from numerai.cli.util.keys import (
+    get_aws_keys,
+    get_numerai_keys,
+    get_azure_keys,
+    get_gcp_keys,
+)
 
 from azure.identity import ClientSecretCredential
 from azure.mgmt.storage import StorageManagementClient
@@ -20,6 +25,8 @@ from azure.data.tables import TableServiceClient, TableClient
 from datetime import datetime, timedelta, timezone
 import pandas as pd
 import json
+import google.cloud.run_v2 as run_v2
+import google.cloud.logging_v2 as logging_v2
 
 
 @click.command()
@@ -83,11 +90,8 @@ def test(ctx, local, command, verbose):
                 },
                 authorization=True,
             )
-            if provider == "aws":
+            if provider in PROVIDERS:
                 trigger_id = res["data"]["triggerModelWebhook"]
-            elif provider == "azure":
-                trigger_id = res["data"]["triggerModelWebhook"]
-
             else:
                 click.secho(f"Unsupported provider: '{provider}'", fg="red")
                 exit(1)
@@ -105,7 +109,15 @@ def test(ctx, local, command, verbose):
         return
 
     click.secho("checking task status...")
-    monitor(node, node_config, verbose, 15, LOG_TYPE_CLUSTER, follow_tail=True)
+    monitor(
+        node,
+        node_config,
+        verbose,
+        15,
+        LOG_TYPE_CLUSTER,
+        follow_tail=True,
+        trigger_id=trigger_id,
+    )
     if node_config["provider"] == "azure":
         time.sleep(5)
 
@@ -166,7 +178,7 @@ def test(ctx, local, command, verbose):
     click.secho("Test complete, your model now submits automatically!", fg="green")
 
 
-def monitor(node, config, verbose, num_lines, log_type, follow_tail):
+def monitor(node, config, verbose, num_lines, log_type, follow_tail, trigger_id=None):
     if log_type not in LOG_TYPES:
         raise exception_with_msg(
             f"Unknown log type '{log_type}', " f"must be one of {LOG_TYPES}"
@@ -176,6 +188,8 @@ def monitor(node, config, verbose, num_lines, log_type, follow_tail):
         monitor_aws(node, config, num_lines, log_type, follow_tail, verbose)
     elif config["provider"] == PROVIDER_AZURE:
         monitor_azure(node, config, verbose)
+    elif config["provider"] == PROVIDER_GCP:
+        monitor_gcp(node, config, verbose, log_type, trigger_id)
     else:
         click.secho(f"Unsupported provider: '{config['provider']}'", fg="red")
         return
@@ -233,6 +247,7 @@ def monitor_aws(node, config, num_lines, log_type, follow_tail, verbose):
                     exit(1)
                 else:
                     click.secho(f"{msg} Checking for log events...", fg="green")
+                    name = streams[-1]["logStreamName"]
                     break
 
             elif len(streams) == 0:
@@ -315,7 +330,8 @@ def get_recent_task_status_aws(ecs_client, node, verbose):
     tasks = ecs_client.describe_tasks(
         cluster="numerai-submission", tasks=tasks["taskArns"]
     )
-    return tasks["tasks"][0]
+
+    return tasks["tasks"][-1]
 
 
 def get_name_and_print_logs(
@@ -499,6 +515,177 @@ def azure_refresh_and_print_log(
     return monitoring_done, shown_log_row_key
 
 
+def monitor_gcp(node, config, verbose, log_type, trigger_id):
+    ## Write a function that uses the gcloud runv2 executions SDK to get executions that are currently running
+    monitor_start_time = datetime.now(timezone.utc) - timedelta(minutes=1)
+
+    gcp_key_path = get_gcp_keys()
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = gcp_key_path
+    client = run_v2.ExecutionsClient()
+
+    # Setup logging if necessary
+    previous_insert_id = "0"
+    logging_client = None
+    if verbose:
+        logging_client = logging_v2.Client()
+
+    time_lapse = datetime.now(timezone.utc) - monitor_start_time
+    monitoring_done = False
+
+    if verbose and log_type == LOG_TYPE_WEBHOOK:
+        print_gcp_webhook_logs(logging_client, config["job_id"])
+
+    while time_lapse <= timedelta(minutes=15) and monitoring_done == False:
+        executions = get_gcp_job_executions(client, config["job_id"], trigger_id)
+        if len(executions) == 0:
+            click.secho(f"No job executions yet, still waiting...\r", fg="yellow")
+        else:
+            monitoring_done, message, color = check_gcp_execution_status(executions[0])
+            if verbose and log_type == LOG_TYPE_CLUSTER:
+                previous_insert_id = print_gcp_execution_logs(
+                    logging_client, config["job_id"], executions[0], previous_insert_id
+                )
+            elif not monitoring_done:
+                click.secho(message, fg=color)
+
+            if monitoring_done:
+                click.secho(message, fg=color)
+                break
+
+        time.sleep(5 if verbose else 15)
+
+    if time_lapse >= timedelta(minutes=15):
+        click.secho(
+            f"Monitoring timed out after 15 minutes without determining the status of your container. Check the status of your container in the Google Cloud console.",
+            fg="red",
+        )
+        exit(1)
+
+
+def get_gcp_job_executions(client, job_id, trigger_id):
+    # Initialize request argument(s)
+    request = run_v2.ListExecutionsRequest(
+        parent=job_id,
+    )
+
+    page_result = client.list_executions(request=request)
+    executions = []
+    # Handle the response
+    for response in page_result:
+        env = response.template.containers[0].env
+        for env_var in env:
+            if env_var.name == "TRIGGER_ID" and env_var.value == trigger_id:
+                executions.append(response)
+            elif trigger_id == None:
+                executions.append(response)
+
+    if trigger_id == None:
+        executions = [executions[0]]
+    return executions
+
+
+def check_gcp_execution_status(execution):
+    condition_based_results = {
+        run_v2.types.Condition.State.CONDITION_SUCCEEDED: [
+            True,
+            "Job execution succeeded!\r",
+            "green",
+        ],
+        run_v2.types.Condition.State.CONDITION_RECONCILING: [
+            False,
+            "Waiting for job to complete...\r",
+            "yellow",
+        ],
+        run_v2.types.Condition.State.CONDITION_PENDING: [
+            False,
+            "Waiting for job to complete...\r",
+            "yellow",
+        ],
+        run_v2.types.Condition.State.CONDITION_FAILED: [False, "Job failed!\r", "red"],
+    }
+
+    completed_condition = list(
+        filter(lambda c: c.type_ == "Completed", execution.conditions)
+    )
+    if len(completed_condition) == 1:
+        if completed_condition[0].state in list((condition_based_results.keys())):
+            return condition_based_results[completed_condition[0].state]
+        else:
+            return (
+                True,
+                f"Unknown job status! Exiting test.\nJob status: {completed_condition.state}\r",
+                "red",
+            )
+    else:
+        return (
+            False,
+            "No job status found. Waiting for job status to resolve....\r",
+            "yellow",
+        )
+
+
+def print_gcp_execution_logs(logging_client, job_id, execution, previous_insert_id):
+    execution_name = execution.name.split("/")[-1]
+
+    filter = " ".join(
+        [
+            'resource.type = "cloud_run_job"',
+            f'resource.labels.job_name = "{job_id.split("/")[-1]}"',
+            f'labels."run.googleapis.com/execution_name" = "{execution_name}"',
+            'labels."run.googleapis.com/task_index" = "0"',
+            f'insertId > "{previous_insert_id}"',
+        ]
+    )
+    page_response = logging_client.list_entries(filter_=filter)
+    insert_id = previous_insert_id
+    for log in page_response:
+        click.secho(f"{log.timestamp}: {log.payload}")
+        insert_id = log.insert_id
+
+    if insert_id == "0":
+        click.secho(f"Waiting for logs to begin...\r", fg="yellow")
+
+    return insert_id
+
+
+def print_gcp_webhook_logs(logging_client, job_id):
+    monitor_start_time = datetime.now(timezone.utc) - timedelta(minutes=30)
+    click.secho("Looking for most recent webhook execution...\r", fg="yellow")
+
+    filter = " ".join(
+        [
+            'resource.type = "cloud_function"',
+            f'resource.labels.function_name = "{job_id.split("/")[-1]}"',
+            f'Timestamp>="{monitor_start_time.isoformat()}"',
+        ]
+    )
+
+    page_response = logging_client.list_entries(filter_=filter)
+
+    execution_id = ""
+    log_entries = []
+    for result in page_response:
+        log_entries.append(
+            {
+                "payload": result.payload,
+                "execution_id": result.labels["execution_id"],
+                "timestamp": result.timestamp,
+            }
+        )
+        execution_id = result.labels["execution_id"]
+
+    for log in log_entries:
+        if log["execution_id"] == execution_id:
+            click.secho(f"{log['timestamp']}: {log['payload']}")
+
+    if len(log_entries) == 0:
+        click.secho("No webhook logs in the past 30 minutes.\r", fg="yellow")
+        click.secho(
+            "Try executing your webhook again or run numerai node deploy to make sure your webhook URL is up to date\r",
+            fg="yellow",
+        )
+
+
 @click.command()
 @click.option("--verbose", "-v", is_flag=True)
 @click.option(
@@ -511,7 +698,12 @@ def azure_refresh_and_print_log(
     default=LOG_TYPE_CLUSTER,
     help=f"The log type to lookup. One of {LOG_TYPES}. Default is {LOG_TYPE_CLUSTER}.",
 )
-@click.option("--follow-tail", "-f", is_flag=True, help="tail the logs constantly")
+@click.option(
+    "--follow-tail",
+    "-f",
+    is_flag=True,
+    help="tail the logs of a running task (AWS only)",
+)
 @click.pass_context
 def status(ctx, verbose, num_lines, log_type, follow_tail):
     """

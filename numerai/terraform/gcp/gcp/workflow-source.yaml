@@ -1,0 +1,20 @@
+main:
+  params: [event]
+  steps:
+    - init:
+        assign:
+          - trigger_id: $${event.trigger_id}
+    - run_job:
+        call: googleapis.run.v1.namespaces.jobs.run
+        args:
+          name: namespaces/${project}/jobs/${job}
+          location: ${region}
+          body:
+            overrides:
+              containerOverrides:
+                env:
+                  - name: TRIGGER_ID
+                    value: $${trigger_id}
+        result: job_execution
+    - finish:
+        return: $${job_execution}
