@@ -11,7 +11,12 @@ from numerai.cli.constants import *
 from numerai.cli.util import docker
 from numerai.cli.util.debug import exception_with_msg
 from numerai.cli.util.files import load_or_init_nodes
-from numerai.cli.util.keys import get_aws_keys, get_numerai_keys, get_azure_keys, get_gcp_keys
+from numerai.cli.util.keys import (
+    get_aws_keys,
+    get_numerai_keys,
+    get_azure_keys,
+    get_gcp_keys,
+)
 
 from azure.identity import ClientSecretCredential
 from azure.mgmt.storage import StorageManagementClient
@@ -104,7 +109,15 @@ def test(ctx, local, command, verbose):
         return
 
     click.secho("checking task status...")
-    monitor(node, node_config, verbose, 15, LOG_TYPE_CLUSTER, follow_tail=True, trigger_id=trigger_id)
+    monitor(
+        node,
+        node_config,
+        verbose,
+        15,
+        LOG_TYPE_CLUSTER,
+        follow_tail=True,
+        trigger_id=trigger_id,
+    )
     if node_config["provider"] == "azure":
         time.sleep(5)
 
@@ -131,7 +144,9 @@ def test(ctx, local, command, verbose):
     tournament = TOURNAMENT_SIGNALS if is_signals else TOURNAMENT_NUMERAI
     curr_round = api.get_current_round(tournament)
     latest_subs = sorted(
-        filter(lambda sub: sub["round"]["number"] == curr_round, res["data"]["submissions"]),
+        filter(
+            lambda sub: sub["round"]["number"] == curr_round, res["data"]["submissions"]
+        ),
         key=lambda sub: sub["insertedAt"],
         reverse=True,
     )
@@ -165,7 +180,9 @@ def test(ctx, local, command, verbose):
 
 def monitor(node, config, verbose, num_lines, log_type, follow_tail, trigger_id=None):
     if log_type not in LOG_TYPES:
-        raise exception_with_msg(f"Unknown log type '{log_type}', " f"must be one of {LOG_TYPES}")
+        raise exception_with_msg(
+            f"Unknown log type '{log_type}', " f"must be one of {LOG_TYPES}"
+        )
 
     if config["provider"] == PROVIDER_AWS:
         monitor_aws(node, config, num_lines, log_type, follow_tail, verbose)
@@ -212,7 +229,9 @@ def monitor_aws(node, config, num_lines, log_type, follow_tail, verbose):
                 return
             task_id = task["taskArn"].split("/")[-1]
 
-            streams = logs_client.describe_log_streams(logGroupName=family, logStreamNamePrefix=f"ecs/{node}/{task_id}")
+            streams = logs_client.describe_log_streams(
+                logGroupName=family, logStreamNamePrefix=f"ecs/{node}/{task_id}"
+            )
             streams = list(
                 filter(
                     lambda s: s["logStreamName"].endswith(task_id),
@@ -266,7 +285,8 @@ def monitor_aws(node, config, num_lines, log_type, follow_tail, verbose):
                 if len(task["containers"]) and "reason" in task["containers"][0]:
                     container = task["containers"][0]
                     click.secho(
-                        f"Container Exit code: {container['exitCode']}\n" f"Reason: {container['reason']}",
+                        f"Container Exit code: {container['exitCode']}\n"
+                        f"Reason: {container['reason']}",
                         fg="red",
                     )
                 break
@@ -274,7 +294,9 @@ def monitor_aws(node, config, num_lines, log_type, follow_tail, verbose):
         start = time.time()
         if total_events == 0:
             while total_events == 0:
-                click.secho("No log events yet, still waiting...\r", fg="yellow", nl=False)
+                click.secho(
+                    "No log events yet, still waiting...\r", fg="yellow", nl=False
+                )
                 next_token, num_events = print_logs(logs_client, family, name)
                 total_events += num_events
                 if (time.time() - start) > 60 * 5:
@@ -297,19 +319,27 @@ def get_recent_task_status_aws(ecs_client, node, verbose):
 
     # try to find stopped tasks
     if len(tasks["taskArns"]) == 0:
-        tasks = ecs_client.list_tasks(cluster="numerai-submission", desiredStatus="STOPPED", family=node)
+        tasks = ecs_client.list_tasks(
+            cluster="numerai-submission", desiredStatus="STOPPED", family=node
+        )
 
     if len(tasks["taskArns"]) == 0:
         click.secho(f"No recent tasks found...", fg="red")
         return None
 
-    tasks = ecs_client.describe_tasks(cluster="numerai-submission", tasks=tasks["taskArns"])
+    tasks = ecs_client.describe_tasks(
+        cluster="numerai-submission", tasks=tasks["taskArns"]
+    )
 
     return tasks["tasks"][-1]
 
 
-def get_name_and_print_logs(logs_client, family, limit, next_token=None, raise_on_error=True):
-    streams = logs_client.describe_log_streams(logGroupName=family, orderBy="LastEventTime", descending=True)
+def get_name_and_print_logs(
+    logs_client, family, limit, next_token=None, raise_on_error=True
+):
+    streams = logs_client.describe_log_streams(
+        logGroupName=family, orderBy="LastEventTime", descending=True
+    )
 
     if len(streams["logStreams"]) == 0:
         if not raise_on_error:
@@ -333,12 +363,16 @@ def print_logs(logs_client, family, name, limit=None, next_token=None):
     if limit is not None:
         kwargs["limit"] = limit
 
-    events = logs_client.get_log_events(logGroupName=family, logStreamName=name, **kwargs)
+    events = logs_client.get_log_events(
+        logGroupName=family, logStreamName=name, **kwargs
+    )
 
     if len(events["events"]) == limit:
         click.echo("...more log lines available: use -n option to get more...")
     for event in events["events"]:
-        click.echo(f"[{name}] {str(datetime.fromtimestamp(event['timestamp'] / 1000))}: {event['message']}")
+        click.echo(
+            f"[{name}] {str(datetime.fromtimestamp(event['timestamp'] / 1000))}: {event['message']}"
+        )
 
     return events["nextForwardToken"], len(events["events"])
 
@@ -352,12 +386,16 @@ def monitor_azure(node, config, verbose):
     monitor_start_time = datetime.now(timezone.utc) - timedelta(minutes=1)
 
     azure_subs_id, azure_client, azure_tenant, azure_secret = get_azure_keys()
-    credentials = ClientSecretCredential(client_id=azure_client, tenant_id=azure_tenant, client_secret=azure_secret)
+    credentials = ClientSecretCredential(
+        client_id=azure_client, tenant_id=azure_tenant, client_secret=azure_secret
+    )
     # Get Azure Storage account key, using resource group name and trigger function's storage account name
 
     resource_group_name = config["resource_group_name"]
     storage_account_name = config["webhook_storage_account_name"]
-    storage_client = StorageManagementClient(credential=credentials, subscription_id=azure_subs_id)
+    storage_client = StorageManagementClient(
+        credential=credentials, subscription_id=azure_subs_id
+    )
     storage_keys = storage_client.storage_accounts.list_keys(
         resource_group_name=resource_group_name, account_name=storage_account_name
     )
@@ -378,8 +416,14 @@ def monitor_azure(node, config, verbose):
 
     # Get the table that store the run history for the webhook from the Azure storage account
     table_credential = AzureNamedKeyCredential(storage_account_name, access_key)
-    table_service_client = TableServiceClient(endpoint=endpoint, credential=table_credential)
-    table_name = [table.name for table in table_service_client.list_tables() if "History" in table.name][0]
+    table_service_client = TableServiceClient(
+        endpoint=endpoint, credential=table_credential
+    )
+    table_name = [
+        table.name
+        for table in table_service_client.list_tables()
+        if "History" in table.name
+    ][0]
 
     # Query the webhook's History table and get records (entities)
     table_client = TableClient.from_connection_string(connection_string, table_name)
@@ -410,7 +454,9 @@ def monitor_azure(node, config, verbose):
         exit(1)
 
 
-def azure_refresh_and_print_log(table_client, monitor_start_time, shown_log_row_key=list()):
+def azure_refresh_and_print_log(
+    table_client, monitor_start_time, shown_log_row_key=list()
+):
     """
     Refresh the log table and print the new log entries
     """
@@ -442,18 +488,24 @@ def azure_refresh_and_print_log(table_client, monitor_start_time, shown_log_row_
 
             if log_df.loc[i, "EventType"] == "ExecutionStarted":
                 az_func_name1 = log_df.loc[i, "Name"]
-                click.secho(f"Azure Trigger Function: '{az_func_name1}' started", fg="green")
+                click.secho(
+                    f"Azure Trigger Function: '{az_func_name1}' started", fg="green"
+                )
                 # execute_st=log_df.loc[i,'_Timestamp']
             elif log_df.loc[i, "EventType"] == "ExecutionCompleted":
-                az_func_name1 = execution_log.loc[execution_log["EventType"] == "ExecutionStarted", "Name"].values[0]
-                execute_st = execution_log.loc[execution_log["EventType"] == "ExecutionStarted", "_Timestamp"].values[
-                    -1
-                ]
-                execute_et = execution_log.loc[execution_log["EventType"] == "ExecutionCompleted", "_Timestamp"].values[
-                    -1
-                ]
+                az_func_name1 = execution_log.loc[
+                    execution_log["EventType"] == "ExecutionStarted", "Name"
+                ].values[0]
+                execute_st = execution_log.loc[
+                    execution_log["EventType"] == "ExecutionStarted", "_Timestamp"
+                ].values[-1]
+                execute_et = execution_log.loc[
+                    execution_log["EventType"] == "ExecutionCompleted", "_Timestamp"
+                ].values[-1]
                 time_taken = execute_et - execute_st
-                click.secho(f"Azure Trigger Function: '{az_func_name1}' ended", fg="green")
+                click.secho(
+                    f"Azure Trigger Function: '{az_func_name1}' ended", fg="green"
+                )
                 click.secho(
                     f"'{az_func_name1}' time taken: {time_taken.astype('timedelta64[s]').astype('float')/60:.2f} mins"
                 )
@@ -534,26 +586,48 @@ def get_gcp_job_executions(client, job_id, trigger_id):
 
 def check_gcp_execution_status(execution):
     condition_based_results = {
-        run_v2.types.Condition.State.CONDITION_SUCCEEDED: [True, "Job execution succeeded!\r", "green"],
-        run_v2.types.Condition.State.CONDITION_RECONCILING: [False, "Waiting for job to complete...\r", "yellow"],
-        run_v2.types.Condition.State.CONDITION_PENDING: [False, "Waiting for job to complete...\r", "yellow"],
+        run_v2.types.Condition.State.CONDITION_SUCCEEDED: [
+            True,
+            "Job execution succeeded!\r",
+            "green",
+        ],
+        run_v2.types.Condition.State.CONDITION_RECONCILING: [
+            False,
+            "Waiting for job to complete...\r",
+            "yellow",
+        ],
+        run_v2.types.Condition.State.CONDITION_PENDING: [
+            False,
+            "Waiting for job to complete...\r",
+            "yellow",
+        ],
         run_v2.types.Condition.State.CONDITION_FAILED: [False, "Job failed!\r", "red"],
     }
 
-    completed_condition = list(filter(lambda c: c.type_ == "Completed", execution.conditions))
+    completed_condition = list(
+        filter(lambda c: c.type_ == "Completed", execution.conditions)
+    )
     if len(completed_condition) == 1:
         if completed_condition[0].state in list((condition_based_results.keys())):
             return condition_based_results[completed_condition[0].state]
         else:
-            return True, f'Unknown job status! Exiting test.\nJob status: {completed_condition.state}\r', 'red'
+            return (
+                True,
+                f"Unknown job status! Exiting test.\nJob status: {completed_condition.state}\r",
+                "red",
+            )
     else:
-        return False, "No job status found. Waiting for job status to resolve....\r", "yellow"
+        return (
+            False,
+            "No job status found. Waiting for job status to resolve....\r",
+            "yellow",
+        )
 
 
 def print_gcp_execution_logs(logging_client, job_id, execution, previous_insert_id):
     execution_name = execution.name.split("/")[-1]
 
-    filter = ' '.join(
+    filter = " ".join(
         [
             'resource.type = "cloud_run_job"',
             f'resource.labels.job_name = "{job_id.split("/")[-1]}"',
@@ -578,7 +652,7 @@ def print_gcp_webhook_logs(logging_client, job_id):
     monitor_start_time = datetime.now(timezone.utc) - timedelta(minutes=30)
     click.secho("Looking for most recent webhook execution...\r", fg="yellow")
 
-    filter = ' '.join(
+    filter = " ".join(
         [
             'resource.type = "cloud_function"',
             f'resource.labels.function_name = "{job_id.split("/")[-1]}"',
@@ -592,7 +666,11 @@ def print_gcp_webhook_logs(logging_client, job_id):
     log_entries = []
     for result in page_response:
         log_entries.append(
-            {"payload": result.payload, "execution_id": result.labels["execution_id"], "timestamp": result.timestamp}
+            {
+                "payload": result.payload,
+                "execution_id": result.labels["execution_id"],
+                "timestamp": result.timestamp,
+            }
         )
         execution_id = result.labels["execution_id"]
 
@@ -610,7 +688,9 @@ def print_gcp_webhook_logs(logging_client, job_id):
 
 @click.command()
 @click.option("--verbose", "-v", is_flag=True)
-@click.option("--num-lines", "-n", type=int, default=20, help="the number of log lines to return")
+@click.option(
+    "--num-lines", "-n", type=int, default=20, help="the number of log lines to return"
+)
 @click.option(
     "--log-type",
     "-l",
@@ -618,7 +698,12 @@ def print_gcp_webhook_logs(logging_client, job_id):
     default=LOG_TYPE_CLUSTER,
     help=f"The log type to lookup. One of {LOG_TYPES}. Default is {LOG_TYPE_CLUSTER}.",
 )
-@click.option("--follow-tail", "-f", is_flag=True, help="tail the logs of a running task (AWS only)")
+@click.option(
+    "--follow-tail",
+    "-f",
+    is_flag=True,
+    help="tail the logs of a running task (AWS only)",
+)
 @click.pass_context
 def status(ctx, verbose, num_lines, log_type, follow_tail):
     """

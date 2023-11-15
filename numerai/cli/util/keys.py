@@ -17,7 +17,12 @@ from google.cloud import storage
 from numerai.cli.constants import *
 from numerai.cli.constants import KEYS_PATH
 from numerai.cli.util.debug import exception_with_msg
-from numerai.cli.util.files import load_or_init_nodes, store_config, maybe_create, load_config
+from numerai.cli.util.files import (
+    load_or_init_nodes,
+    store_config,
+    maybe_create,
+    load_config,
+)
 
 
 def reformat_keys():
@@ -98,7 +103,10 @@ def check_numerai_validity(key_id, secret):
         napi = numerapi.NumerAPI(key_id, secret)
         napi.get_account()
     except Exception:
-        raise exception_with_msg("Numerai keys seem to be invalid. " "Make sure you've entered them correctly.")
+        raise exception_with_msg(
+            "Numerai keys seem to be invalid. "
+            "Make sure you've entered them correctly."
+        )
 
 
 def get_provider_keys(node):
@@ -157,10 +165,14 @@ def config_aws_keys():
 
 def config_azure_keys():
     azure_subs_id, azure_client, azure_tenant, azure_secret = get_azure_keys()
-    azure_subs_id = prompt_for_key("Azure Subscription ID [ARM_SUBSCRIPTION_ID]", azure_subs_id)
+    azure_subs_id = prompt_for_key(
+        "Azure Subscription ID [ARM_SUBSCRIPTION_ID]", azure_subs_id
+    )
     azure_client = prompt_for_key("Azure Client ID [ARM_CLIENT_ID]", azure_client)
     azure_tenant = prompt_for_key("Azure Tenant ID [ARM_TENANT_ID]", azure_tenant)
-    azure_secret = prompt_for_key("Azure Client Secret [ARM_CLIENT_SECRET]", azure_secret)
+    azure_secret = prompt_for_key(
+        "Azure Client Secret [ARM_CLIENT_SECRET]", azure_secret
+    )
     check_azure_validity(azure_subs_id, azure_client, azure_tenant, azure_secret)
 
     keys_config = load_or_init_keys()
@@ -176,7 +188,10 @@ def config_azure_keys():
 
 def config_gcp_keys():
     gcp_keys_path = get_gcp_keys()
-    gcp_keys_path_new = prompt_for_key(f"Path to GCP keys file (will be copied to {GCP_KEYS_PATH})", gcp_keys_path)
+    gcp_keys_path_new = prompt_for_key(
+        f"Absolute path to GCP keys file (will be copied to {GCP_KEYS_PATH})",
+        gcp_keys_path,
+    )
     if gcp_keys_path_new != gcp_keys_path:
         shutil.copy(gcp_keys_path_new, GCP_KEYS_PATH)
 
@@ -190,7 +205,9 @@ def config_gcp_keys():
 
 def check_aws_validity(key_id, secret):
     try:
-        client = boto3.client("s3", aws_access_key_id=key_id, aws_secret_access_key=secret)
+        client = boto3.client(
+            "s3", aws_access_key_id=key_id, aws_secret_access_key=secret
+        )
         client.list_buckets()
     except Exception as e:
         if "NotSignedUp" in str(e):
@@ -210,7 +227,9 @@ def check_aws_validity(key_id, secret):
 
 def check_azure_validity(subs_id, client_id, tenant_id, secret):
     try:
-        credentials = ClientSecretCredential(client_id=client_id, tenant_id=tenant_id, client_secret=secret)
+        credentials = ClientSecretCredential(
+            client_id=client_id, tenant_id=tenant_id, client_secret=secret
+        )
         sub_client = SubscriptionClient(credentials)
         subs = [sub.as_dict() for sub in sub_client.subscriptions.list()]
         all_subs_ids = [subs_details["subscription_id"] for subs_details in subs]
@@ -240,7 +259,9 @@ def check_azure_validity(subs_id, client_id, tenant_id, secret):
 
 def check_gcp_validity():
     try:
-        credentials = service_account.Credentials.from_service_account_file(GCP_KEYS_PATH)
+        credentials = service_account.Credentials.from_service_account_file(
+            GCP_KEYS_PATH
+        )
         client = storage.Client(credentials=credentials)
         response = client.list_buckets()
         print(response)

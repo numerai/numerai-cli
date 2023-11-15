@@ -118,7 +118,9 @@ def build_tf_cmd(tf_cmd, provider, env_vars, inputs, version, verbose):
         cmd += " ".join([f' -e "{key}={val}"' for key, val in env_vars.items()])
     cmd += f" --rm -it -v {format_if_docker_toolbox(CONFIG_PATH, verbose)}:/opt/plan"
     if provider == PROVIDER_GCP:
-        cmd += f" --mount type=bind,source={GCP_KEYS_PATH},target=/tmp/gcp_keys/keys.json"
+        cmd += (
+            f" --mount type=bind,source={GCP_KEYS_PATH},target=/tmp/gcp_keys/keys.json"
+        )
         cmd += f" -e GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp_keys/keys.json"
         cmd += f" -e GOOGLE_PROJECT={get_gcp_project()}"
     cmd += f" -w /opt/plan hashicorp/terraform:{version}"
@@ -164,7 +166,8 @@ def build(node_config, node, verbose):
     build_arg_str += f" --build-arg NODE={node}"
 
     cmd = (
-        f'docker build --platform=linux/amd64 -t {node_config["docker_repo"]}' f"{build_arg_str} -f {path}/Dockerfile ."
+        f'docker build --platform=linux/amd64 -t {node_config["docker_repo"]}'
+        f"{build_arg_str} -f {path}/Dockerfile ."
     )
     execute(cmd, verbose)
 
@@ -177,13 +180,15 @@ def run(node_config, verbose, command=""):
 def login(node_config, verbose):
     if node_config["provider"] == PROVIDER_AWS:
         username, password = login_aws()
-        login_url = node_config['docker_repo']
+        login_url = node_config["docker_repo"]
     elif node_config["provider"] == PROVIDER_AZURE:
-        username, password = login_azure(node_config["registry_rg_name"], node_config["registry_name"])
-        login_url = node_config['docker_repo']
+        username, password = login_azure(
+            node_config["registry_rg_name"], node_config["registry_name"]
+        )
+        login_url = node_config["docker_repo"]
     elif node_config["provider"] == PROVIDER_GCP:
         username, password = login_gcp()
-        login_url = node_config['artifact_registry_login_url']
+        login_url = node_config["artifact_registry_login_url"]
     else:
         raise ValueError(f"Unsupported provider: '{node_config['provider']}'")
 
@@ -192,7 +197,12 @@ def login(node_config, verbose):
     else:
         echo_cmd = f'echo "{password}"'
 
-    cmd = echo_cmd + f" | docker login" f" -u {username}" f" --password-stdin" f" {login_url}"
+    cmd = (
+        echo_cmd + f" | docker login"
+        f" -u {username}"
+        f" --password-stdin"
+        f" {login_url}"
+    )
 
     execute(cmd, verbose, censor_substr=password)
 
@@ -207,17 +217,23 @@ def login_aws():
     )
 
     token = ecr_client.get_authorization_token()  # TODO: use registryIds
-    username, password = base64.b64decode(token["authorizationData"][0]["authorizationToken"]).decode().split(":")
+    username, password = (
+        base64.b64decode(token["authorizationData"][0]["authorizationToken"])
+        .decode()
+        .split(":")
+    )
 
     return username, password
 
 
 def login_azure(resource_group_name, registry_name):
     azure_subs_id, azure_client, azure_tenant, azure_secret = get_azure_keys()
-    credentials = ClientSecretCredential(client_id=azure_client, tenant_id=azure_tenant, client_secret=azure_secret)
-    username_password = ContainerRegistryManagementClient(credentials, azure_subs_id).registries.list_credentials(
-        resource_group_name, registry_name
+    credentials = ClientSecretCredential(
+        client_id=azure_client, tenant_id=azure_tenant, client_secret=azure_secret
     )
+    username_password = ContainerRegistryManagementClient(
+        credentials, azure_subs_id
+    ).registries.list_credentials(resource_group_name, registry_name)
     username = username_password.username
     password = username_password.passwords[0].value
     return username, password
@@ -281,24 +297,32 @@ def cleanup_aws(docker_repo):
 
     docker_repo_name = docker_repo.split("/")[-1]
 
-    resp = ecr_client.list_images(repositoryName=docker_repo_name, filter={"tagStatus": "UNTAGGED"})
+    resp = ecr_client.list_images(
+        repositoryName=docker_repo_name, filter={"tagStatus": "UNTAGGED"}
+    )
 
     imageIds = resp["imageIds"]
     if len(imageIds) == 0:
         return []
 
-    resp = ecr_client.batch_delete_image(repositoryName=docker_repo_name, imageIds=imageIds)
+    resp = ecr_client.batch_delete_image(
+        repositoryName=docker_repo_name, imageIds=imageIds
+    )
 
     return resp["imageIds"]
 
 
 def cleanup_azure(node_config):
     _, azure_client, azure_tenant, azure_secret = get_azure_keys()
-    credentials = ClientSecretCredential(client_id=azure_client, tenant_id=azure_tenant, client_secret=azure_secret)
+    credentials = ClientSecretCredential(
+        client_id=azure_client, tenant_id=azure_tenant, client_secret=azure_secret
+    )
     acr_client = ContainerRegistryClient(node_config["acr_login_server"], credentials)
     docker_repo = node_config["docker_repo"]
     node_repo_name = [
-        repo_name for repo_name in acr_client.list_repository_names() if repo_name == docker_repo.split("/")[-1]
+        repo_name
+        for repo_name in acr_client.list_repository_names()
+        if repo_name == docker_repo.split("/")[-1]
     ][0]
 
     # get all manifests, ordered by last update time
@@ -311,7 +335,9 @@ def cleanup_azure(node_config):
     # Remove all but the latest manifest
     removed_manifests = []
     for manifest in manifest_list[1:]:
-        acr_client.update_manifest_properties(node_repo_name, manifest.digest, can_write=True, can_delete=True)
+        acr_client.update_manifest_properties(
+            node_repo_name, manifest.digest, can_write=True, can_delete=True
+        )
         removed_manifests.append(manifest.digest)
         acr_client.delete_manifest(node_repo_name, manifest.digest)
     return removed_manifests
@@ -325,7 +351,9 @@ def cleanup_gcp(node_config):
     node_name = node_config["docker_repo"].split("/")[-1]
 
     client = artifactregistry_v1.ArtifactRegistryClient()
-    list_images_request = artifactregistry_v1.ListDockerImagesRequest(parent=node_config["registry_id"])
+    list_images_request = artifactregistry_v1.ListDockerImagesRequest(
+        parent=node_config["registry_id"]
+    )
     page_result = client.list_docker_images(request=list_images_request)
 
     latest_image_name = ""
@@ -333,7 +361,9 @@ def cleanup_gcp(node_config):
         if "latest" in response.tags:
             latest_image_name = response.name
 
-    versions = artifactregistry_v1.ListVersionsRequest(parent=f"{node_config['registry_id']}/packages/{node_name}")
+    versions = artifactregistry_v1.ListVersionsRequest(
+        parent=f"{node_config['registry_id']}/packages/{node_name}"
+    )
     page_result = client.list_versions(request=versions)
     versions_to_delete = []
     for response in page_result:

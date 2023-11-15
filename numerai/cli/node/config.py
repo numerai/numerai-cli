@@ -33,7 +33,8 @@ from numerai.cli.util.keys import get_provider_keys, get_numerai_keys, load_or_i
     "--provider",
     "-P",
     type=str,
-    help=f"Select a cloud provider. One of {PROVIDERS}. " f"Defaults to {DEFAULT_PROVIDER}.",
+    help=f"Select a cloud provider. One of {PROVIDERS}. "
+    f"Defaults to {DEFAULT_PROVIDER}.",
 )
 @click.option(
     "--size",
@@ -80,7 +81,9 @@ from numerai.cli.util.keys import get_provider_keys, get_numerai_keys, load_or_i
     "Use in conjunction with options that prevent webhook auto-registering.",
 )
 @click.pass_context
-def config(ctx, verbose, provider, size, path, example, cron, timeout_minutes, register_webhook):
+def config(
+    ctx, verbose, provider, size, path, example, cron, timeout_minutes, register_webhook
+):
     """
     Uses Terraform to create a full Numerai Compute cluster in your desired provider.
     Prompts for your cloud provider and Numerai API keys on first run, caches them in $HOME/.numerai.
@@ -118,7 +121,11 @@ def config(ctx, verbose, provider, size, path, example, cron, timeout_minutes, r
     affected_providers = set(filter(None, affected_providers))
 
     nodes_config[node].update(
-        {key: default for key, default in DEFAULT_SETTINGS.items() if key not in nodes_config[node]}
+        {
+            key: default
+            for key, default in DEFAULT_SETTINGS.items()
+            if key not in nodes_config[node]
+        }
     )
     # update node as needed
     node_conf = nodes_config[node]
@@ -133,10 +140,12 @@ def config(ctx, verbose, provider, size, path, example, cron, timeout_minutes, r
 
     if provider == PROVIDER_GCP and size is not None and "mem-" in size:
         click.secho(
-            "Invalid size: mem sizes are invalid for GCP due to sizing constraints with Google Cloud Run.", fg="red"
+            "Invalid size: mem sizes are invalid for GCP due to sizing constraints with Google Cloud Run.",
+            fg="red",
         )
         click.secho(
-            "Visit https://cloud.google.com/run/docs/configuring/services/memory-limits to learn more.", fg="red"
+            "Visit https://cloud.google.com/run/docs/configuring/services/memory-limits to learn more.",
+            fg="red",
         )
         exit(1)
 
@@ -176,7 +185,9 @@ def config(ctx, verbose, provider, size, path, example, cron, timeout_minutes, r
 
     # Azure only: Need to create a master Azure Container Registry and push a dummy placeholder image, before deploying the rest of the resources
     if provider == "azure":
-        provider_registry_conf = create_azure_registry(provider, provider_keys, verbose=verbose)
+        provider_registry_conf = create_azure_registry(
+            provider, provider_keys, verbose=verbose
+        )
         node_conf.update(provider_registry_conf)
         node_conf["docker_repo"] = f'{node_conf["acr_login_server"]}/{node}'
         docker.login(node_conf, verbose)
@@ -192,10 +203,12 @@ def config(ctx, verbose, provider, size, path, example, cron, timeout_minutes, r
         provider_registry_conf = create_gcp_registry(provider, verbose=verbose)
         node_conf.update(provider_registry_conf)
         registry_parts = node_conf["registry_id"].split("/")
-        node_conf["artifact_registry_login_url"] = f'https://{registry_parts[3]}-docker.pkg.dev/'
+        node_conf[
+            "artifact_registry_login_url"
+        ] = f"https://{registry_parts[3]}-docker.pkg.dev/"
         node_conf[
             "docker_repo"
-        ] = f'{registry_parts[3]}-docker.pkg.dev/{registry_parts[1]}/numerai-container-registry/{node}:latest'
+        ] = f"{registry_parts[3]}-docker.pkg.dev/{registry_parts[1]}/numerai-container-registry/{node}:latest"
         docker.login(node_conf, verbose)
         try:
             docker.manifest_inspect(node_conf["docker_repo"], verbose)
@@ -284,5 +297,7 @@ def create_gcp_registry(provider, verbose):
         "gcp",
         inputs={"node_config_file": "nodes.json"},
     )
-    res = terraform("output -json artifact_registry_details", True, provider).decode("utf-8")
+    res = terraform("output -json artifact_registry_details", True, provider).decode(
+        "utf-8"
+    )
     return json.loads(res)
