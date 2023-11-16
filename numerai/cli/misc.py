@@ -12,15 +12,13 @@ from numerai.cli.util import files
     "-e",
     type=click.Choice(EXAMPLES),
     default=DEFAULT_EXAMPLE,
-    help=f"Specify the example to copy, defaults to {DEFAULT_EXAMPLE}. "
-    f"Options are {EXAMPLES}.",
+    help=f"Specify the example to copy, defaults to {DEFAULT_EXAMPLE}. " f"Options are {EXAMPLES}.",
 )
 @click.option(
     "--dest",
     "-d",
     type=str,
-    help=f"Destination folder to which example code is written. "
-    f"Defaults to the name of the example.",
+    help=f"Destination folder to which example code is written. " f"Defaults to the name of the example.",
 )
 @click.option("--verbose", "-v", is_flag=True)
 def copy_example(example, dest, verbose):
@@ -55,12 +53,10 @@ def list_constants():
             if size == DEFAULT_SIZE or size == DEFAULT_SIZE_GCP
             else "yellow",
         )
+    click.secho("Due to GCP Cloud Run size constraints, 'mem' sizes are not allowed when using GCP.")
     click.secho(
-        "Due to GCP Cloud Run size constraints, 'mem' sizes are not allowed when using GCP."
-    )
-    click.secho(
-        "See https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-cpu-memory-error.html for AWS,\n"
-        "https://learn.microsoft.com/en-us/azure/container-apps/containers#configuration for Azure,\n"
+        "For AWS, use one of these sizes, or specify your own CPU and Memory in cores and GB using --cpu and --memory options.\n"
+        "See https://learn.microsoft.com/en-us/azure/container-apps/containers#configuration for Azure,\n"
         "or https://cloud.google.com/run/docs/configuring/services/memory-limits for GCP \n"
-        "to learn more info about allowed size presets for your provider."
+        "to learn more info about allowed size presets for those providers."
     )

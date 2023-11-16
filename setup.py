@@ -23,6 +23,7 @@ setup(
     install_requires=[
         "click>=7",
         "boto3",
+        "botocore",
         "numerapi>=2.4.5",
         "colorama",
         "requests",

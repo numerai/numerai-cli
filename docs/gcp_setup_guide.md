@@ -9,7 +9,7 @@ your GCP account for use with the Numerai CLI.
 4. If you don't already have a Google Cloud project you want to use, [create a new project](https://console.cloud.google.com/projectcreate)
 5. Wait for the project to finish creating then ensure it's selected in the dropdown at the top of the console.
 6. Ensure your billing account is assigned to your new project by checking [billing projects](https://console.cloud.google.com/billing/projects).
-7. Navigate to the [Create service account](https://console.cloud.google.com/iam-admin/serviceaccounts/create)
+7. Next, [Create a service account](https://console.cloud.google.com/iam-admin/serviceaccounts/create)
 8. Give your service account an ID and optionally a name and description, then click "Create and continue" to grant your service account access to this project.
 9. Select "Basic" and then "Owner" to give your service account complete access to this project. Then select "Done".
 10. You should now see your new service account in your list of service accounts. Click on your service account and then click the tab named "Keys"
