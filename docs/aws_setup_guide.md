@@ -48,6 +48,7 @@ If upgrading from numerai-cli 0.x, please review [Upgrading from numerai-cli v0.
 
 [Return to main guide](../README.md#getting-started)
 
+
 ## Upgrading from numerai-cli v0.x
 
 Additional permissions are required to upgrade from numerai-cli v0.x to numerai-cli v1.x. In numerai-cli v0.x, AWS models used API Gateway, which is no longer used in v1.x
@@ -78,4 +79,5 @@ Numerai-cli will need permissions to remove API Gateway resources from your acco
 }
 ```
 
-After your upgrade is complete, you can remove "apigateway:*" from your policy if desire.
+After your upgrade is complete, you can remove "apigateway:\*" from your policy if desire.
+

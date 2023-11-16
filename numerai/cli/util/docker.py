@@ -118,7 +118,9 @@ def build_tf_cmd(tf_cmd, provider, env_vars, inputs, version, verbose):
         cmd += " ".join([f' -e "{key}={val}"' for key, val in env_vars.items()])
     cmd += f" --rm -it -v {format_if_docker_toolbox(CONFIG_PATH, verbose)}:/opt/plan"
     if provider == PROVIDER_GCP:
-        cmd += f" --mount type=bind,source={GCP_KEYS_PATH},target=/tmp/gcp_keys/keys.json"
+        cmd += (
+            f" --mount type=bind,source={GCP_KEYS_PATH},target=/tmp/gcp_keys/keys.json"
+        )
         cmd += f" -e GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp_keys/keys.json"
         cmd += f" -e GOOGLE_PROJECT={get_gcp_project()}"
     cmd += f" -w /opt/plan hashicorp/terraform:{version}"
@@ -192,7 +194,12 @@ def login(node_config, verbose):
     else:
         echo_cmd = f'echo "{password}"'
 
-    cmd = echo_cmd + f" | docker login" f" -u {username}" f" --password-stdin" f" {login_url}"
+    cmd = (
+        echo_cmd + f" | docker login"
+        f" -u {username}"
+        f" --password-stdin"
+        f" {login_url}"
+    )
 
     execute(cmd, verbose, censor_substr=password)
 
@@ -325,7 +332,9 @@ def cleanup_gcp(node_config):
     node_name = node_config["docker_repo"].split("/")[-1]
 
     client = artifactregistry_v1.ArtifactRegistryClient()
-    list_images_request = artifactregistry_v1.ListDockerImagesRequest(parent=node_config["registry_id"])
+    list_images_request = artifactregistry_v1.ListDockerImagesRequest(
+        parent=node_config["registry_id"]
+    )
     page_result = client.list_docker_images(request=list_images_request)
 
     latest_image_name = ""
@@ -333,7 +342,9 @@ def cleanup_gcp(node_config):
         if "latest" in response.tags:
             latest_image_name = response.name
 
-    versions = artifactregistry_v1.ListVersionsRequest(parent=f"{node_config['registry_id']}/packages/{node_name}")
+    versions = artifactregistry_v1.ListVersionsRequest(
+        parent=f"{node_config['registry_id']}/packages/{node_name}"
+    )
     page_result = client.list_versions(request=versions)
     versions_to_delete = []
     for response in page_result:

@@ -12,7 +12,12 @@ from numerai.cli.constants import *
 from numerai.cli.util import docker
 from numerai.cli.util.debug import exception_with_msg
 from numerai.cli.util.files import load_or_init_nodes
-from numerai.cli.util.keys import get_aws_keys, get_numerai_keys, get_azure_keys, get_gcp_keys
+from numerai.cli.util.keys import (
+    get_aws_keys,
+    get_numerai_keys,
+    get_azure_keys,
+    get_gcp_keys,
+)
 
 from azure.identity import ClientSecretCredential
 from azure.mgmt.storage import StorageManagementClient
@@ -105,7 +110,16 @@ def test(ctx, local, command, verbose):
         return
 
     click.secho("checking task status...")
-    monitor(node, node_config, verbose, 15, LOG_TYPE_CLUSTER, follow_tail=True, trigger_id=trigger_id)
+
+    monitor(
+        node,
+        node_config,
+        verbose,
+        15,
+        LOG_TYPE_CLUSTER,
+        follow_tail=True,
+        trigger_id=trigger_id,
+    )
     if node_config["provider"] == "azure":
         time.sleep(5)
 
@@ -204,6 +218,7 @@ def monitor_aws(node, config, num_lines, log_type, follow_tail, verbose, trigger
     if verbose and log_type == LOG_TYPE_WEBHOOK:
         print_aws_webhook_logs(logs_client, config["webhook_log_group"], num_lines)
 
+
     while time_lapse <= timedelta(minutes=15) and monitoring_done == False:
         task, monitoring_done, message, color = get_recent_task_status_aws(
             config["cluster_arn"], ecs_client, node, trigger_id
@@ -277,7 +292,10 @@ def get_recent_task_status_aws(cluster_arn, ecs_client, node, trigger_id):
         color = "red" if trigger_id is None else "yellow"
         return None, trigger_id is None, message, color
 
-    tasks = ecs_client.describe_tasks(cluster=cluster_arn, tasks=tasks["taskArns"])
+
+    tasks = ecs_client.describe_tasks(
+        cluster="numerai-submission", tasks=tasks["taskArns"]
+    )
 
     matched_task = None
 
@@ -544,26 +562,49 @@ def get_gcp_job_executions(client, job_id, trigger_id):
 
 def check_gcp_execution_status(execution):
     condition_based_results = {
-        run_v2.types.Condition.State.CONDITION_SUCCEEDED: [True, "Job execution succeeded!\r", "green"],
-        run_v2.types.Condition.State.CONDITION_RECONCILING: [False, "Waiting for job to complete...\r", "yellow"],
-        run_v2.types.Condition.State.CONDITION_PENDING: [False, "Waiting for job to complete...\r", "yellow"],
+        run_v2.types.Condition.State.CONDITION_SUCCEEDED: [
+            True,
+            "Job execution succeeded!\r",
+            "green",
+        ],
+        run_v2.types.Condition.State.CONDITION_RECONCILING: [
+            False,
+            "Waiting for job to complete...\r",
+            "yellow",
+        ],
+        run_v2.types.Condition.State.CONDITION_PENDING: [
+            False,
+            "Waiting for job to complete...\r",
+            "yellow",
+        ],
         run_v2.types.Condition.State.CONDITION_FAILED: [False, "Job failed!\r", "red"],
     }
 
-    completed_condition = list(filter(lambda c: c.type_ == "Completed", execution.conditions))
+    completed_condition = list(
+        filter(lambda c: c.type_ == "Completed", execution.conditions)
+    )
     if len(completed_condition) == 1:
         if completed_condition[0].state in list((condition_based_results.keys())):
             return condition_based_results[completed_condition[0].state]
         else:
-            return True, f'Unknown job status! Exiting test.\nJob status: {completed_condition.state}\r', 'red'
+            return (
+                True,
+                f"Unknown job status! Exiting test.\nJob status: {completed_condition.state}\r",
+                "red",
+            )
     else:
-        return False, "No job status found. Waiting for job status to resolve....\r", "yellow"
+        return (
+            False,
+            "No job status found. Waiting for job status to resolve....\r",
+            "yellow",
+        )
 
 
 def print_gcp_execution_logs(logging_client, job_id, execution, previous_insert_id):
     execution_name = execution.name.split("/")[-1]
 
-    filter = ' '.join(
+
+    filter = " ".join(
         [
             'resource.type = "cloud_run_job"',
             f'resource.labels.job_name = "{job_id.split("/")[-1]}"',
@@ -588,7 +629,7 @@ def print_gcp_webhook_logs(logging_client, job_id):
     monitor_start_time = datetime.now(timezone.utc) - timedelta(minutes=30)
     click.secho("Looking for most recent webhook execution...\r", fg="yellow")
 
-    filter = ' '.join(
+    filter = " ".join(
         [
             'resource.type = "cloud_function"',
             f'resource.labels.function_name = "{job_id.split("/")[-1]}"',
@@ -602,7 +643,11 @@ def print_gcp_webhook_logs(logging_client, job_id):
     log_entries = []
     for result in page_response:
         log_entries.append(
-            {"payload": result.payload, "execution_id": result.labels["execution_id"], "timestamp": result.timestamp}
+            {
+                "payload": result.payload,
+                "execution_id": result.labels["execution_id"],
+                "timestamp": result.timestamp,
+            }
         )
         execution_id = result.labels["execution_id"]
 
@@ -628,7 +673,13 @@ def print_gcp_webhook_logs(logging_client, job_id):
     default=LOG_TYPE_CLUSTER,
     help=f"The log type to lookup. One of {LOG_TYPES}. Default is {LOG_TYPE_CLUSTER}.",
 )
-@click.option("--follow-tail", "-f", is_flag=True, help="tail the logs of a running task (AWS only)")
+
+@click.option(
+    "--follow-tail",
+    "-f",
+    is_flag=True,
+    help="tail the logs of a running task (AWS only)",
+)
 @click.pass_context
 def status(ctx, verbose, num_lines, log_type, follow_tail):
     """

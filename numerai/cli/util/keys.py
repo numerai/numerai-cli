@@ -176,7 +176,10 @@ def config_azure_keys():
 
 def config_gcp_keys():
     gcp_keys_path = get_gcp_keys()
-    gcp_keys_path_new = prompt_for_key(f"Path to GCP keys file (will be copied to {GCP_KEYS_PATH})", gcp_keys_path)
+    gcp_keys_path_new = prompt_for_key(
+        f"Absolute path to GCP keys file (will be copied to {GCP_KEYS_PATH})",
+        gcp_keys_path,
+    )
     if gcp_keys_path_new != gcp_keys_path:
         shutil.copy(gcp_keys_path_new, GCP_KEYS_PATH)
 
@@ -240,7 +243,9 @@ def check_azure_validity(subs_id, client_id, tenant_id, secret):
 
 def check_gcp_validity():
     try:
-        credentials = service_account.Credentials.from_service_account_file(GCP_KEYS_PATH)
+        credentials = service_account.Credentials.from_service_account_file(
+            GCP_KEYS_PATH
+        )
         client = storage.Client(credentials=credentials)
         response = client.list_buckets()
         print(response)
