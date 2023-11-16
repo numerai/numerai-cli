@@ -8,25 +8,7 @@ from numerai.cli.util.files import load_or_init_nodes, store_config, copy_file
 from numerai.cli.util.keys import get_provider_keys, get_numerai_keys
 
 
-@click.command()
-@click.option("--verbose", "-v", is_flag=True)
-@click.pass_context
-def destroy(ctx, verbose):
-    """
-    Uses Terraform to destroy Numerai Compute cluster in AWS.
-    This will delete everything, including:
-        - lambda url
-        - docker container and associated task
-        - all logs
-    This command is idempotent and safe to run multiple times.
-    """
-    ctx.ensure_object(dict)
-    model = ctx.obj["model"]
-    node = model["name"]
-    if not os.path.exists(CONFIG_PATH):
-        click.secho(".numerai directory not setup, run `numerai setup`...", fg="red")
-        return
-
+def destroy_node(node, verbose):
     try:
         nodes_config = load_or_init_nodes()
         node_config = nodes_config[node]
@@ -69,3 +51,26 @@ def destroy(ctx, verbose):
         napi.set_submission_webhook(model_id, None)
 
     click.secho("Prediction Node destroyed successfully", fg="green")
+
+
+@click.command()
+@click.option("--verbose", "-v", is_flag=True)
+@click.pass_context
+def destroy(ctx, verbose):
+    """
+    Uses Terraform to destroy a Numerai Compute cluster.
+    This will delete everything, including:
+        - lambda url
+        - docker container and associated task
+        - all logs
+    This command is idempotent and safe to run multiple times.
+    """
+
+    ctx.ensure_object(dict)
+    model = ctx.obj["model"]
+    node = model["name"]
+    if not os.path.exists(CONFIG_PATH):
+        click.secho(".numerai directory not setup, run `numerai setup`...", fg="red")
+        return
+
+    destroy_node(node, verbose)

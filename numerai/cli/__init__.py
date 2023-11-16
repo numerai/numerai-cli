@@ -1,7 +1,16 @@
 import click
 from colorama import init
 
-from numerai.cli import constants, doctor, node, setup, uninstall, upgrade, misc
+from numerai.cli import (
+    constants,
+    destroy_all,
+    doctor,
+    node,
+    setup,
+    uninstall,
+    upgrade,
+    misc,
+)
 from numerai.cli.util import debug, docker, files, keys
 
 
@@ -26,4 +35,5 @@ def main():
     numerai.add_command(upgrade.upgrade)
     numerai.add_command(misc.copy_example)
     numerai.add_command(misc.list_constants)
+    numerai.add_command(destroy_all.destroy_all)
     numerai()

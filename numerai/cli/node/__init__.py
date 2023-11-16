@@ -15,6 +15,26 @@ from numerai.cli.util.keys import get_numerai_keys
 # Setting azure's logging level "ERROR" to avoid spamming the terminal
 
 
+def get_models(signals):
+    if signals:
+        tournament = TOURNAMENT_SIGNALS
+        name_prefix = "signals"
+    else:
+        tournament = TOURNAMENT_NUMERAI
+        name_prefix = "numerai"
+    napi = base_api.Api(*get_numerai_keys())
+    models = napi.get_models(tournament)
+
+    model_dict = {}
+    for model_name, model_id in models.items():
+        model_dict[model_name] = {
+            "id": model_id,
+            "name": f"{name_prefix}-{model_name}",
+            "is_signals": signals,
+        }
+    return model_dict
+
+
 @click.group()
 @click.option("--verbose", "-v", is_flag=True)
 @click.option(
@@ -48,27 +68,15 @@ def node(ctx, verbose, model_name, signals):
     else:
         logger.setLevel(logging.ERROR)
 
-    if signals:
-        tournament = TOURNAMENT_SIGNALS
-        name_prefix = "signals"
-    else:
-        tournament = TOURNAMENT_NUMERAI
-        name_prefix = "numerai"
-    napi = base_api.Api(*get_numerai_keys())
-    models = napi.get_models(tournament)
+    models = get_models(signals)
 
     try:
-        model_id = models[model_name]
         ctx.ensure_object(dict)
-        ctx.obj["model"] = {
-            "id": model_id,
-            "name": f"{name_prefix}-{model_name}",
-            "is_signals": signals,
-        }
+        ctx.obj["model"] = models[model_name]
 
     except KeyError:
         click.secho(
-            f'No tournament {tournament} model with name "{model_name}" '
+            f'Model with name "{model_name}" '
             f"found in list of models:\n{json.dumps(models, indent=2)}"
             f'\n(use the "-s" flag for signals models)',
             fg="red",
