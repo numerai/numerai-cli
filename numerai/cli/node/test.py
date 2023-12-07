@@ -146,7 +146,9 @@ def test(ctx, local, command, verbose):
     tournament = TOURNAMENT_SIGNALS if is_signals else TOURNAMENT_NUMERAI
     curr_round = api.get_current_round(tournament)
     latest_subs = sorted(
-        filter(lambda sub: sub["round"]["number"] == curr_round, res["data"]["submissions"]),
+        filter(
+            lambda sub: sub["round"]["number"] == curr_round, res["data"]["submissions"]
+        ),
         key=lambda sub: sub["insertedAt"],
         reverse=True,
     )
@@ -180,7 +182,9 @@ def test(ctx, local, command, verbose):
 
 def monitor(node, config, verbose, num_lines, log_type, follow_tail, trigger_id=None):
     if log_type not in LOG_TYPES:
-        raise exception_with_msg(f"Unknown log type '{log_type}', " f"must be one of {LOG_TYPES}")
+        raise exception_with_msg(
+            f"Unknown log type '{log_type}', " f"must be one of {LOG_TYPES}"
+        )
 
     if config["provider"] == PROVIDER_AWS:
         monitor_aws(node, config, num_lines, log_type, follow_tail, verbose, trigger_id)
@@ -218,7 +222,6 @@ def monitor_aws(node, config, num_lines, log_type, follow_tail, verbose, trigger
     if verbose and log_type == LOG_TYPE_WEBHOOK:
         print_aws_webhook_logs(logs_client, config["webhook_log_group"], num_lines)
 
-
     while time_lapse <= timedelta(minutes=15) and monitoring_done == False:
         task, monitoring_done, message, color = get_recent_task_status_aws(
             config["cluster_arn"], ecs_client, node, trigger_id
@@ -244,7 +247,13 @@ def monitor_aws(node, config, num_lines, log_type, follow_tail, verbose, trigger
             time.sleep(5 if verbose else 15)
             time_lapse = datetime.now(timezone.utc) - monitor_start_time
 
-    if monitoring_done and time_lapse <= timedelta(minutes=15) and verbose and log_lines == 0 and task is not None:
+    if (
+        monitoring_done
+        and time_lapse <= timedelta(minutes=15)
+        and verbose
+        and log_lines == 0
+        and task is not None
+    ):
         click.secho(
             "Node executed successfully, but there are no logs yet.\n"
             "You can safely exit at this time, or the  CLI will try to collect logs for the next 120 seconds.",
@@ -285,24 +294,30 @@ def get_recent_task_status_aws(cluster_arn, ecs_client, node, trigger_id):
 
     # try to find stopped tasks
     if len(tasks["taskArns"]) == 0:
-        tasks = ecs_client.list_tasks(cluster=cluster_arn, desiredStatus="STOPPED", family=node)
+        tasks = ecs_client.list_tasks(
+            cluster=cluster_arn, desiredStatus="STOPPED", family=node
+        )
 
     if len(tasks["taskArns"]) == 0:
-        message = "No recent tasks found!" if trigger_id is None else "No tasks yet, still waiting..."
+        message = (
+            "No recent tasks found!"
+            if trigger_id is None
+            else "No tasks yet, still waiting..."
+        )
         color = "red" if trigger_id is None else "yellow"
         return None, trigger_id is None, message, color
 
-
-    tasks = ecs_client.describe_tasks(
-        cluster="numerai-submission", tasks=tasks["taskArns"]
-    )
+    tasks = ecs_client.describe_tasks(cluster=cluster_arn, tasks=tasks["taskArns"])
 
     matched_task = None
 
     if trigger_id is not None:
         for task in tasks["tasks"]:
             matching_override = list(
-                filter(lambda e: e["value"] == trigger_id, task["overrides"]["containerOverrides"][0]["environment"])
+                filter(
+                    lambda e: e["value"] == trigger_id,
+                    task["overrides"]["containerOverrides"][0]["environment"],
+                )
             )
             if len(matching_override) == 1:
                 matched_task = task
@@ -311,25 +326,32 @@ def get_recent_task_status_aws(cluster_arn, ecs_client, node, trigger_id):
         matched_task = tasks["tasks"][-1]
 
     if matched_task == None:
-        return matched_task, False, 'Waiting for job to start...', 'yellow'
-    elif matched_task["lastStatus"] in stopped_codes and "reason" in matched_task["containers"][0]:
+        return matched_task, False, "Waiting for job to start...", "yellow"
+    elif (
+        matched_task["lastStatus"] in stopped_codes
+        and "reason" in matched_task["containers"][0]
+    ):
         return (
             matched_task,
             True,
             f'Job failed! Container exited with code {matched_task["containers"][0]["exitCode"]}\r',
-            'red',
+            "red",
         )
     elif matched_task["lastStatus"] in stopped_codes:
-        return matched_task, True, 'Job execution succeeded!\r', 'green'
+        return matched_task, True, "Job execution succeeded!\r", "green"
     elif matched_task["lastStatus"] in pending_codes:
-        return matched_task, False, 'Waiting for job to start...', 'yellow'
+        return matched_task, False, "Waiting for job to start...", "yellow"
     elif matched_task["lastStatus"] in running_codes:
-        return matched_task, False, 'Waiting for job to complete...', 'yellow'
-    return matched_task, False, 'Waiting for job to start...', 'yellow'
+        return matched_task, False, "Waiting for job to complete...", "yellow"
+    return matched_task, False, "Waiting for job to start...", "yellow"
 
 
-def print_aws_webhook_logs(logs_client, family, limit, next_token=None, raise_on_error=True):
-    streams = logs_client.describe_log_streams(logGroupName=family, orderBy="LastEventTime", descending=True)
+def print_aws_webhook_logs(
+    logs_client, family, limit, next_token=None, raise_on_error=True
+):
+    streams = logs_client.describe_log_streams(
+        logGroupName=family, orderBy="LastEventTime", descending=True
+    )
 
     if len(streams["logStreams"]) == 0:
         if not raise_on_error:
@@ -346,16 +368,20 @@ def print_aws_webhook_logs(logs_client, family, limit, next_token=None, raise_on
     return True
 
 
-def print_aws_logs(logs_client, family, name, limit=None, next_token=None, fail_on_not_found=True):
+def print_aws_logs(
+    logs_client, family, name, limit=None, next_token=None, fail_on_not_found=True
+):
     kwargs = {}  # boto is weird, and doesn't allow `None` for parameters
     if next_token is not None:
         kwargs["nextToken"] = next_token
     if limit is not None:
         kwargs["limit"] = limit
     try:
-        events = logs_client.get_log_events(logGroupName=family, logStreamName=name, **kwargs)
+        events = logs_client.get_log_events(
+            logGroupName=family, logStreamName=name, **kwargs
+        )
     except botocore.exceptions.ClientError as error:
-        if error.response['Error']['Code'] == 'ResourceNotFoundException':
+        if error.response["Error"]["Code"] == "ResourceNotFoundException":
             if fail_on_not_found:
                 raise error
             else:
@@ -366,7 +392,9 @@ def print_aws_logs(logs_client, family, name, limit=None, next_token=None, fail_
     if len(events["events"]) == limit:
         click.echo("...more log lines available: use -n option to get more...")
     for event in events["events"]:
-        click.echo(f"[{name}] {str(datetime.fromtimestamp(event['timestamp'] / 1000))}: {event['message']}")
+        click.echo(
+            f"[{name}] {str(datetime.fromtimestamp(event['timestamp'] / 1000))}: {event['message']}"
+        )
 
     return events["nextForwardToken"], len(events["events"])
 
@@ -380,12 +408,16 @@ def monitor_azure(node, config, verbose):
     monitor_start_time = datetime.now(timezone.utc) - timedelta(minutes=1)
 
     azure_subs_id, azure_client, azure_tenant, azure_secret = get_azure_keys()
-    credentials = ClientSecretCredential(client_id=azure_client, tenant_id=azure_tenant, client_secret=azure_secret)
+    credentials = ClientSecretCredential(
+        client_id=azure_client, tenant_id=azure_tenant, client_secret=azure_secret
+    )
     # Get Azure Storage account key, using resource group name and trigger function's storage account name
 
     resource_group_name = config["resource_group_name"]
     storage_account_name = config["webhook_storage_account_name"]
-    storage_client = StorageManagementClient(credential=credentials, subscription_id=azure_subs_id)
+    storage_client = StorageManagementClient(
+        credential=credentials, subscription_id=azure_subs_id
+    )
     storage_keys = storage_client.storage_accounts.list_keys(
         resource_group_name=resource_group_name, account_name=storage_account_name
     )
@@ -406,8 +438,14 @@ def monitor_azure(node, config, verbose):
 
     # Get the table that store the run history for the webhook from the Azure storage account
     table_credential = AzureNamedKeyCredential(storage_account_name, access_key)
-    table_service_client = TableServiceClient(endpoint=endpoint, credential=table_credential)
-    table_name = [table.name for table in table_service_client.list_tables() if "History" in table.name][0]
+    table_service_client = TableServiceClient(
+        endpoint=endpoint, credential=table_credential
+    )
+    table_name = [
+        table.name
+        for table in table_service_client.list_tables()
+        if "History" in table.name
+    ][0]
 
     # Query the webhook's History table and get records (entities)
     table_client = TableClient.from_connection_string(connection_string, table_name)
@@ -438,7 +476,9 @@ def monitor_azure(node, config, verbose):
         exit(1)
 
 
-def azure_refresh_and_print_log(table_client, monitor_start_time, shown_log_row_key=list()):
+def azure_refresh_and_print_log(
+    table_client, monitor_start_time, shown_log_row_key=list()
+):
     """
     Refresh the log table and print the new log entries
     """
@@ -470,18 +510,24 @@ def azure_refresh_and_print_log(table_client, monitor_start_time, shown_log_row_
 
             if log_df.loc[i, "EventType"] == "ExecutionStarted":
                 az_func_name1 = log_df.loc[i, "Name"]
-                click.secho(f"Azure Trigger Function: '{az_func_name1}' started", fg="green")
+                click.secho(
+                    f"Azure Trigger Function: '{az_func_name1}' started", fg="green"
+                )
                 # execute_st=log_df.loc[i,'_Timestamp']
             elif log_df.loc[i, "EventType"] == "ExecutionCompleted":
-                az_func_name1 = execution_log.loc[execution_log["EventType"] == "ExecutionStarted", "Name"].values[0]
-                execute_st = execution_log.loc[execution_log["EventType"] == "ExecutionStarted", "_Timestamp"].values[
-                    -1
-                ]
-                execute_et = execution_log.loc[execution_log["EventType"] == "ExecutionCompleted", "_Timestamp"].values[
-                    -1
-                ]
+                az_func_name1 = execution_log.loc[
+                    execution_log["EventType"] == "ExecutionStarted", "Name"
+                ].values[0]
+                execute_st = execution_log.loc[
+                    execution_log["EventType"] == "ExecutionStarted", "_Timestamp"
+                ].values[-1]
+                execute_et = execution_log.loc[
+                    execution_log["EventType"] == "ExecutionCompleted", "_Timestamp"
+                ].values[-1]
                 time_taken = execute_et - execute_st
-                click.secho(f"Azure Trigger Function: '{az_func_name1}' ended", fg="green")
+                click.secho(
+                    f"Azure Trigger Function: '{az_func_name1}' ended", fg="green"
+                )
                 click.secho(
                     f"'{az_func_name1}' time taken: {time_taken.astype('timedelta64[s]').astype('float')/60:.2f} mins"
                 )
@@ -603,7 +649,6 @@ def check_gcp_execution_status(execution):
 def print_gcp_execution_logs(logging_client, job_id, execution, previous_insert_id):
     execution_name = execution.name.split("/")[-1]
 
-
     filter = " ".join(
         [
             'resource.type = "cloud_run_job"',
@@ -665,7 +710,9 @@ def print_gcp_webhook_logs(logging_client, job_id):
 
 @click.command()
 @click.option("--verbose", "-v", is_flag=True)
-@click.option("--num-lines", "-n", type=int, default=20, help="the number of log lines to return")
+@click.option(
+    "--num-lines", "-n", type=int, default=20, help="the number of log lines to return"
+)
 @click.option(
     "--log-type",
     "-l",
@@ -673,7 +720,6 @@ def print_gcp_webhook_logs(logging_client, job_id):
     default=LOG_TYPE_CLUSTER,
     help=f"The log type to lookup. One of {LOG_TYPES}. Default is {LOG_TYPE_CLUSTER}.",
 )
-
 @click.option(
     "--follow-tail",
     "-f",
