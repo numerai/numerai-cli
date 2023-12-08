@@ -39,7 +39,7 @@ def is_win10_professional():
 # especially b/c there's tons of ways to mess up your docker install
 # especially on windows :(
 def root_cause(std_out, err_msg):
-    all = f'{std_out.decode("utf-8") }\n{err_msg.decode("utf-8") }'
+    all_logs = f'{std_out.decode("utf-8") }\n{err_msg.decode("utf-8") }'
     if b"is not recognized as an internal or external command" in err_msg:
         if sys.platform == "win32":
             if is_win10_professional():
@@ -135,10 +135,10 @@ def root_cause(std_out, err_msg):
         raise exception_with_msg("Invalid size preset, report this to Numerai")
 
     if (
-        "Can't add file" in all
+        "Can't add file" in all_logs
         or b"Error processing tar file(exit status 1): unexpected EOF" in err_msg
     ):
-        err_files = [f for f in all.split("\n") if "Can't add file" in f]
+        err_files = [f for f in all_logs.split("\n") if "Can't add file" in f]
         raise exception_with_msg(
             "Docker was unable to access some files while trying to build,"
             "either another program is using them or docker does not have permissions"
@@ -157,7 +157,16 @@ def root_cause(std_out, err_msg):
     if b"ResourceNotFoundException" in std_out or b"NoSuchEntity" in std_out:
         return
 
+    if b"Cycle" in std_out:
+        raise exception_with_msg(
+            "You upgraded to 1.0+ and need to replace your AWS nodes."
+            "\nRun the following commands:"
+            "\n numerai node  -m <model_name> destroy --preserve-node-config"
+            "\n numerai node -m <model_name> config"
+            "\n numerai node -m <model_name> deploy"
+        )
+
     raise exception_with_msg(
         f"Numerai CLI was unable to identify an error, please try to use the "
-        f'"--verbose|-v" option for more information before reporting this\n{all}'
+        f'"--verbose|-v" option for more information before reporting this\n{all_logs}'
     )

@@ -210,6 +210,17 @@ numerai setup --provider azure
 numerai node config --provider azure
 ```
 
+#### 0.4 to 1.0
+
+CLI 1.0 is a big change for AWS, you'll need to:
+
+- update the permissions for the role you created in the [AWS Setup Guide](./docs/aws_setup_guide.md)
+- update the terraform with `numerai setup`
+- replace your aws nodes by running:
+  - `numerai node  -m <model_name> destroy --preserve-node-config`
+  - `numerai node -m <model_name> config`
+  - `numerai node -m <model_name> deploy`
+
 #### Beyond
 
 Some updates will make changes to configuration files used by Numerai CLI. These will
