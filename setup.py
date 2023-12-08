@@ -9,7 +9,7 @@ with open(path.join(this_directory, "README.md"), encoding="utf-8") as f:
 
 setup(
     name="numerai-cli",
-    version="1.0.1",
+    version="1.0.2",
     description="A library for deploying Numer.ai Prediction Nodes.",
     url="https://github.com/numerai/numerai-cli",
     author="Numer.ai",
