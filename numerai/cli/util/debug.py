@@ -159,11 +159,12 @@ def root_cause(std_out, err_msg):
 
     if b"Cycle" in std_out:
         raise exception_with_msg(
-            "You upgraded to 1.0+ and need to replace your AWS nodes."
-            "\nRun the following commands:"
-            "\n numerai node  -m <model_name> destroy --preserve-node-config"
-            "\n numerai node -m <model_name> config"
-            "\n numerai node -m <model_name> deploy"
+            "You upgraded to 1.0+ and need to replace your AWS nodes before continuing!"
+            "\nTo do this now follow these instructions:"
+            '\n run "numerai destroy-all --preserve-node-config"'
+            '\n run "numerai node -m <model_name> config" for each node'
+            '\n run "numerai node -m <model_name> deploy" for each node'
+            "\nIf you do not want to do this, downgrade to 0.4.1 to continue."
         )
 
     raise exception_with_msg(
