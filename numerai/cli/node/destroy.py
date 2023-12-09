@@ -8,7 +8,27 @@ from numerai.cli.util.files import load_or_init_nodes, store_config, copy_file
 from numerai.cli.util.keys import get_provider_keys, get_numerai_keys
 
 
-def destroy_node(node, verbose, preserve_node_config=False):
+@click.command()
+@click.option("--preserve-node-config", "-p", is_flag=True)
+@click.option("--verbose", "-v", is_flag=True)
+@click.pass_context
+def destroy(ctx, preserve_node_config, verbose):
+    """
+    Uses Terraform to destroy a Numerai Compute cluster.
+    This will delete everything, including:
+        - lambda url
+        - docker container and associated task
+        - all logs
+    This command is idempotent and safe to run multiple times.
+    """
+
+    ctx.ensure_object(dict)
+    model = ctx.obj["model"]
+    node = model["name"]
+    if not os.path.exists(CONFIG_PATH):
+        click.secho(".numerai directory not setup, run `numerai setup`...", fg="red")
+        return
+
     try:
         nodes_config = load_or_init_nodes()
         node_config = nodes_config[node]
@@ -21,6 +41,10 @@ def destroy_node(node, verbose, preserve_node_config=False):
             fg="red",
         )
         return
+    
+    if not preserve_node_config:
+        click.secho("backing up nodes.json...")
+        copy_file(NODES_PATH, f"{NODES_PATH}.backup", force=True, verbose=True)
 
     try:
         click.secho(
@@ -30,7 +54,6 @@ def destroy_node(node, verbose, preserve_node_config=False):
         )
         del nodes_config[node]
         store_config(NODES_PATH, nodes_config)
-        copy_file(NODES_PATH, f"{CONFIG_PATH}/{provider}/", force=True, verbose=True)
 
         click.secho("deleting cloud resources for node...")
         terraform(
@@ -60,27 +83,3 @@ def destroy_node(node, verbose, preserve_node_config=False):
         click.secho("re-adding node config to nodes.json...", fg="green")
         nodes_config[node] = node_config
         store_config(NODES_PATH, nodes_config)
-
-
-@click.command()
-@click.option("--preserve-node-config", "-p", is_flag=True)
-@click.option("--verbose", "-v", is_flag=True)
-@click.pass_context
-def destroy(ctx, preserve_node_config, verbose):
-    """
-    Uses Terraform to destroy a Numerai Compute cluster.
-    This will delete everything, including:
-        - lambda url
-        - docker container and associated task
-        - all logs
-    This command is idempotent and safe to run multiple times.
-    """
-
-    ctx.ensure_object(dict)
-    model = ctx.obj["model"]
-    node = model["name"]
-    if not os.path.exists(CONFIG_PATH):
-        click.secho(".numerai directory not setup, run `numerai setup`...", fg="red")
-        return
-
-    destroy_node(node, verbose, preserve_node_config)
