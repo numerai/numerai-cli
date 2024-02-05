@@ -3,6 +3,7 @@
 [![PyPI](https://img.shields.io/pypi/v/numerai-cli.svg?color=brightgreen)](https://pypi.org/project/numerai-cli/)
 
 Welcome to the Numerai CLI for the [Numerai Tournament](https://docs.numer.ai/tournament/learn).
+Numerai CLI (aka Compute Heavy) is a tool to help you set up cloud automation for your Numerai predictions.
 This README is designed to have EVERYTHING you need to setup and maintain a Numerai Compute Heavy node.
 
 This CLI runs on your local computer to configure a Numerai Prediction Node in the cloud.
