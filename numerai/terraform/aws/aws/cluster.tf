@@ -84,11 +84,29 @@ resource "aws_iam_role_policy_attachment" "aws_batch_service_role" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSBatchServiceRole"
 }
 
+resource "aws_launch_template" "node" {
+  name = local.node_prefix
+
+  block_device_mappings {
+    device_name = "/dev/xvda"
+
+    ebs {
+      volume_size = var.volume_size
+      volume_type = "gp2"
+    }
+  }
+}
+
 resource "aws_batch_compute_environment" "node" {
-  compute_environment_name = local.node_prefix
+  compute_environment_name_prefix = "${local.node_prefix}-"
 
   compute_resources {
     instance_role = aws_iam_instance_profile.batch_ecs_instance_role.arn
+
+    launch_template {
+      launch_template_id = aws_launch_template.node.id
+      version            = "$Latest"
+    }
 
     max_vcpus = 64
 
@@ -145,7 +163,18 @@ resource "aws_batch_job_definition" "node" {
 
   retry_strategy {
     attempts = 2
-
+    evaluate_on_exit {
+      on_reason = "CannotInspectContainerError:*"
+      action    = "RETRY"
+    }
+    evaluate_on_exit {
+      on_reason = "CannotPullContainerError:*"
+      action    = "RETRY"
+    }
+    evaluate_on_exit {
+      action    = "RETRY"
+      on_reason = "CannotStartContainerError:*"
+    }
     evaluate_on_exit {
       action    = "RETRY"
       on_reason = "Task failed to start"
