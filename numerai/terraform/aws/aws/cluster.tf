@@ -124,6 +124,10 @@ resource "aws_batch_compute_environment" "node" {
   service_role = aws_iam_role.aws_batch_service_role.arn
   type         = "MANAGED"
   depends_on   = [aws_iam_role_policy_attachment.aws_batch_service_role]
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 
