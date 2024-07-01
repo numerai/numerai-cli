@@ -61,7 +61,7 @@ def test(ctx, local, command, verbose):
     ctx.ensure_object(dict)
     model = ctx.obj["model"]
     node = model["name"]
-    is_signals = model["is_signals"]
+    tournament = model["tournament"]
     node_config = load_or_init_nodes(node)
     provider = node_config["provider"]
 
@@ -143,7 +143,6 @@ def test(ctx, local, command, verbose):
         variables={"modelId": node_config["model_id"]},
         authorization=True,
     )
-    tournament = TOURNAMENT_SIGNALS if is_signals else TOURNAMENT_NUMERAI
     curr_round = api.get_current_round(tournament)
     latest_subs = sorted(
         filter(
