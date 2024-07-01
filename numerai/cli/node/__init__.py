@@ -50,7 +50,7 @@ def get_models(tournament):
 @click.option(
     "--tournament",
     "-t",
-    default=TOURNAMENTS["numerai"],
+    default=8,
     help="Target a specific tournament number."
     " Defaults to Numerai Tournament/Classic."
     f" Available tournaments: {json.dumps(tournaments_dict(), indent=2)}",
