@@ -11,10 +11,7 @@ import lightgbm as lgbm
 logging.basicConfig(filename="log.txt", filemode="a")
 
 TOURNAMENT = 12
-DATA_VERSION = "v4.1"
-ERA_COL = "era"
-DATA_TYPE_COL = "data_type"
-TARGET_COL = "target_nomi_v4_20"
+DATA_VERSION = "crypto/v1.0"
 TRAINED_MODEL_PREFIX = "./trained_model"
 
 DEFAULT_MODEL_ID = None
@@ -31,17 +28,6 @@ napi = numerapi.NumerAPI(
 )
 
 
-def get_features(napi):
-    napi.download_dataset(f"{DATA_VERSION}/features.json")
-    with open(f"{DATA_VERSION}/features.json", "r") as f:
-        feature_metadata = json.load(f)
-    return feature_metadata["feature_sets"]["small"] + [
-        ERA_COL,
-        DATA_TYPE_COL,
-        TARGET_COL,
-    ]
-
-
 def train(napi, model_id, force_training=False):
     model_name = TRAINED_MODEL_PREFIX
     if model_id:
@@ -54,43 +40,54 @@ def train(napi, model_id, force_training=False):
         return model
 
     logging.info("reading training data")
-    napi.download_dataset(f"{DATA_VERSION}/train.parquet")
-    train_data = pd.read_parquet(
-        f"{DATA_VERSION}/train.parquet", columns=get_features(napi)
-    )
+    napi.download_dataset(f"{DATA_VERSION}/train_targets.parquet")
+    target = pd.read_parquet(f"{DATA_VERSION}/train_targets.parquet")
 
+    # TODO: implement get_features and train a model
     # This will take a few minutes 🍵
-    logging.info("training model")
-    model = lgbm.LGBMRegressor(
-        n_estimators=2000,
-        learning_rate=0.01,
-        max_depth=5,
-        num_leaves=2**5 - 1,
-        colsample_bytree=0.1,
-    )
-    model.fit(
-        train_data.filter(like="feature_", axis="columns"),
-        train_data[TARGET_COL],
-    )
+    # logging.info("training model")
+    # model = lgbm.LGBMRegressor(
+    #     n_estimators=2000,
+    #     learning_rate=0.01,
+    #     max_depth=5,
+    #     num_leaves=2**5-1,
+    #     colsample_bytree=0.1
+    # )
+    # model.fit(
+    #     train_data[feature_cols],
+    #     train_data["target"]
+    # )
 
-    logging.info("saving model")
-    joblib.dump(model, model_name)
-    return model
+    # logging.info("saving model")
+    # joblib.dump(model, model_name)
+    # return model
+
+    # just return the target for now
+    return target
 
 
 def predict(napi, model):
     logging.info("reading prediction data")
-    napi.download_dataset(f"{DATA_VERSION}/live.parquet")
-    predict_data = pd.read_parquet(
-        f"{DATA_VERSION}/live.parquet", columns=get_features(napi)
-    )
+    napi.download_dataset(f"{DATA_VERSION}/live_universe.parquet")
+    live_universe = pd.read_parquet(f"{DATA_VERSION}/live_universe.parquet")
 
-    logging.info("generating predictions")
-    predictions = model.predict(predict_data.filter(like="feature_", axis="columns"))
-    predictions = pd.DataFrame(
-        predictions, columns=["prediction"], index=predict_data.index
+    # TODO: implement get_features and predict the target
+    # logging.info("generating predictions")
+    # predictions = model.predict(get_features(live_universe))
+    # predictions = pd.DataFrame(
+    #     predictions, columns=["prediction"], index=predict_data.index
+    # )
+    # return predictions
+
+    # just return the latest target for now
+    napi.download_dataset(f"{DATA_VERSION}/train_targets.parquet")
+    target = pd.read_parquet(f"{DATA_VERSION}/train_targets.parquet")
+    return (
+        target[target.date == target.date.max()]
+        .drop(columns=["date"])
+        .rename(columns={"target": "prediction"})
+        .set_index("symbol")
     )
-    return predictions
 
 
 def submit(predictions, predict_output_path="predictions.csv", model_id=None):

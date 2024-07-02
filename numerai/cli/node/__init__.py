@@ -1,4 +1,5 @@
 """Init for node"""
+
 import json
 import logging
 import click
@@ -15,22 +16,23 @@ from numerai.cli.util.keys import get_numerai_keys
 # Setting azure's logging level "ERROR" to avoid spamming the terminal
 
 
-def get_models(signals):
-    if signals:
-        tournament = TOURNAMENT_SIGNALS
-        name_prefix = "signals"
-    else:
-        tournament = TOURNAMENT_NUMERAI
-        name_prefix = "numerai"
+def tournaments_dict():
+    napi = base_api.Api()
+    tournaments = napi.raw_query('query { tournaments { name tournament } }')
+    return {t["tournament"]: t["name"] for t in tournaments["data"]["tournaments"]}
+
+
+def get_models(tournament):
     napi = base_api.Api(*get_numerai_keys())
     models = napi.get_models(tournament)
-
+    tournaments = napi.raw_query('query { tournaments { name tournament } }')
+    name_prefix = tournaments_dict()[tournament]
     model_dict = {}
     for model_name, model_id in models.items():
         model_dict[model_name] = {
             "id": model_id,
             "name": f"{name_prefix}-{model_name}",
-            "is_signals": signals,
+            "tournament": tournament,
         }
     return model_dict
 
@@ -43,16 +45,18 @@ def get_models(signals):
     type=str,
     prompt=True,
     help="The name of one of your models to configure the Prediction Node for."
-    "It defaults to the first model returned from your account.",
+    " It defaults to the first model returned from your account.",
 )
 @click.option(
-    "--signals",
-    "-s",
-    is_flag=True,
-    help="Target a signals model with this name. Defaults to false.",
+    "--tournament",
+    "-t",
+    default=8,
+    help="Target a specific tournament number."
+    " Defaults to Numerai Tournament/Classic."
+    f" Available tournaments: {json.dumps(tournaments_dict(), indent=2)}",
 )
 @click.pass_context
-def node(ctx, verbose, model_name, signals):
+def node(ctx, verbose, model_name, tournament):
     """
     Commands to manage and test Prediction Nodes.
     """
@@ -68,7 +72,7 @@ def node(ctx, verbose, model_name, signals):
     else:
         logger.setLevel(logging.ERROR)
 
-    models = get_models(signals)
+    models = get_models(tournament)
 
     try:
         ctx.ensure_object(dict)
