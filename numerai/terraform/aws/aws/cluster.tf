@@ -84,15 +84,26 @@ resource "aws_iam_role_policy_attachment" "aws_batch_service_role" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSBatchServiceRole"
 }
 
+data "aws_ami" "ecs_al2" {
+  most_recent = true
+  filter {
+    name   = "name"
+    values = ["amzn2-ami-ecs-hvm-*-x86_64-ebs"]
+  }
+}
+
 resource "aws_launch_template" "node" {
-  name = local.node_prefix
+  image_id = data.aws_ami.ecs_al2.id
+  dynamic "block_device_mappings" {
+    for_each = var.volume_size > 0 ? {size: var.volume_size} : {}
+    content {
+      device_name = "/dev/xvda"
 
-  block_device_mappings {
-    device_name = "/dev/xvda"
-
-    ebs {
-      volume_size = var.volume_size
-      volume_type = "gp2"
+      ebs {
+        encrypted = true
+        volume_size = each.size
+        volume_type = "gp3"
+      }
     }
   }
 }
@@ -151,9 +162,10 @@ resource "aws_batch_job_queue" "node" {
   state    = "ENABLED"
   priority = 1
 
-  compute_environments = [
-    aws_batch_compute_environment.node.arn
-  ]
+  compute_environment_order {
+    order = 1
+    compute_environment = aws_batch_compute_environment.node.arn
+  }
 }
 
 resource "aws_batch_job_definition" "node" {
