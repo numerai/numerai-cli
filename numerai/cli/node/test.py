@@ -337,7 +337,7 @@ def get_recent_task_status_aws(cluster_arn, ecs_client, node, trigger_id):
             "red",
         )
     elif matched_task["lastStatus"] in stopped_codes:
-        return matched_task, True, "Job execution succeeded!\r", "green"
+        return matched_task, True, "Job execution finished!\r", "green"
     elif matched_task["lastStatus"] in pending_codes:
         return matched_task, False, "Waiting for job to start...", "yellow"
     elif matched_task["lastStatus"] in running_codes:

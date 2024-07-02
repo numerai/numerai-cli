@@ -4,9 +4,9 @@ FROM python:3.9
 # These are docker arguments that `numerai node deploy/test` will always pass into docker.
 # They are then set in your environment so that numerapi can access them when uploading submissions.
 # You can also access them from your script like so:
-    # import os
-    # public_id = os.environ["NUMERAI_PUBLIC_ID"]
-    # secret_key = os.environ["NUMERAI_SECRET_KEY"]
+# import os
+# public_id = os.environ["NUMERAI_PUBLIC_ID"]
+# secret_key = os.environ["NUMERAI_SECRET_KEY"]
 ARG NUMERAI_PUBLIC_ID
 ENV NUMERAI_PUBLIC_ID=$NUMERAI_PUBLIC_ID
 

@@ -56,7 +56,7 @@ def get_models(tournament):
     f" Available tournaments: {json.dumps(tournaments_dict(), indent=2)}",
 )
 @click.pass_context
-def node(ctx, verbose, model_name, signals):
+def node(ctx, verbose, model_name, tournament):
     """
     Commands to manage and test Prediction Nodes.
     """
@@ -72,7 +72,7 @@ def node(ctx, verbose, model_name, signals):
     else:
         logger.setLevel(logging.ERROR)
 
-    models = get_models(signals)
+    models = get_models(tournament)
 
     try:
         ctx.ensure_object(dict)
