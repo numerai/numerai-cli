@@ -1,10 +1,9 @@
 """Constants for Numerai CLI"""
+
 import os
 import json
 from pathlib import Path
 
-TOURNAMENT_NUMERAI = 8
-TOURNAMENT_SIGNALS = 11
 PACKAGE_PATH = os.path.dirname(__file__)
 CONFIG_PATH = os.path.join(str(Path.home()), ".numerai")
 KEYS_PATH = os.path.join(CONFIG_PATH, ".keys")
@@ -65,11 +64,6 @@ DEFAULT_SETTINGS = {
 }
 
 CONSTANTS_STR = f"""Default values (not your configured node values):
-
----Tournament Numbers---
-TOURNAMENT_NUMERAI: {TOURNAMENT_NUMERAI}
-TOURNAMENT_SIGNALS: {TOURNAMENT_SIGNALS}
-
 ---Paths---
 PACKAGE_PATH: {PACKAGE_PATH}
 CONFIG_PATH: {CONFIG_PATH}

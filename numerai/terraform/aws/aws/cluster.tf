@@ -84,11 +84,40 @@ resource "aws_iam_role_policy_attachment" "aws_batch_service_role" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSBatchServiceRole"
 }
 
+data "aws_ami" "ecs_al2" {
+  most_recent = true
+  filter {
+    name   = "name"
+    values = ["amzn2-ami-ecs-hvm-*-x86_64-ebs"]
+  }
+}
+
+resource "aws_launch_template" "node" {
+  image_id = data.aws_ami.ecs_al2.id
+  dynamic "block_device_mappings" {
+    for_each = var.volume_size > 0 ? {size: var.volume_size} : {}
+    content {
+      device_name = "/dev/xvda"
+
+      ebs {
+        encrypted = true
+        volume_size = each.size
+        volume_type = "gp3"
+      }
+    }
+  }
+}
+
 resource "aws_batch_compute_environment" "node" {
-  compute_environment_name = local.node_prefix
+  compute_environment_name_prefix = "${local.node_prefix}-"
 
   compute_resources {
     instance_role = aws_iam_instance_profile.batch_ecs_instance_role.arn
+
+    launch_template {
+      launch_template_id = aws_launch_template.node.id
+      version            = "$Latest"
+    }
 
     max_vcpus = 64
 
@@ -106,6 +135,10 @@ resource "aws_batch_compute_environment" "node" {
   service_role = aws_iam_role.aws_batch_service_role.arn
   type         = "MANAGED"
   depends_on   = [aws_iam_role_policy_attachment.aws_batch_service_role]
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 
@@ -129,9 +162,10 @@ resource "aws_batch_job_queue" "node" {
   state    = "ENABLED"
   priority = 1
 
-  compute_environments = [
-    aws_batch_compute_environment.node.arn
-  ]
+  compute_environment_order {
+    order = 1
+    compute_environment = aws_batch_compute_environment.node.arn
+  }
 }
 
 resource "aws_batch_job_definition" "node" {
@@ -145,7 +179,18 @@ resource "aws_batch_job_definition" "node" {
 
   retry_strategy {
     attempts = 2
-
+    evaluate_on_exit {
+      on_reason = "CannotInspectContainerError:*"
+      action    = "RETRY"
+    }
+    evaluate_on_exit {
+      on_reason = "CannotPullContainerError:*"
+      action    = "RETRY"
+    }
+    evaluate_on_exit {
+      action    = "RETRY"
+      on_reason = "CannotStartContainerError:*"
+    }
     evaluate_on_exit {
       action    = "RETRY"
       on_reason = "Task failed to start"

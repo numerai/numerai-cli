@@ -26,3 +26,9 @@ variable "gateway_stage_path" {
   type        = string
   default     = "v1"
 }
+
+variable "volume_size" {
+  description = "Size of the EC2 volumes in GB"
+  type        = number
+  nullable    = true
+}

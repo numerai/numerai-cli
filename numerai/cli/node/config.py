@@ -1,4 +1,5 @@
 """Config command for Numerai CLI"""
+
 import json
 import os
 import click
@@ -94,6 +95,12 @@ from numerai.cli.util.keys import get_provider_keys, get_numerai_keys, load_or_i
     help="Forces your webhook to register with Numerai. "
     "Use in conjunction with options that prevent webhook auto-registering.",
 )
+@click.option(
+    "--volume",
+    "-v",
+    type=int,
+    help="Specify additional block storage in GB. Currently only supported in AWS.",
+)
 @click.pass_context
 def config(
     ctx,
@@ -107,6 +114,7 @@ def config(
     cron,
     timeout_minutes,
     register_webhook,
+    volume,
 ):
     """
     Uses Terraform to create a full Numerai Compute cluster in your desired provider.
@@ -262,12 +270,12 @@ def config(
         provider_registry_conf = create_gcp_registry(provider, verbose=verbose)
         node_conf.update(provider_registry_conf)
         registry_parts = node_conf["registry_id"].split("/")
-        node_conf[
-            "artifact_registry_login_url"
-        ] = f"https://{registry_parts[3]}-docker.pkg.dev/"
-        node_conf[
-            "docker_repo"
-        ] = f"{registry_parts[3]}-docker.pkg.dev/{registry_parts[1]}/numerai-container-registry/{node}:latest"
+        node_conf["artifact_registry_login_url"] = (
+            f"https://{registry_parts[3]}-docker.pkg.dev/"
+        )
+        node_conf["docker_repo"] = (
+            f"{registry_parts[3]}-docker.pkg.dev/{registry_parts[1]}/numerai-container-registry/{node}:latest"
+        )
         docker.login(node_conf, verbose)
         try:
             docker.manifest_inspect(node_conf["docker_repo"], verbose)
@@ -276,6 +284,9 @@ def config(
             docker.tag("hello-world:linux", node_conf["docker_repo"], verbose)
             docker.push(node_conf["docker_repo"], verbose)
         nodes_config[node] = node_conf
+    elif provider == "aws":
+        if volume is not None:
+            node_conf["volume"] = volume
 
     store_config(NODES_PATH, nodes_config)
 

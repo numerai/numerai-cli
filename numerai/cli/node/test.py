@@ -61,7 +61,7 @@ def test(ctx, local, command, verbose):
     ctx.ensure_object(dict)
     model = ctx.obj["model"]
     node = model["name"]
-    is_signals = model["is_signals"]
+    tournament = model["tournament"]
     node_config = load_or_init_nodes(node)
     provider = node_config["provider"]
 
@@ -143,7 +143,6 @@ def test(ctx, local, command, verbose):
         variables={"modelId": node_config["model_id"]},
         authorization=True,
     )
-    tournament = TOURNAMENT_SIGNALS if is_signals else TOURNAMENT_NUMERAI
     curr_round = api.get_current_round(tournament)
     latest_subs = sorted(
         filter(
@@ -338,7 +337,7 @@ def get_recent_task_status_aws(cluster_arn, ecs_client, node, trigger_id):
             "red",
         )
     elif matched_task["lastStatus"] in stopped_codes:
-        return matched_task, True, "Job execution succeeded!\r", "green"
+        return matched_task, True, "Job execution finished!\r", "green"
     elif matched_task["lastStatus"] in pending_codes:
         return matched_task, False, "Waiting for job to start...", "yellow"
     elif matched_task["lastStatus"] in running_codes:
