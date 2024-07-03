@@ -10,7 +10,7 @@ import lightgbm as lgbm
 
 logging.basicConfig(filename="log.txt", filemode="a")
 
-TOURNAMENT = 12
+TOURNAMENT = 8
 DATA_VERSION = "v4.1"
 ERA_COL = "era"
 DATA_TYPE_COL = "data_type"
