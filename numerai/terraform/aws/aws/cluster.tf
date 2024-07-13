@@ -117,7 +117,7 @@ resource "aws_batch_compute_environment" "node" {
 
     launch_template {
       launch_template_id = aws_launch_template.node.id
-      version            = "$Latest"
+      version            = aws_launch_template.node.latest_version
     }
 
     max_vcpus = 64
