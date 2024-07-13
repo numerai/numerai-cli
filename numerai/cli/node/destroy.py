@@ -1,4 +1,5 @@
 """Destroy command for Numerai CLI"""
+
 import click
 from numerapi import base_api
 
@@ -41,7 +42,7 @@ def destroy(ctx, preserve_node_config, verbose):
             fg="red",
         )
         return
-    
+
     if not preserve_node_config:
         click.secho("backing up nodes.json...")
         copy_file(NODES_PATH, f"{NODES_PATH}.backup", force=True, verbose=True)

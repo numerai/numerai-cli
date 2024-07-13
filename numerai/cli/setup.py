@@ -1,4 +1,5 @@
 """Setup command for Numerai CLI"""
+
 import click
 import logging
 
@@ -16,8 +17,9 @@ from numerai.cli.util.keys import config_numerai_keys, config_provider_keys
     prompt=True,
     help=f"Initialize with this providers API keys.",
 )
+@click.option("--skip-key-setup", "-s", is_flag=True)
 @click.option("--verbose", "-v", is_flag=True)
-def setup(provider, verbose):
+def setup(provider, skip_key_setup, verbose):
     """
     Initializes cli and provider API keys.
     """
@@ -38,20 +40,22 @@ def setup(provider, verbose):
         return
 
     # setup numerai keys
-    click.secho(
-        "Initializing numerai keys " "(press enter to keep value in brackets)...",
-        fg="yellow",
-    )
-    maybe_create(KEYS_PATH, protected=True)
-    config_numerai_keys()
+    if not skip_key_setup:
+        click.secho(
+            "Initializing numerai keys " "(press enter to keep value in brackets)...",
+            fg="yellow",
+        )
+        maybe_create(KEYS_PATH, protected=True)
+        config_numerai_keys()
 
     # setup provider keys
-    click.secho(
-        f"\nInitializing {provider} keys "
-        f"(press enter to keep value in brackets)...",
-        fg="yellow",
-    )
-    config_provider_keys(provider)
+    if not skip_key_setup:
+        click.secho(
+            f"\nInitializing {provider} keys "
+            f"(press enter to keep value in brackets)...",
+            fg="yellow",
+        )
+        config_provider_keys(provider)
 
     # copy tf files
     click.secho("copying terraform files...")
