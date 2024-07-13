@@ -94,14 +94,15 @@ data "aws_ami" "ecs_al2" {
 
 resource "aws_launch_template" "node" {
   image_id = data.aws_ami.ecs_al2.id
+  update_default_version = true
   dynamic "block_device_mappings" {
-    for_each = var.volume_size > 0 ? {size: var.volume_size} : {}
+    for_each = local.max_node_volume_size > 0 ? {size: local.max_node_volume_size} : {}
     content {
       device_name = "/dev/xvda"
 
       ebs {
         encrypted = true
-        volume_size = each.size
+        volume_size = local.max_node_volume_size
         volume_type = "gp3"
       }
     }
@@ -142,6 +143,19 @@ resource "aws_batch_compute_environment" "node" {
 }
 
 
+resource "aws_batch_job_queue" "node" {
+  name = "${local.node_prefix}-queue"
+
+  state    = "ENABLED"
+  priority = 1
+
+  compute_environment_order {
+    order = 1
+    compute_environment = aws_batch_compute_environment.node.arn
+  }
+}
+
+
 #############
 # Job Setup #
 #############
@@ -151,21 +165,6 @@ resource "aws_cloudwatch_log_group" "ec2" {
 
   name              = "/ec2/service/${each.key}"
   retention_in_days = "14"
-}
-
-
-resource "aws_batch_job_queue" "node" {
-  for_each = { for name, config in var.nodes : name => config }
-
-  name = each.key
-
-  state    = "ENABLED"
-  priority = 1
-
-  compute_environment_order {
-    order = 1
-    compute_environment = aws_batch_compute_environment.node.arn
-  }
 }
 
 resource "aws_batch_job_definition" "node" {

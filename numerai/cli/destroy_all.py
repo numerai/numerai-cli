@@ -1,4 +1,5 @@
 """Destroy command for Numerai CLI"""
+
 import click
 from numerapi import base_api
 

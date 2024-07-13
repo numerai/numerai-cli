@@ -35,5 +35,6 @@ def main():
     numerai.add_command(upgrade.upgrade)
     numerai.add_command(misc.copy_example)
     numerai.add_command(misc.list_constants)
+    numerai.add_command(misc.add_volume_aws)
     numerai.add_command(destroy_all.destroy_all)
     numerai()

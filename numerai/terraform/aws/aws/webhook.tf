@@ -15,7 +15,7 @@ resource "aws_lambda_function" "submission" {
   environment {
     variables = {
       JOB_DEFINITION = aws_batch_job_definition.node[each.key].name
-      JOB_QUEUE      = aws_batch_job_queue.node[each.key].name
+      JOB_QUEUE      = aws_batch_job_queue.node.name
     }
   }
 }

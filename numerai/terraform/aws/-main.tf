@@ -23,5 +23,4 @@ module "aws" {
   nodes               = local.aws_nodes
   node_container_port = var.node_container_port
   gateway_stage_path  = var.gateway_stage_path
-  volume_size         = var.volume_size
 }

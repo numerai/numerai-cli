@@ -25,7 +25,6 @@ def tournaments_dict():
 def get_models(tournament):
     napi = base_api.Api(*get_numerai_keys())
     models = napi.get_models(tournament)
-    tournaments = napi.raw_query('query { tournaments { name tournament } }')
     name_prefix = tournaments_dict()[tournament]
     model_dict = {}
     for model_name, model_id in models.items():
