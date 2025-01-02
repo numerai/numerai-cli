@@ -76,7 +76,7 @@ To use this tool you need:
    - Windows 10 Command Prompt (windows key, type `cmd`, select Command Prompt):
 
      ```powershell
-     powershell -command "$Script = Invoke-WebRequest 'https://raw.githubusercontent.com/numerai/numerai-cli/master/scripts/setup-win10.ps1'; $ScriptBlock = [ScriptBlock]::Create($Script.Content); Invoke-Command -ScriptBlock $ScriptBlock"
+     powershell -command "$Script = Invoke-WebRequest 'https://raw.githubusercontent.com/numerai/numerai-cli/master/scripts/setup-win10.ps1'; $ScriptBlock = [ScriptBlock]::Create($Script.Content); Invoke-Command criptBlock $ScriptBlock"
      ```
 
 4. After the setup script confirms Python and Docker, install `numerai-cli` via:
@@ -128,7 +128,7 @@ To use this tool you need:
    to list the vCPU/mem presets available, then you can configure a node to use one of the presets via:
 
    ```shell
-   numerai node config -s mem-lg
+   numerai node config  mem-lg
    ```
 
    Your compute node is now setup and ready to run! When you make changes to your code or re-train your model,
@@ -148,7 +148,7 @@ To use this tool you need:
    - The default example does _not_ make stake changes; please refer to the [numerapi docs](https://numerapi.readthedocs.io/en/latest/api/numerapi.html#module-numerapi.numerapi)
      for the methods you must call to do this.
    - You can view resources and logs in the AWS Console (region us-east-1) for your
-     [ECS Cluster](https://console.aws.amazon.com/ecs/home?region=us-east-1#/clusters/numerai-submission-ecs-cluster/tasks)
+     [ECS Cluster](https://console.aws.amazon.com/ecs/home?region=us-east-1#/clusters/numeraiubmission-ecs-cluster/tasks)
      and [other resources](https://console.aws.amazon.com/cloudwatch/home?region=us-east-1#logsV2:log-groups)
 
 ### List of Commands
@@ -168,12 +168,12 @@ requirements you'd use something like this (replacing [MODEL NAME] with the rele
 signals model name):
 
 ```shell
-numerai node -m [MODEL NAME] -s config -s mem-lg -e signals-python3
+numerai node -m [MODEL NAME] -t 11 config -s mem-lg -e signals-python3
 ```
 
-Here, the `node` command takes a model name with `-m` and a flag `-s` to detect if it's
-a signals model or numerai model. The `config` sub-command also takes a `-s` option to
-specify the size of the node to configure.
+Here, the `node` command takes a model name with `-m` and an argument `-t 11` to specify the tournament number
+(numerai is tournament 8, signals is tournament 11, crypto is tournament 12).
+The `config` sub-command also takes a `-s` option to specify the size of the node to configure.
 
 ### Upgrading
 
