@@ -179,21 +179,20 @@ resource "aws_batch_job_definition" "node" {
   retry_strategy {
     attempts = 2
     evaluate_on_exit {
-      on_reason = "CannotInspectContainerError:*"
-      action    = "RETRY"
+      # Should catch load and throttling related issues like:
+      #   - CannotPullContainerError
+      #   - CannotStartContainerError
+      #   - CannotInspectContainerError
+      #   - CannotCreateContainerError
+      #   - ThrottlingException
+      on_status_reason = "Task failed to start"
+      action           = "RETRY"
     }
     evaluate_on_exit {
-      on_reason = "CannotPullContainerError:*"
-      action    = "RETRY"
+      on_status_reason = "DockerTimeoutError*"
+      action           = "RETRY"
     }
-    evaluate_on_exit {
-      action    = "RETRY"
-      on_reason = "CannotStartContainerError:*"
-    }
-    evaluate_on_exit {
-      action    = "RETRY"
-      on_reason = "Task failed to start"
-    }
+    
     evaluate_on_exit {
       action    = "EXIT"
       on_reason = "*"
