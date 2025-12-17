@@ -55,7 +55,7 @@ def uninstall():
                         provider=provider,
                         verbose=True,
                         env_vars=provider_keys,
-                        inputs={"node_config_file": "nodes.json"},
+                        inputs={"node_config_file": "../nodes.json"},
                     )
 
             click.secho("cleaning up docker images...")

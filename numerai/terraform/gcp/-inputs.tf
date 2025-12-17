@@ -7,5 +7,5 @@ variable "region" {
 variable "node_config_file" {
   description = "Path to the json file used to configure nodes"
   type        = string
-  default     = "nodes.json"
+  default     = "../nodes.json"
 }
