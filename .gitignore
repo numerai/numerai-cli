@@ -116,3 +116,5 @@ terraform.tfstate*
 .DS_STORE
 
 tournament-python*/
+signals-python*/
+crypto-python*/
