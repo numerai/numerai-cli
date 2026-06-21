@@ -19,7 +19,7 @@ def apply_terraform(nodes_config, affected_providers, provider, verbose):
                 verbose,
                 affected_provider,
                 env_vars=load_or_init_keys(affected_provider),
-                inputs={"node_config_file": "nodes.json"},
+                inputs={"node_config_file": "../nodes.json"},
             )
         else:
             click.secho(f"provider {affected_provider} not supported", fg="red")
@@ -51,7 +51,7 @@ def create_azure_registry(provider, provider_keys, verbose):
         verbose,
         "azure",
         env_vars=provider_keys,
-        inputs={"node_config_file": "nodes.json"},
+        inputs={"node_config_file": "../nodes.json"},
     )
     res = terraform("output -json acr_repo_details", True, provider).decode("utf-8")
     return json.loads(res)
@@ -64,13 +64,13 @@ def create_gcp_registry(provider, verbose):
         'apply -target="google_project_service.cloud_resource_manager" -auto-approve ',
         verbose,
         "gcp",
-        inputs={"node_config_file": "nodes.json"},
+        inputs={"node_config_file": "../nodes.json"},
     )
     terraform(
         'apply -target="google_artifact_registry_repository.registry[0]" -auto-approve ',
         verbose,
         "gcp",
-        inputs={"node_config_file": "nodes.json"},
+        inputs={"node_config_file": "../nodes.json"},
     )
     res = terraform("output -json artifact_registry_details", True, provider).decode(
         "utf-8"

@@ -110,7 +110,7 @@ resource "aws_launch_template" "node" {
 }
 
 resource "aws_batch_compute_environment" "node" {
-  compute_environment_name_prefix = "${local.node_prefix}-"
+  compute_environment_name = "${local.node_prefix}-compute"
 
   compute_resources {
     instance_role = aws_iam_instance_profile.batch_ecs_instance_role.arn
