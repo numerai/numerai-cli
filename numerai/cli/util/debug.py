@@ -151,6 +151,18 @@ def root_cause(std_out, err_msg):
             "mode: https://docs.docker.com/engine/security/rootless/"
         )
 
+    if (
+        "RepositoryAlreadyExistsException" in all_logs
+        or "EntityAlreadyExists" in all_logs
+        or "ResourceAlreadyExistsException" in all_logs
+    ):
+        raise exception_with_msg(
+            "AWS resources with the names this node expects already exist in your account, "
+            "but they are not tracked in the current local Terraform state. "
+            "This usually happens after a partial previous apply. "
+            "Delete or import the existing AWS resources shown above, then retry."
+        )
+
     # these are non-errors that either shouldn't be handled or are handled elsewhere
     if b"Can't update submission after deadline" in err_msg:
         return

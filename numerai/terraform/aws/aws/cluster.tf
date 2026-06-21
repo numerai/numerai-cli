@@ -86,6 +86,8 @@ resource "aws_iam_role_policy_attachment" "aws_batch_service_role" {
 
 data "aws_ami" "ecs_al2" {
   most_recent = true
+  owners      = ["amazon"]
+
   filter {
     name   = "name"
     values = ["amzn2-ami-ecs-hvm-*-x86_64-ebs"]

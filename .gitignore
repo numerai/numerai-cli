@@ -114,3 +114,5 @@ terraform.tfstate*
 
 .idea/
 .DS_STORE
+
+tournament-python*/
