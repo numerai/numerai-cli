@@ -86,6 +86,8 @@ resource "aws_iam_role_policy_attachment" "aws_batch_service_role" {
 
 data "aws_ami" "ecs_al2" {
   most_recent = true
+  owners      = ["amazon"]
+
   filter {
     name   = "name"
     values = ["amzn2-ami-ecs-hvm-*-x86_64-ebs"]
@@ -110,7 +112,7 @@ resource "aws_launch_template" "node" {
 }
 
 resource "aws_batch_compute_environment" "node" {
-  compute_environment_name_prefix = "${local.node_prefix}-"
+  compute_environment_name = "${local.node_prefix}-compute"
 
   compute_resources {
     instance_role = aws_iam_instance_profile.batch_ecs_instance_role.arn
@@ -179,21 +181,20 @@ resource "aws_batch_job_definition" "node" {
   retry_strategy {
     attempts = 2
     evaluate_on_exit {
-      on_reason = "CannotInspectContainerError:*"
-      action    = "RETRY"
+      # Should catch load and throttling related issues like:
+      #   - CannotPullContainerError
+      #   - CannotStartContainerError
+      #   - CannotInspectContainerError
+      #   - CannotCreateContainerError
+      #   - ThrottlingException
+      on_status_reason = "Task failed to start"
+      action           = "RETRY"
     }
     evaluate_on_exit {
-      on_reason = "CannotPullContainerError:*"
-      action    = "RETRY"
+      on_status_reason = "DockerTimeoutError*"
+      action           = "RETRY"
     }
-    evaluate_on_exit {
-      action    = "RETRY"
-      on_reason = "CannotStartContainerError:*"
-    }
-    evaluate_on_exit {
-      action    = "RETRY"
-      on_reason = "Task failed to start"
-    }
+    
     evaluate_on_exit {
       action    = "EXIT"
       on_reason = "*"

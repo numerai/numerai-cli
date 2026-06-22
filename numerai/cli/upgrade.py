@@ -210,7 +210,7 @@ def upgrade(verbose):
             verbose,
             provider="aws",
             env_vars=load_or_init_keys("aws"),
-            inputs={"node_config_file": "nodes.json"},
+            inputs={"node_config_file": "../nodes.json"},
         )
 
     click.secho("Upgrade complete!", fg="green")

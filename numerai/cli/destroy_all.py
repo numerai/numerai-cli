@@ -62,7 +62,7 @@ def destroy_all(ctx, verbose, preserve_node_config):
                 verbose,
                 provider,
                 env_vars=provider_keys,
-                inputs={"node_config_file": "nodes.json"},
+                inputs={"node_config_file": "../nodes.json"},
             )
 
     except Exception as e:

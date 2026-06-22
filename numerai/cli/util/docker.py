@@ -69,7 +69,6 @@ def execute(command, verbose, censor_substr=None):
         shell=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        bufsize=1,
         close_fds=on_posix,
     )
     stdout_q = Queue()

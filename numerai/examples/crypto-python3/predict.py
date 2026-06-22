@@ -11,7 +11,8 @@ import lightgbm as lgbm
 logging.basicConfig(filename="log.txt", filemode="a")
 
 TOURNAMENT = 12
-DATA_VERSION = "crypto/v1.0"
+DATA_VERSION = "crypto/v2.0"
+TARGET_COL = "target_binned_return_20"
 TRAINED_MODEL_PREFIX = "./trained_model"
 
 DEFAULT_MODEL_ID = None
@@ -22,7 +23,7 @@ DEFAULT_SECRET_KEY = None
 # these are set by the docker image that you deploy after training,
 # but you can also set them manually above for local testing
 MODEL_ID = os.getenv("MODEL_ID", DEFAULT_MODEL_ID)
-napi = numerapi.NumerAPI(
+napi = numerapi.CryptoAPI(
     public_id=os.getenv("NUMERAI_PUBLIC_ID", DEFAULT_PUBLIC_ID),
     secret_key=os.getenv("NUMERAI_SECRET_KEY", DEFAULT_SECRET_KEY),
 )
@@ -40,63 +41,44 @@ def train(napi, model_id, force_training=False):
         return model
 
     logging.info("reading training data")
-    napi.download_dataset(f"{DATA_VERSION}/train_targets.parquet")
-    target = pd.read_parquet(f"{DATA_VERSION}/train_targets.parquet")
+    napi.download_dataset(f"{DATA_VERSION}/train.parquet")
+    train_data = pd.read_parquet(f"{DATA_VERSION}/train.parquet")
+    feature_cols = [col for col in train_data.columns if col.startswith("feature_")]
 
-    # TODO: implement get_features and train a model
-    # This will take a few minutes 🍵
-    # logging.info("training model")
-    # model = lgbm.LGBMRegressor(
-    #     n_estimators=2000,
-    #     learning_rate=0.01,
-    #     max_depth=5,
-    #     num_leaves=2**5-1,
-    #     colsample_bytree=0.1
-    # )
-    # model.fit(
-    #     train_data[feature_cols],
-    #     train_data["target"]
-    # )
+    logging.info("training model")
+    model = lgbm.LGBMRegressor(
+        n_estimators=2000,
+        learning_rate=0.01,
+        max_depth=5,
+        num_leaves=2**5 - 1,
+        colsample_bytree=0.1,
+    )
+    model.fit(train_data[feature_cols], train_data[TARGET_COL])
 
-    # logging.info("saving model")
-    # joblib.dump(model, model_name)
-    # return model
-
-    # just return the target for now
-    return target
+    logging.info("saving model")
+    joblib.dump(model, model_name)
+    return model
 
 
 def predict(napi, model):
     logging.info("reading prediction data")
-    napi.download_dataset(f"{DATA_VERSION}/live_universe.parquet")
-    live_universe = pd.read_parquet(f"{DATA_VERSION}/live_universe.parquet")
+    napi.download_dataset(f"{DATA_VERSION}/live.parquet")
+    predict_data = pd.read_parquet(f"{DATA_VERSION}/live.parquet")
+    feature_cols = [col for col in predict_data.columns if col.startswith("feature_")]
 
-    # TODO: implement get_features and predict the target
-    # logging.info("generating predictions")
-    # predictions = model.predict(get_features(live_universe))
-    # predictions = pd.DataFrame(
-    #     predictions, columns=["prediction"], index=predict_data.index
-    # )
-    # return predictions
-
-    # just return the latest target for now
-    napi.download_dataset(f"{DATA_VERSION}/train_targets.parquet")
-    target = pd.read_parquet(f"{DATA_VERSION}/train_targets.parquet")
-    return (
-        target[target.date == target.date.max()]
-        .drop(columns=["date"])
-        .rename(columns={"target": "prediction"})
-        .set_index("symbol")
+    logging.info("generating predictions")
+    predictions = model.predict(predict_data[feature_cols])
+    predictions = pd.DataFrame(
+        predictions, columns=["prediction"], index=predict_data.index
     )
+    return predictions
 
 
 def submit(predictions, predict_output_path="predictions.csv", model_id=None):
     logging.info("writing predictions to file and submitting")
     include_index = predictions.index.name is not None
     predictions.to_csv(predict_output_path, index=include_index)
-    napi.upload_predictions(
-        predict_output_path, model_id=model_id, tournament=TOURNAMENT
-    )
+    napi.upload_predictions(predict_output_path, model_id=model_id)
 
 
 if __name__ == "__main__":

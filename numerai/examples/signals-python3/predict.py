@@ -11,7 +11,7 @@ import lightgbm as lgbm
 logging.basicConfig(filename="log.txt", filemode="a")
 
 TOURNAMENT = 11
-DATA_VERSION = "signals/v1.0"
+DATA_VERSION = "signals/v2.0"
 TARGET_COL = "target"
 TRAINED_MODEL_PREFIX = "./trained_model"
 
@@ -23,7 +23,7 @@ DEFAULT_SECRET_KEY = None
 # these are set by the docker image that you deploy after training,
 # but you can also set them manually above for local testing
 MODEL_ID = os.getenv("MODEL_ID", DEFAULT_MODEL_ID)
-napi = numerapi.NumerAPI(
+napi = numerapi.SignalsAPI(
     public_id=os.getenv("NUMERAI_PUBLIC_ID", DEFAULT_PUBLIC_ID),
     secret_key=os.getenv("NUMERAI_SECRET_KEY", DEFAULT_SECRET_KEY),
 )
@@ -93,9 +93,7 @@ def submit(predictions, predict_output_path="predictions.csv", model_id=None):
     include_index = predictions.index.name is not None
     predictions.to_csv(predict_output_path, index=include_index)
     print(predictions)
-    napi.upload_predictions(
-        predict_output_path, model_id=model_id, tournament=TOURNAMENT
-    )
+    napi.upload_predictions(predict_output_path, model_id=model_id)
 
 
 if __name__ == "__main__":
