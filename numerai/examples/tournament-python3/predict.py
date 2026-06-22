@@ -11,10 +11,9 @@ import lightgbm as lgbm
 logging.basicConfig(filename="log.txt", filemode="a")
 
 TOURNAMENT = 8
-DATA_VERSION = "v4.1"
+DATA_VERSION = "v5.2"
 ERA_COL = "era"
-DATA_TYPE_COL = "data_type"
-TARGET_COL = "target_nomi_v4_20"
+TARGET_COL = "target"
 TRAINED_MODEL_PREFIX = "./trained_model"
 
 DEFAULT_MODEL_ID = None
@@ -35,11 +34,7 @@ def get_features(napi):
     napi.download_dataset(f"{DATA_VERSION}/features.json")
     with open(f"{DATA_VERSION}/features.json", "r") as f:
         feature_metadata = json.load(f)
-    return feature_metadata["feature_sets"]["small"] + [
-        ERA_COL,
-        DATA_TYPE_COL,
-        TARGET_COL,
-    ]
+    return feature_metadata["feature_sets"]["small"]
 
 
 def train(napi, model_id, force_training=False):
@@ -56,7 +51,8 @@ def train(napi, model_id, force_training=False):
     logging.info("reading training data")
     napi.download_dataset(f"{DATA_VERSION}/train.parquet")
     train_data = pd.read_parquet(
-        f"{DATA_VERSION}/train.parquet", columns=get_features(napi)
+        f"{DATA_VERSION}/train.parquet",
+        columns=[ERA_COL] + get_features(napi) + [TARGET_COL],
     )
 
     # This will take a few minutes 🍵

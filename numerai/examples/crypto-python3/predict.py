@@ -11,7 +11,7 @@ import lightgbm as lgbm
 logging.basicConfig(filename="log.txt", filemode="a")
 
 TOURNAMENT = 12
-DATA_VERSION = "crypto/v1.0"
+DATA_VERSION = "crypto/v2.0"
 TRAINED_MODEL_PREFIX = "./trained_model"
 
 DEFAULT_MODEL_ID = None
@@ -22,7 +22,7 @@ DEFAULT_SECRET_KEY = None
 # these are set by the docker image that you deploy after training,
 # but you can also set them manually above for local testing
 MODEL_ID = os.getenv("MODEL_ID", DEFAULT_MODEL_ID)
-napi = numerapi.NumerAPI(
+napi = numerapi.CryptoAPI(
     public_id=os.getenv("NUMERAI_PUBLIC_ID", DEFAULT_PUBLIC_ID),
     secret_key=os.getenv("NUMERAI_SECRET_KEY", DEFAULT_SECRET_KEY),
 )
