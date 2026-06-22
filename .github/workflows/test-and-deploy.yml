@@ -7,26 +7,17 @@ on:
 concurrency: deploy-numerai-cli-${{ github.ref }}
 
 jobs:
-  build-python36:
-    name: Build Python 3.6
+  build-python:
+    name: Build Python ${{ matrix.python-version }}
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v4
         with:
-          python-version: "3.6.15"
-      - run: pip install .
-      - run: numerai copy-example
-      - run: test -e tournament-python3/predict.py
-
-  build-python37:
-    name: Build Python 3.7
-    runs-on: ubuntu-20.04
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-python@v4
-        with:
-          python-version: "3.7.9"
+          python-version: ${{ matrix.python-version }}
       - run: pip install .
       - run: numerai copy-example
       - run: test -e tournament-python3/predict.py
@@ -46,12 +37,12 @@ jobs:
     name: PyPI Release
     runs-on: ubuntu-20.04
     if: github.ref == 'refs/heads/master'
-    needs: [build-python36, build-python37, build-docker]
+    needs: [build-python, build-docker]
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v4
         with:
-          python-version: "3.7.9"
+          python-version: "3.12"
       - run: pip install twine wheel
       - run: python setup.py sdist bdist_wheel
       - run: |
