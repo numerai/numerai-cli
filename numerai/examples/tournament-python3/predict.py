@@ -93,9 +93,7 @@ def submit(predictions, predict_output_path="predictions.csv", model_id=None):
     logging.info("writing predictions to file and submitting")
     include_index = predictions.index.name is not None
     predictions.to_csv(predict_output_path, index=include_index)
-    napi.upload_predictions(
-        predict_output_path, model_id=model_id, tournament=TOURNAMENT
-    )
+    napi.upload_predictions(predict_output_path, model_id=model_id)
 
 
 if __name__ == "__main__":

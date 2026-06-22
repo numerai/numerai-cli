@@ -3,3 +3,4 @@ pandas==2.3.3
 pyarrow==18.1.0
 joblib==1.5.3
 lightgbm==4.5.0
+scikit-learn==1.6.1
