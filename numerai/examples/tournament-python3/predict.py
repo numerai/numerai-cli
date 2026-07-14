@@ -11,7 +11,7 @@ import lightgbm as lgbm
 logging.basicConfig(filename="log.txt", filemode="a")
 
 TOURNAMENT = 8
-DATA_VERSION = "v5.2"
+DATA_VERSION = "v5.3"
 ERA_COL = "era"
 TARGET_COL = "target"
 TRAINED_MODEL_PREFIX = "./trained_model"
