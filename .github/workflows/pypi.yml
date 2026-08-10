@@ -1,0 +1,90 @@
+name: PyPI Release
+
+on:
+  push:
+    tags:
+      # Release tags are bare version numbers: 1.2.0, 1.2.0.dev0
+      - "[0-9]*"
+      # A `v` prefix is NOT a valid release tag. It is matched here only so the
+      # job can fail with an explanatory error instead of silently doing nothing.
+      - "v[0-9]*"
+
+concurrency: pypi-release-${{ github.ref }}
+
+jobs:
+  publish:
+    name: Build and publish numerai-cli to PyPI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # full history so the master-ancestry check below can run
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --upgrade build packaging setuptools twine wheel
+
+      - name: Verify tag format and version match
+        env:
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          python - <<'PY'
+          import os
+          import pathlib
+          import re
+          import sys
+          from packaging.version import Version
+
+          tag = os.environ["TAG_NAME"]
+          if tag.startswith("v"):
+              sys.exit(
+                  f"::error::Release tags must be bare version numbers. "
+                  f"`{tag}` has a `v` prefix; delete it and tag `{tag[1:]}` instead."
+              )
+          pkg = re.search(
+              r'numerai_cli_version\s*=\s*"([^"]+)"',
+              pathlib.Path("setup.py").read_text(),
+          ).group(1)
+          print(f"tag={tag} setup.py={pkg}")
+          if Version(tag) != Version(pkg):
+              sys.exit(
+                  f"::error::Tag {tag} does not match setup.py numerai_cli_version={pkg}"
+              )
+          print(f"::notice::publishing numerai-cli {Version(pkg)}")
+          PY
+
+      - name: Final releases must come from master
+        env:
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          python - <<'PY' > prerelease.txt
+          import os
+          from packaging.version import Version
+
+          print("yes" if Version(os.environ["TAG_NAME"]).is_prerelease else "no")
+          PY
+          if [ "$(cat prerelease.txt)" = "no" ]; then
+            git fetch --no-tags --quiet origin master
+            if git merge-base --is-ancestor "$GITHUB_SHA" FETCH_HEAD; then
+              echo "final release from a commit on master: ok"
+            else
+              echo "::error::Final release tags must point at a commit on master; $GITHUB_SHA is not one. Cut a pre-release (e.g. 1.1.7.dev0) from your branch instead."
+              exit 1
+            fi
+          else
+            echo "pre-release: master-ancestry check skipped"
+          fi
+          rm -f prerelease.txt
+
+      - name: Build a source tarball and wheel
+        run: python -m build
+
+      # No --skip-existing: under tag-triggered releases a duplicate version is
+      # a mistake worth failing on, not something to silently swallow.
+      - name: Publish to PyPI
+        run: |
+          python -m twine upload \
+            -u __token__ \
+            -p ${{ secrets.PYPI_API_KEY }} \
+            dist/*

@@ -1,6 +1,10 @@
 from setuptools import setup
 from os import path
 
+# The release version. See RELEASING.md -- this string is the release, the git
+# tag is only the trigger, and CI refuses to publish if the two disagree.
+numerai_cli_version = "1.2.0.dev0"
+
 # read the contents of the README file
 this_directory = path.abspath(path.dirname(__file__))
 with open(path.join(this_directory, "README.md"), encoding="utf-8") as f:
@@ -9,7 +13,7 @@ with open(path.join(this_directory, "README.md"), encoding="utf-8") as f:
 
 setup(
     name="numerai-cli",
-    version="1.1.5",
+    version=numerai_cli_version,
     description="A library for deploying Numer.ai Prediction Nodes.",
     url="https://github.com/numerai/numerai-cli",
     author="Numer.ai",

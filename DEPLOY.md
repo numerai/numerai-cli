@@ -1,29 +1,7 @@
 # Deployment Instructions
-Create a .pypirc file in your home directory like so:
-```
-▶ cat ~/.pypirc
-[distutils]
-index-servers =
-    pypi
 
-[pypi]
-repository: https://upload.pypi.org/legacy/
-username: REPLACE_ME
-password: ***
-```
+Releasing has moved to a tag-triggered flow. See [RELEASING.md](RELEASING.md).
 
-Install twine:
-```
-pip3 install twine
-```
-
-Build the dist packages:
-```
-rm -rf dist
-python3 setup.py sdist bdist_wheel
-```
-
-Deploy:
-```
-twine upload dist/*
-```
+The manual `~/.pypirc` + `twine upload dist/*` procedure that used to live here
+is no longer the release path — publishing is done by
+`.github/workflows/pypi.yml` when a `vX.Y.Z` tag is pushed.

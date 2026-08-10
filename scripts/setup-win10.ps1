@@ -2,7 +2,7 @@
 [CmdletBinding()] Param(
     $downloadsDir = "C:\Users\$env:UserName\Downloads",
     $installsDir = "C:\Program Files",
-    $pythonVersion = "3.9.1",
+    $pythonVersion = "3.12.10",
     $pythonUrl = "https://www.python.org/ftp/python/$pythonVersion/python-$pythonVersion-amd64.exe",
     $pythonDownloadPath = "$downloadsDir\python-$pythonVersion-amd64-installer.exe",
     $pythonInstallDir = "$installsDir\Python$pythonVersion",
@@ -44,4 +44,3 @@ Catch [Exception] {
     Write-Host $_.Exception | format-list -force
     Get-ComputerInfo
 }
-

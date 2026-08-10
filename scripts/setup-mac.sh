@@ -7,30 +7,27 @@
     xcode-select --installed
   fi
 
-  # Install Python 3.9.1 if not found, checks for OS X 10.9 or later and Intel vs. Apple Silicon
-  if [[ $(which python3) = "python3 not installed" ]]; then
+  # Install Python 3.12.10 if not found. Its universal2 installer supports
+  # both Intel and Apple Silicon on macOS 10.13 or later.
+  if ! command -v python3 >/dev/null 2>&1; then
     echo "Python 3 not found, installing now..."
 
-    sys_ver_os=$(system_profiler SPSoftwareDataType | grep "System Version:")
-    if [[ sys_ver_os =~ (.*[macOS|OS X] [10\.9|10.1\d|11\.]) ]]; then
-      echo "Mac OS 10.9 or later detected, installing Python 3.9.1"
-
-      if [[ $(system_profiler SPHardwareDataType | grep "Processor Name:" ) =~ .*Intel.* ]]; then
-        echo "Intel chip detected..."
-        curl https://www.python.org/ftp/python/3.9.1/python-3.9.1-macosx10.9.pkg --output ~/Downloads/python-3.9.1-installer.pkg
-      else
-        echo "Apple Silicon detected..."
-        curl https://www.python.org/ftp/python/3.9.1/python-3.9.1-macos11.0.pkg --output ~/Downloads/python-3.9.1-installer.pkg
-      fi
-      sudo installer -pkg ~/Downloads/python-3.9.1-installer.pkg -target /
+    sys_ver_os=$(sw_vers -productVersion)
+    sys_ver_major=${sys_ver_os%%.*}
+    sys_ver_minor=${sys_ver_os#*.}
+    sys_ver_minor=${sys_ver_minor%%.*}
+    if (( sys_ver_major > 10 || (sys_ver_major == 10 && sys_ver_minor >= 13) )); then
+      echo "macOS 10.13 or later detected, installing Python 3.12.10"
+      curl -fL https://www.python.org/ftp/python/3.12.10/python-3.12.10-macos11.pkg --output ~/Downloads/python-3.12.10-installer.pkg
+      sudo installer -pkg ~/Downloads/python-3.12.10-installer.pkg -target /
 
     else
-      echo "Your Mac OS version is too old, consider updating to 10.9 before installing python..."
+      echo "Your macOS version is too old, consider updating to 10.13 before installing Python..."
       echo $sys_ver_os
       exit 1
     fi
 
-    echo "Python 3.9.1 installed!"
+    echo "Python 3.12.10 installed!"
   else
     echo "Python 3 installed!"
   fi
