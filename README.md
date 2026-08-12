@@ -1,5 +1,7 @@
 # numerai-cli
 
+**As of August 2026, we are no longer supporting this project. You may use our [Model Uploads](https://docs.numer.ai/numerai-tournament/submissions/model-uploads) service instead.**
+
 [![PyPI](https://img.shields.io/pypi/v/numerai-cli.svg?color=brightgreen)](https://pypi.org/project/numerai-cli/)
 
 Welcome to the Numerai CLI for the [Numerai Tournament](https://docs.numer.ai/tournament/learn).
