@@ -2,5 +2,5 @@ numerapi==2.22.0
 pandas==3.0.5
 pyarrow==23.0.1
 joblib==1.5.3
-lightgbm==4.5.0
+lightgbm==4.7.0
 scikit-learn==1.8.0

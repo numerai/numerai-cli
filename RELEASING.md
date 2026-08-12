@@ -177,9 +177,7 @@ the images their prediction nodes build. Blast radius is wider than for a pure
 library — this is the main reason the `.devN` channel is worth using here rather
 than shipping straight to final.
 
-**There is no CHANGELOG.md.** numerapi's flow includes a changelog edit at each
-version bump; this repo has never had one, and the release notes live in the PR
-title and `README.md`. Adding one is optional and not assumed anywhere below.
+**CHANGELOG.md** Edit `CHANGELOG.md` as part of the version-bump commit when cutting a release.
 
 **Version is only in `setup.py`.** The package exposes no `__version__` and
 nothing else in the tree hardcodes it, so `numerai_cli_version` is the single

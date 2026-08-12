@@ -3,7 +3,7 @@ from os import path
 
 # The release version. See RELEASING.md -- this string is the release, the git
 # tag is only the trigger, and CI refuses to publish if the two disagree.
-numerai_cli_version = "1.2.0.dev0"
+numerai_cli_version = "1.2.0"
 
 # read the contents of the README file
 this_directory = path.abspath(path.dirname(__file__))
