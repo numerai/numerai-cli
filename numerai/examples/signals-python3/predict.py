@@ -1,7 +1,6 @@
 """ Sample tournament model in python 3 """
 
 import os
-import json
 import logging
 import joblib
 import numerapi
@@ -11,9 +10,10 @@ import lightgbm as lgbm
 logging.basicConfig(filename="log.txt", filemode="a")
 
 TOURNAMENT = 11
-DATA_VERSION = "signals/v2.1"
+DATA_VERSION = "signals/v3.0"
 TARGET_COL = "target"
-TRAINED_MODEL_PREFIX = "./trained_model"
+# Keep models trained on older Signals datasets separate from this version.
+TRAINED_MODEL_PREFIX = f"./trained_model_{DATA_VERSION.replace('/', '_')}"
 
 DEFAULT_MODEL_ID = None
 DEFAULT_PUBLIC_ID = None
@@ -59,7 +59,7 @@ def train(napi, model_id, force_training=False):
         num_leaves=2**5 - 1,
         colsample_bytree=0.1,
     )
-    model.fit(train_data[feature_cols], train_data["target"])
+    model.fit(train_data[feature_cols], train_data[TARGET_COL])
 
     logging.info("saving model")
     joblib.dump(model, model_name)
@@ -72,16 +72,8 @@ def predict(napi, model):
     predict_data = pd.read_parquet(f"{DATA_VERSION}/live.parquet").set_index(
         'numerai_ticker'
     )
-    feature_cols = [
-        col
-        for col in predict_data.columns
-        if col.startswith('feature_')
-        and col not in ("feature_country", "feature_exchange_code")
-    ]
-    print(predict_data)
-
     logging.info("generating predictions")
-    predictions = model.predict(predict_data[feature_cols])
+    predictions = model.predict(predict_data[model.feature_name_])
     predictions = pd.DataFrame(
         predictions, columns=["prediction"], index=predict_data.index
     )
@@ -92,7 +84,6 @@ def submit(predictions, predict_output_path="predictions.csv", model_id=None):
     logging.info("writing predictions to file and submitting")
     include_index = predictions.index.name is not None
     predictions.to_csv(predict_output_path, index=include_index)
-    print(predictions)
     napi.upload_predictions(predict_output_path, model_id=model_id)
 
 
