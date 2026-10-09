@@ -10,7 +10,7 @@ import lightgbm as lgbm
 logging.basicConfig(filename="log.txt", filemode="a")
 
 TOURNAMENT = 11
-DATA_VERSION = "signals/v3.0"
+DATA_VERSION = "signals/v3.1"
 TARGET_COL = "target"
 # Keep models trained on older Signals datasets separate from this version.
 TRAINED_MODEL_PREFIX = f"./trained_model_{DATA_VERSION.replace('/', '_')}"
