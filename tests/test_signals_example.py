@@ -52,7 +52,7 @@ class SignalsExampleTest(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as directory:
             with (
-                patch.object(signals, "TRAINED_MODEL_PREFIX", f"{directory}/trained_model_signals_v3.0"),
+                patch.object(signals, "TRAINED_MODEL_PREFIX", f"{directory}/trained_model_signals_v3.1"),
                 patch.object(signals.pd, "read_parquet", side_effect=read_parquet),
                 patch.object(signals.lgbm, "LGBMRegressor", return_value=model),
                 patch.object(signals.joblib, "dump"),
@@ -62,7 +62,7 @@ class SignalsExampleTest(unittest.TestCase):
 
         self.assertEqual(
             [call.args[0] for call in api.download_dataset.call_args_list],
-            ["signals/v3.0/train.parquet", "signals/v3.0/live.parquet"],
+            ["signals/v3.1/train.parquet", "signals/v3.1/live.parquet"],
         )
         self.assertEqual(list(model.fit.call_args.args[0].columns), model.feature_name_)
         self.assertEqual(list(model.predict.call_args.args[0].columns), model.feature_name_)
