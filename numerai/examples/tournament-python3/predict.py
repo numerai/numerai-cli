@@ -13,7 +13,6 @@ logging.basicConfig(filename="log.txt", filemode="a")
 TOURNAMENT = 8
 DATA_VERSION = "v6.0"
 TARGET_COL = "target"
-# Never reuse a model trained on the previous dataset's features or universe.
 TRAINED_MODEL_PREFIX = f"./trained_model_{DATA_VERSION}"
 
 DEFAULT_MODEL_ID = None
@@ -54,7 +53,6 @@ def train(napi, model_id, force_training=False):
         f"{DATA_VERSION}/train.parquet",
         columns=get_features(napi) + [TARGET_COL],
     )
-    # Unity includes text metadata such as feature_country.
     features = train_data.filter(like="feature_", axis="columns").select_dtypes(include="number")
     assert len(features.columns), "No numeric training features found"
 

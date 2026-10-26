@@ -1,5 +1,3 @@
-"""Exercise Classic v6 training and submission without downloading full datasets."""
-
 import importlib.util
 from pathlib import Path
 import runpy
