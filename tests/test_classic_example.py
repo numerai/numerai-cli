@@ -24,11 +24,22 @@ class ClassicExampleTest(unittest.TestCase):
         with (
             patch.dict(sys.modules, {"predict": classic}),
             patch.object(classic, "train") as train,
+            patch.object(classic, "MODEL_ID", "node-model-id"),
         ):
             runpy.run_path(str(EXAMPLE.parent / "train.py"), run_name="__main__")
         train.assert_called_once_with(
-            classic.napi, classic.MODEL_ID, force_training=True
+            classic.napi, "node-model-id", force_training=True
         )
+
+    def test_training_requires_node_model_id(self):
+        with (
+            patch.dict(sys.modules, {"predict": classic}),
+            patch.object(classic, "MODEL_ID", None),
+            patch.object(classic, "train") as train,
+            self.assertRaisesRegex(AssertionError, "MODEL_ID"),
+        ):
+            runpy.run_path(str(EXAMPLE.parent / "train.py"), run_name="__main__")
+        train.assert_not_called()
 
     def test_train_predict_and_submit_v6(self):
         train_data = pd.DataFrame(
@@ -69,10 +80,13 @@ class ClassicExampleTest(unittest.TestCase):
                     return_value=["feature_alpha", "feature_country", "feature_beta"],
                 ),
                 patch.object(classic.lgbm, "LGBMRegressor", return_value=model),
-                patch.object(classic.joblib, "dump"),
+                patch.object(classic.joblib, "dump") as dump,
                 patch.object(classic, "napi", api),
             ):
                 trained_model = classic.train(api, "model-id")
+                dump.assert_called_once_with(
+                    model, f"{directory}/trained_model_v6.0_model-id"
+                )
                 predictions = classic.predict(api, trained_model)
                 filename = str(Path(directory) / "predictions.csv")
                 classic.submit(predictions, filename, "model-id")

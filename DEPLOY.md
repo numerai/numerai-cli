@@ -10,7 +10,8 @@ the data and submission release is approved; merging publishes the package.
 4. After release approval, merge, monitor the PyPI release job, and tag the merged
    commit with the matching version. Do not publish a tag from an unmerged branch.
 5. Verify installation and `numerai copy-example`; existing nodes must copy the
-   changes, retrain on v6, and redeploy.
+   changes, retrain on v6 with `MODEL_ID=<your-node-model-id> python train.py`,
+   and redeploy.
 
 The commands below are a manual publishing fallback, not an additional required
 upload after the automated release.
