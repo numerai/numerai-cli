@@ -11,10 +11,10 @@ import lightgbm as lgbm
 logging.basicConfig(filename="log.txt", filemode="a")
 
 TOURNAMENT = 8
-DATA_VERSION = "v5.3"
-ERA_COL = "era"
+DATA_VERSION = "v6.0"
 TARGET_COL = "target"
-TRAINED_MODEL_PREFIX = "./trained_model"
+# Never reuse a model trained on the previous dataset's features or universe.
+TRAINED_MODEL_PREFIX = f"./trained_model_{DATA_VERSION}"
 
 DEFAULT_MODEL_ID = None
 DEFAULT_PUBLIC_ID = None
@@ -52,8 +52,11 @@ def train(napi, model_id, force_training=False):
     napi.download_dataset(f"{DATA_VERSION}/train.parquet")
     train_data = pd.read_parquet(
         f"{DATA_VERSION}/train.parquet",
-        columns=[ERA_COL] + get_features(napi) + [TARGET_COL],
+        columns=get_features(napi) + [TARGET_COL],
     )
+    # Unity includes text metadata such as feature_country.
+    features = train_data.filter(like="feature_", axis="columns").select_dtypes(include="number")
+    assert len(features.columns), "No numeric training features found"
 
     # This will take a few minutes 🍵
     logging.info("training model")
@@ -65,7 +68,7 @@ def train(napi, model_id, force_training=False):
         colsample_bytree=0.1,
     )
     model.fit(
-        train_data.filter(like="feature_", axis="columns"),
+        features,
         train_data[TARGET_COL],
     )
 
@@ -78,15 +81,15 @@ def predict(napi, model):
     logging.info("reading prediction data")
     napi.download_dataset(f"{DATA_VERSION}/live.parquet")
     predict_data = pd.read_parquet(
-        f"{DATA_VERSION}/live.parquet", columns=get_features(napi)
-    )
+        f"{DATA_VERSION}/live.parquet", columns=["numerai_ticker"] + model.feature_name_
+    ).set_index("numerai_ticker")
 
     logging.info("generating predictions")
-    predictions = model.predict(predict_data.filter(like="feature_", axis="columns"))
+    predictions = model.predict(predict_data[model.feature_name_])
     predictions = pd.DataFrame(
         predictions, columns=["prediction"], index=predict_data.index
     )
-    return predictions
+    return predictions.rank(pct=True)
 
 
 def submit(predictions, predict_output_path="predictions.csv", model_id=None):

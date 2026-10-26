@@ -389,6 +389,18 @@ A Prediction Node represents a cloud-based model that Numerai can trigger for pr
 
 ### Python Example
 
+The Classic Python example uses v6.0 (Unity), the same dataset as Signals v3.1.
+It trains on numeric features from the small feature set, preserves their training
+order, and submits ranked predictions keyed by `numerai_ticker`. V6 has `date`
+rather than the old `era` column. Saved models use a `trained_model_v6.0` prefix
+so a v5-trained model is not reused accidentally.
+
+Copy the updated example, retrain with `python train.py`, then redeploy your node.
+Updating the CLI package alone does not update code already copied into a node.
+Coordinate the switch with Classic v6 submission availability; v5 hosted support
+ends with the November 6, 2026 cutover. The R example below still uses the legacy
+ID-based API and is not a v6 example.
+
 ```shell
 numerai-python3
 ├── Dockerfile
