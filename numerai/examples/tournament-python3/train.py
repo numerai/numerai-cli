@@ -2,9 +2,6 @@
 
 import predict
 
-train_data_path, predict_data_path, predict_output_path = predict.download_data()
+assert predict.MODEL_ID, "Set MODEL_ID to the model ID configured for your deployed node"
 
-model_id = predict.MODEL_ID
-model_type = predict.MODEL
-
-predict.train(train_data_path, model_id, model_type, force_training=True)
+predict.train(predict.napi, predict.MODEL_ID, force_training=True)

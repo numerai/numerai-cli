@@ -21,7 +21,7 @@ jobs:
       - run: pip install .
       - run: numerai copy-example
       - run: test -e tournament-python3/predict.py
-      - name: Test Signals example
+      - name: Test Classic and Signals examples
         if: matrix.python-version == '3.13'
         run: |
           pip install -r numerai/examples/signals-python3/requirements.txt
